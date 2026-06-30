@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Environment variables (secrets)
+.env
+
+# Uploads (generated at runtime)
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Node (frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Alembic
+backend/alembic/versions/*.pyc
+
+# Logs
+*.log
