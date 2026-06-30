@@ -28,6 +28,7 @@ function DraggableMarker({
       center={[lat, lng]}
       radius={10}
       pathOptions={{ color: "#D94A63", fillColor: "#D94A63", fillOpacity: 1 }}
+      // @ts-ignore - draggable prop not in types but works at runtime
       draggable
       eventHandlers={{
         dragend(e) {

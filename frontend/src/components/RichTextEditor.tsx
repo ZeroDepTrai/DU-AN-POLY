@@ -74,7 +74,7 @@ export default function RichTextEditor({
         editor
           .chain()
           .focus()
-          .setImage({ src: base64, style: "max-width: 300px; height: auto; border-radius: 8px; margin: 0.5em 0;" })
+          .setImage({ src: base64 })
           .run();
       };
       reader.readAsDataURL(file);
