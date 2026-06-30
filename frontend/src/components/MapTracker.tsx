@@ -62,7 +62,7 @@ function RoutingLayer({
   useEffect(() => {
     let isMounted = true;
 
-    import("leaflet-routing-machine").then((Lrm) => {
+    import("leaflet-routing-machine").then(() => {
       if (!isMounted || !map) return;
 
       if (routingControlRef.current) {
@@ -93,7 +93,7 @@ function RoutingLayer({
           extendToRoute: true,
         },
         createMarker: () => null,
-        router: (L.Routing as never).osrmv1({
+        router: (L.Routing as any).osrmv1({
           serviceUrl: "https://router.project-osrm.org/route/v1",
         }),
       });
