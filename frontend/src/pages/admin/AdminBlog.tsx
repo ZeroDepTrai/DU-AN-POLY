@@ -104,7 +104,7 @@ export default function AdminBlog() {
       setError("Tiêu đề không được để trống");
       return;
     }
-    if (!form.content.trim() || form.content === "<p></p>") {
+    if (!form.content || !form.content.trim() || form.content === "<p></p>") {
       setError("Nội dung không được để trống");
       return;
     }
