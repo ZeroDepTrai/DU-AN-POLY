@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminBlogApi, blogApi } from "../../api/client";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -65,29 +65,39 @@ export default function AdminBlog() {
     },
   });
 
-  const startEdit = async (post: BlogPost) => {
+  // Sync: just open the edit panel immediately
+  const startEdit = (post: BlogPost) => {
     setEditing(post);
+    setForm({ title: post.title, content: "" }); // content loaded async below
     setImage(null);
     setCoverPreview(null);
     setError("");
-
-    try {
-      // Fetch the full post to get content (list API omits content for performance)
-      const { data: fullPost } = await blogApi.get(post.slug);
-      setForm({ title: fullPost.title, content: fullPost.content });
-      const tags = fullPost.tags
-        ? fullPost.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
-        : [];
-      setSelectedTags(tags);
-    } catch {
-      // Fallback: just use the list-item fields
-      setForm({ title: post.title, content: "" });
-      const tags = post.tags
-        ? post.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
-        : [];
-      setSelectedTags(tags);
-    }
+    const tags = post.tags
+      ? post.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+      : [];
+    setSelectedTags(tags);
   };
+
+  // Async: load full post content after the panel opens
+  useEffect(() => {
+    if (!editing) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await blogApi.get(editing.slug);
+        if (!cancelled) {
+          setForm((f) => ({ ...f, content: data.content }));
+          const tags = data.tags
+            ? data.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+            : [];
+          setSelectedTags(tags);
+        }
+      } catch {
+        // ignore — form already has title
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editing?.id]);
 
   const handleSubmit = () => {
     if (!form.title.trim()) {
