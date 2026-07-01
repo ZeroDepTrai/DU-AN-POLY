@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { adminBlogApi } from "../../api/client";
+import { adminBlogApi, blogApi } from "../../api/client";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import RichTextEditor from "../../components/RichTextEditor";
 import type { BlogPost } from "../../types";
@@ -65,15 +65,28 @@ export default function AdminBlog() {
     },
   });
 
-  const startEdit = (post: BlogPost) => {
+  const startEdit = async (post: BlogPost) => {
     setEditing(post);
-    setForm({ title: post.title, content: post.content });
     setImage(null);
     setCoverPreview(null);
-    const tags = post.tags
-      ? post.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
-      : [];
-    setSelectedTags(tags);
+    setError("");
+
+    try {
+      // Fetch the full post to get content (list API omits content for performance)
+      const { data: fullPost } = await blogApi.get(post.slug);
+      setForm({ title: fullPost.title, content: fullPost.content });
+      const tags = fullPost.tags
+        ? fullPost.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+        : [];
+      setSelectedTags(tags);
+    } catch {
+      // Fallback: just use the list-item fields
+      setForm({ title: post.title, content: "" });
+      const tags = post.tags
+        ? post.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+        : [];
+      setSelectedTags(tags);
+    }
   };
 
   const handleSubmit = () => {
