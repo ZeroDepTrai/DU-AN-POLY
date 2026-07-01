@@ -52,7 +52,7 @@ class Product(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
-    tag: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    tags: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
     image_url: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str] = mapped_column(Text, default="", nullable=False)
     stock: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -123,6 +123,6 @@ class BlogPost(Base):
     image_url: Mapped[str] = mapped_column(String(500), default="", nullable=False)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[str] = mapped_column(String(30), nullable=False)
-    category: Mapped[str] = mapped_column(String(100), default="", nullable=False)
+    tags: Mapped[str] = mapped_column(String(500), default="", nullable=False)
 
     author: Mapped["User"] = relationship(back_populates=None)

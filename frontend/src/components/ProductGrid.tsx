@@ -29,7 +29,7 @@ export default function ProductGrid() {
 
   const filteredProducts = useMemo(() => {
     if (!selectedTag) return products;
-    return products.filter((product) => product.tag === selectedTag);
+    return products.filter((product) => product.tags.includes(selectedTag));
   }, [products, selectedTag]);
 
   if (isLoading) {

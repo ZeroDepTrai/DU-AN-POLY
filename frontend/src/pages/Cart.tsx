@@ -63,7 +63,7 @@ export default function CartPage() {
                   >
                     {item.product.name}
                   </Link>
-                  <span className="ml-2 tag-badge text-xs">{item.product.tag}</span>
+                  <span className="ml-2 tag-badge text-xs">{item.product.tags}</span>
                   <p className="mt-1 text-sm font-bold text-crimson">
                     {new Intl.NumberFormat("vi-VN").format(item.product.price)} VND
                   </p>

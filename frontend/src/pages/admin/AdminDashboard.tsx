@@ -58,7 +58,6 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   },
 ];
 
-const TAG_PRESETS = ["iPhone", "Android", "Samsung", "Xiaomi", "Flagship", "Budget", "5G", "Gaming", "Featured", "Accessory"];
 const ORDER_STATUSES: { value: OrderStatus; label: string }[] = [
   { value: "pending", label: "Chờ xác nhận" },
   { value: "processing", label: "Đang xử lý" },
@@ -246,26 +245,32 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
 function ProductsTab({ products }: { products: Product[] }) {
   const queryClient = useQueryClient();
   const [formTab, setFormTab] = useState<"quick" | "full">("quick");
-  const [quickForm, setQuickForm] = useState({ name: "", price: "", tag: "" });
-  const [fullForm, setFullForm] = useState({ name: "", price: "", tag: "", description: "", stock: "10" });
+  const [quickForm, setQuickForm] = useState({ name: "", price: "", tags: "" });
+  const [fullForm, setFullForm] = useState({ name: "", price: "", tags: "", description: "", stock: "10" });
   const [quickImage, setQuickImage] = useState<File | null>(null);
   const [fullImage, setFullImage] = useState<File | null>(null);
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [customTags, setCustomTags] = useState<string[]>([]);
-  const [newTagInput, setNewTagInput] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [quickTagChips, setQuickTagChips] = useState<string[]>([]);
+  const [fullTagChips, setFullTagChips] = useState<string[]>([]);
 
-  const allTags = [...TAG_PRESETS, ...customTags];
+  const allPresets = ["iPhone", "Android", "Samsung", "Xiaomi", "Flagship", "Budget", "5G", "Gaming", "Featured", "Accessory"];
+  const allTags = [...allPresets, ...customTags];
 
   const addCustomTag = () => {
-    const trimmed = newTagInput.trim();
+    const trimmed = tagInput.trim();
     if (trimmed && !allTags.includes(trimmed)) {
       setCustomTags((prev) => [...prev, trimmed]);
-      setQuickForm((f) => ({ ...f, tag: trimmed }));
-      setFullForm((f) => ({ ...f, tag: trimmed }));
     }
-    setNewTagInput("");
+    setTagInput("");
+  };
+
+  const addTagToForms = (tag: string) => {
+    if (!quickTagChips.includes(tag)) setQuickTagChips((p) => [...p, tag]);
+    if (!fullTagChips.includes(tag)) setFullTagChips((p) => [...p, tag]);
   };
 
   const filtered = products.filter((p) =>
@@ -277,13 +282,13 @@ function ProductsTab({ products }: { products: Product[] }) {
       if (!quickImage) throw new Error("Hình ảnh bắt buộc");
       const fd = new FormData();
       fd.append("name", quickForm.name); fd.append("price", quickForm.price);
-      fd.append("tag", quickForm.tag); fd.append("image", quickImage);
+      fd.append("tags", quickTagChips.join(",")); fd.append("image", quickImage);
       return adminApi.quickAddProduct(fd);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      setQuickForm({ name: "", price: "", tag: "" }); setQuickImage(null);
+      setQuickForm({ name: "", price: "", tags: "" }); setQuickTagChips([]); setQuickImage(null);
     },
     onError: (err: Error) => setError(err.message),
   });
@@ -292,7 +297,7 @@ function ProductsTab({ products }: { products: Product[] }) {
     mutationFn: async () => {
       const fd = new FormData();
       fd.append("name", fullForm.name); fd.append("price", fullForm.price);
-      fd.append("tag", fullForm.tag); fd.append("description", fullForm.description);
+      fd.append("tags", fullTagChips.join(",")); fd.append("description", fullForm.description);
       fd.append("stock", fullForm.stock);
       if (fullImage) fd.append("image", fullImage);
       return editing ? adminApi.updateProduct(editing.id, fd) : adminApi.createProduct(fd);
@@ -301,7 +306,8 @@ function ProductsTab({ products }: { products: Product[] }) {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setEditing(null);
-      setFullForm({ name: "", price: "", tag: "", description: "", stock: "10" });
+      setFullForm({ name: "", price: "", tags: "", description: "", stock: "10" });
+      setFullTagChips([]);
       setFullImage(null);
       setFormTab("quick");
       setError("");
@@ -319,7 +325,10 @@ function ProductsTab({ products }: { products: Product[] }) {
 
   const startEdit = (p: Product) => {
     setEditing(p); setFormTab("full");
-    setFullForm({ name: p.name, price: String(p.price), tag: p.tag, description: p.description, stock: String(p.stock) });
+    const existingChips = p.tags ? p.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
+    setFullTagChips(existingChips);
+    setFullForm({ name: p.name, price: String(p.price), tags: p.tags, description: p.description, stock: String(p.stock) });
+    setFullImage(null);
   };
 
   return (
@@ -333,6 +342,31 @@ function ProductsTab({ products }: { products: Product[] }) {
           placeholder="Tìm sản phẩm..."
           className="input-field w-64"
         />
+      </div>
+
+      {/* Tag management */}
+      <div className="mb-4 flex items-center gap-2 flex-wrap">
+        <input
+          type="text"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTagToForms(tagInput.trim()); addCustomTag(); } }}
+          placeholder="Gõ nhãn..."
+          list="product-all-tags"
+          className="input-field w-48 text-sm"
+        />
+        <datalist id="product-all-tags">
+          {allTags.map((t) => <option key={t} value={t} />)}
+        </datalist>
+        <button type="button" onClick={() => { addTagToForms(tagInput.trim()); addCustomTag(); setTagInput(""); }} className="btn-secondary text-sm">+ Thêm nhãn</button>
+        <div className="flex flex-wrap gap-1.5 ml-2">
+          <span className="text-xs text-steelgray self-center">Nhãn có sẵn:</span>
+          {[...allPresets, ...customTags].map((t) => (
+            <button key={t} type="button"
+              onClick={() => addTagToForms(t)}
+              className="tag-badge cursor-pointer hover:opacity-80">{t}</button>
+          ))}
+        </div>
       </div>
 
       {/* Add Form */}
@@ -349,33 +383,44 @@ function ProductsTab({ products }: { products: Product[] }) {
 
       {formTab === "quick" && (
         <form onSubmit={(e) => { e.preventDefault(); quickMutation.mutate(); }}
-          className="mb-6 grid gap-4 rounded-2xl border border-gunmetal/60 bg-graphite p-5 md:grid-cols-2 lg:grid-cols-5">
-          <input required placeholder="Tên sản phẩm" value={quickForm.name}
-            onChange={(e) => setQuickForm({ ...quickForm, name: e.target.value })} className="input-field" />
-          <input required type="number" step="1000" placeholder="Giá (VND)" value={quickForm.price}
-            onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })} className="input-field" />
-          <div className="flex flex-col gap-1">
-            <input
-              required
-              list="quick-tags-datalist"
-              placeholder="Nhãn (gõ hoặc chọn)"
-              value={quickForm.tag}
-              onChange={(e) => setQuickForm({ ...quickForm, tag: e.target.value })}
-              className="input-field w-full"
-            />
-            <datalist id="quick-tags-datalist">
-              {allTags.map((t) => <option key={t} value={t} />)}
-            </datalist>
+          className="mb-6 space-y-3 rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <input required placeholder="Tên sản phẩm" value={quickForm.name}
+              onChange={(e) => setQuickForm({ ...quickForm, name: e.target.value })} className="input-field" />
+            <input required type="number" step="1000" placeholder="Giá (VND)" value={quickForm.price}
+              onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })} className="input-field" />
+            <div>
+              <label className="mb-1 block text-xs text-steelgray">Hình ảnh</label>
+              <input required type="file" accept="image/*"
+                onChange={(e) => setQuickImage(e.target.files?.[0] ?? null)}
+                className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-crimson file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white" />
+            </div>
           </div>
+          {/* Tag chips for quick form */}
           <div>
-            <label className="mb-1.5 block text-sm text-steelgray">Hình ảnh</label>
-            <input required type="file" accept="image/*"
-              onChange={(e) => setQuickImage(e.target.files?.[0] ?? null)}
-              className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-crimson file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white" />
+            <label className="mb-1 block text-xs text-steelgray">Nhãn đã chọn:</label>
+            <div className="mb-2 flex flex-wrap gap-1.5 min-h-[28px]">
+              {quickTagChips.map((t) => (
+                <span key={t} className="tag-badge flex items-center gap-1">
+                  {t}
+                  <button type="button" onClick={() => setQuickTagChips((p) => p.filter((x) => x !== t))} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+                </span>
+              ))}
+              {quickTagChips.length === 0 && <span className="text-xs text-steelgray">Nhấn nhãn bên trên để thêm...</span>}
+            </div>
+            <input type="text" value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); addTagToForms(tagInput.trim()); }
+                if (e.key === "Backspace" && !tagInput && quickTagChips.length > 0)
+                  setQuickTagChips((p) => p.slice(0, -1));
+              }}
+              placeholder="Gõ nhãn và nhấn Enter để thêm..."
+              list="product-all-tags"
+              className="input-field text-sm w-full" />
           </div>
-          {error && <p className="col-span-full text-sm text-rose">{error}</p>}
-          <button type="submit" disabled={quickMutation.isPending}
-            className="col-span-full btn-primary lg:col-span-1 lg:col-start-5">
+          {error && <p className="text-sm text-rose">{error}</p>}
+          <button type="submit" disabled={quickMutation.isPending} className="btn-primary">
             {quickMutation.isPending ? "Đang thêm..." : "Thêm sản phẩm"}
           </button>
         </form>
@@ -383,8 +428,8 @@ function ProductsTab({ products }: { products: Product[] }) {
 
       {formTab === "full" && (
         <form onSubmit={(e) => { e.preventDefault(); fullMutation.mutate(); }}
-          className="mb-6 grid gap-4 rounded-2xl border border-gunmetal/60 bg-graphite p-5">
-          <h3 className="col-span-full text-base font-bold text-warmwhite">
+          className="mb-6 space-y-3 rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+          <h3 className="text-base font-bold text-warmwhite">
             {editing ? `Sửa: ${editing.name}` : "Thêm sản phẩm đầy đủ"}
           </h3>
           <div className="grid gap-4 md:grid-cols-2">
@@ -392,21 +437,31 @@ function ProductsTab({ products }: { products: Product[] }) {
               onChange={(e) => setFullForm({ ...fullForm, name: e.target.value })} className="input-field" />
             <input required type="number" step="1000" placeholder="Giá (VND)" value={fullForm.price}
               onChange={(e) => setFullForm({ ...fullForm, price: e.target.value })} className="input-field" />
-            <div className="flex flex-col gap-1">
-              <input
-                required
-                list="full-tags-datalist"
-                placeholder="Nhãn (gõ hoặc chọn)"
-                value={fullForm.tag}
-                onChange={(e) => setFullForm({ ...fullForm, tag: e.target.value })}
-                className="input-field w-full"
-              />
-              <datalist id="full-tags-datalist">
-                {allTags.map((t) => <option key={t} value={t} />)}
-              </datalist>
-            </div>
             <input type="number" placeholder="Số lượng tồn kho" value={fullForm.stock}
               onChange={(e) => setFullForm({ ...fullForm, stock: e.target.value })} className="input-field" />
+            {/* Tag chips for full form */}
+            <div>
+              <label className="mb-1 block text-xs text-steelgray">Nhãn đã chọn:</label>
+              <div className="mb-1.5 flex flex-wrap gap-1 min-h-[28px]">
+                {fullTagChips.map((t) => (
+                  <span key={t} className="tag-badge flex items-center gap-1">
+                    {t}
+                    <button type="button" onClick={() => setFullTagChips((p) => p.filter((x) => x !== t))} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+                  </span>
+                ))}
+                {fullTagChips.length === 0 && <span className="text-xs text-steelgray self-center">Nhấn nhãn bên trên để thêm...</span>}
+              </div>
+              <input type="text" value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); addTagToForms(tagInput.trim()); }
+                  if (e.key === "Backspace" && !tagInput && fullTagChips.length > 0)
+                    setFullTagChips((p) => p.slice(0, -1));
+                }}
+                placeholder="Gõ nhãn và nhấn Enter..."
+                list="product-all-tags"
+                className="input-field text-sm w-full" />
+            </div>
           </div>
           <textarea placeholder="Mô tả sản phẩm" value={fullForm.description}
             onChange={(e) => setFullForm({ ...fullForm, description: e.target.value })}
@@ -424,48 +479,12 @@ function ProductsTab({ products }: { products: Product[] }) {
               {fullMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm sản phẩm"}
             </button>
             {editing && (
-              <button type="button" onClick={() => { setEditing(null); setFormTab("quick"); setFullForm({ name: "", price: "", tag: "", description: "", stock: "10" }); }}
+              <button type="button" onClick={() => { setEditing(null); setFormTab("quick"); setFullTagChips([]); setFullForm({ name: "", price: "", tags: "", description: "", stock: "10" }); }}
                 className="btn-secondary">Hủy</button>
             )}
           </div>
         </form>
       )}
-
-      {/* Custom tag management */}
-      <div className="mb-4 flex items-center gap-2">
-        <input
-          type="text"
-          value={newTagInput}
-          onChange={(e) => setNewTagInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
-          placeholder="Tên nhãn tùy chỉnh..."
-          className="input-field w-64 text-sm"
-        />
-        <button
-          type="button"
-          onClick={addCustomTag}
-          className="btn-secondary text-sm"
-        >
-          + Thêm nhãn
-        </button>
-        {customTags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            <span className="text-xs text-steelgray self-center">Nhãn tùy chỉnh:</span>
-            {customTags.map((t) => (
-              <span key={t} className="tag-badge">
-                {t}
-                <button
-                  type="button"
-                  onClick={() => setCustomTags((prev) => prev.filter((x) => x !== t))}
-                  className="ml-1.5 text-warmwhite/60 hover:text-warmwhite"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Table */}
       <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
@@ -487,26 +506,33 @@ function ProductsTab({ products }: { products: Product[] }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
-                <tr key={p.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors">
-                  <td className="px-4 py-3"><img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-xl object-cover" /></td>
-                  <td className="px-4 py-3 font-medium text-warmwhite max-w-[200px] truncate">{p.name}</td>
-                  <td className="px-4 py-3 font-semibold text-crimson">
-                    {new Intl.NumberFormat("vi-VN").format(p.price)} VND
-                  </td>
-                  <td className="px-4 py-3"><span className="tag-badge">{p.tag}</span></td>
-                  <td className="px-4 py-3">
-                    <span className={p.stock < 5 ? "text-deeprose font-semibold" : "text-warmwhite"}>{p.stock}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-3">
-                      <button onClick={() => startEdit(p)} className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
-                      <button onClick={() => { if (confirm(`Xóa "${p.name}"?`)) deleteMutation.mutate(p.id); }}
-                        className="text-sm text-deeprose hover:text-rose transition-colors">Xóa</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((p) => {
+                const tagChips = p.tags ? p.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
+                return (
+                  <tr key={p.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors">
+                    <td className="px-4 py-3"><img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-xl object-cover" /></td>
+                    <td className="px-4 py-3 font-medium text-warmwhite max-w-[200px] truncate">{p.name}</td>
+                    <td className="px-4 py-3 font-semibold text-crimson">
+                      {new Intl.NumberFormat("vi-VN").format(p.price)} VND
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {tagChips.map((t: string) => <span key={t} className="tag-badge">{t}</span>)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={p.stock < 5 ? "text-deeprose font-semibold" : "text-warmwhite"}>{p.stock}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-3">
+                        <button onClick={() => startEdit(p)} className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
+                        <button onClick={() => { if (confirm(`Xóa "${p.name}"?`)) deleteMutation.mutate(p.id); }}
+                          className="text-sm text-deeprose hover:text-rose transition-colors">Xóa</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -658,7 +684,9 @@ function OrdersTab({ orders }: { orders: Order[] }) {
 // ── Blog Tab ───────────────────────────────────────────────
 function BlogTab() {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ title: "", content: "", category: "" });
+  const [form, setForm] = useState({ title: "", content: "", tags: "" });
+  const [tagInput, setTagInput] = useState("");
+  const [tagChips, setTagChips] = useState<string[]>([]);
   const [image, setImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [editing, setEditing] = useState<import("../../types").BlogPost | null>(null);
@@ -674,14 +702,14 @@ function BlogTab() {
     mutationFn: async () => {
       const fd = new FormData();
       fd.append("title", form.title); fd.append("content", form.content);
-      if (form.category.trim()) fd.append("category", form.category.trim());
+      fd.append("tags", tagChips.join(","));
       if (image) fd.append("image", image);
       return editing ? adminBlogApi.update(editing.id, fd) : adminBlogApi.create(fd);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-blog"] });
       queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
-      setForm({ title: "", content: "", category: "" }); setImage(null); setCoverPreview(null); setEditing(null); setError("");
+      setForm({ title: "", content: "", tags: "" }); setTagChips([]); setImage(null); setCoverPreview(null); setEditing(null); setError("");
     },
     onError: (err: Error) => setError(err.message),
   });
@@ -698,6 +726,14 @@ function BlogTab() {
     if (!form.title.trim()) { setError("Tiêu đề không được để trống"); return; }
     if (!form.content.trim() || form.content === "<p></p>") { setError("Nội dung không được để trống"); return; }
     setError(""); saveMutation.mutate();
+  };
+
+  const addTagChip = (tag: string) => {
+    const t = tag.trim().toLowerCase();
+    if (t && !tagChips.includes(t)) {
+      setTagChips((prev) => [...prev, t]);
+    }
+    setTagInput("");
   };
 
   const handleImportDocx = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -726,14 +762,34 @@ function BlogTab() {
         <input required placeholder="Tiêu đề bài viết" value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           className="input-field text-lg font-semibold" />
-        <div className="grid gap-4 md:grid-cols-2">
-          <input
-            placeholder="Danh mục (vd: tech, review, tips)"
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className="input-field"
-          />
+
+        {/* Tags chips */}
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-softgray">Nhãn (Tags)</label>
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {tagChips.map((t) => (
+              <span key={t} className="tag-badge flex items-center gap-1">
+                {t}
+                <button type="button" onClick={() => setTagChips((p) => p.filter((x) => x !== t))} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              list="blog-tags-datalist"
+              placeholder="Gõ nhãn (VD: tech, review, tips)"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTagChip(tagInput); } }}
+              className="input-field flex-1"
+            />
+            <button type="button" onClick={() => addTagChip(tagInput)} className="btn-secondary">+ Thêm</button>
+            <datalist id="blog-tags-datalist">
+              {["tech", "review", "tips", "news", "guide"].map((t) => <option key={t} value={t} />)}
+            </datalist>
+          </div>
         </div>
+
         <RichTextEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} />
         <div className="flex flex-wrap items-start gap-4">
           <div>
@@ -763,7 +819,7 @@ function BlogTab() {
             {saveMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật bài viết" : "Đăng bài viết"}
           </button>
           {editing && (
-            <button onClick={() => { setEditing(null); setForm({ title: "", content: "", category: "" }); setImage(null); setCoverPreview(null); }}
+            <button onClick={() => { setEditing(null); setForm({ title: "", content: "", tags: "" }); setTagChips([]); setImage(null); setCoverPreview(null); }}
               className="btn-secondary">Hủy</button>
           )}
         </div>
@@ -782,42 +838,47 @@ function BlogTab() {
               <tr className="text-left text-steelgray">
                 <th className="px-4 py-3">Ảnh</th>
                 <th className="px-4 py-3">Tiêu đề</th>
-                <th className="px-4 py-3">Danh mục</th>
+                <th className="px-4 py-3">Tags</th>
                 <th className="px-4 py-3">Slug</th>
                 <th className="px-4 py-3">Tác giả</th>
                 <th className="px-4 py-3">Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {posts.map((post) => (
-                <tr key={post.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors">
-                  <td className="px-4 py-3">
-                    {post.image_url && <img src={post.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-warmwhite max-w-[200px] truncate">{post.title}</td>
-                  <td className="px-4 py-3">
-                    {post.category ? (
-                      <span className="tag-badge">{post.category}</span>
-                    ) : (
-                      <span className="text-steelgray text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-steelgray">{post.slug}</td>
-                  <td className="px-4 py-3 text-softgray">{post.author_name}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-3">
-                      <button onClick={() => {
-                        setEditing(post);
-                        setForm({ title: post.title, content: post.content, category: post.category ?? "" });
-                        setImage(null); setCoverPreview(null);
-                      }}
-                        className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
-                      <button onClick={() => { if (confirm(`Xóa "${post.title}"?`)) deleteMutation.mutate(post.id); }}
-                        className="text-sm text-deeprose hover:text-rose transition-colors">Xóa</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {posts.map((post) => {
+                const postTags = post.tags ? post.tags.split(",").filter(Boolean) : [];
+                return (
+                  <tr key={post.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors">
+                    <td className="px-4 py-3">
+                      {post.image_url && <img src={post.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-warmwhite max-w-[200px] truncate">{post.title}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {postTags.length > 0
+                          ? postTags.map((t: string) => <span key={t} className="tag-badge">{t}</span>)
+                          : <span className="text-steelgray text-xs">—</span>
+                        }
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-steelgray">{post.slug}</td>
+                    <td className="px-4 py-3 text-softgray">{post.author_name}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-3">
+                        <button onClick={() => {
+                          setEditing(post as import("../../types").BlogPost);
+                          setForm({ title: post.title, content: (post as import("../../types").BlogPost).content, tags: post.tags });
+                          setTagChips(postTags);
+                          setImage(null); setCoverPreview(null);
+                        }}
+                          className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
+                        <button onClick={() => { if (confirm(`Xóa "${post.title}"?`)) deleteMutation.mutate(post.id); }}
+                          className="text-sm text-deeprose hover:text-rose transition-colors">Xóa</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

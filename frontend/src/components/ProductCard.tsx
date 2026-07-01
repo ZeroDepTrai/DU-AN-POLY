@@ -31,16 +31,16 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
               alt={product.name}
               className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-105"
             />
-          )}
-          {product.tag && (
-            <div className="absolute left-4 top-4">
-              <span className="product-tag">{product.tag}</span>
-            </div>
-          )}
-        </div>
-        <div className="flex flex-1 flex-col gap-3 p-5">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-steelgray">{product.tag}</p>
+        )}
+        {product.tags && (
+          <div className="absolute left-4 top-4">
+            <span className="product-tag">{product.tags}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col gap-3 p-5">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-steelgray">{product.tags}</p>
             <h3 className="mt-1 text-xl font-bold text-warmwhite group-hover:text-sakura transition-colors line-clamp-2">
               {product.name}
             </h3>
@@ -80,7 +80,7 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
         )}
       </div>
       <div className="flex flex-col gap-2 p-4">
-        <p className="text-xs font-medium uppercase tracking-wider text-steelgray">{product.tag}</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-steelgray">{product.tags}</p>
         <h3 className="text-base font-bold text-warmwhite group-hover:text-sakura transition-colors line-clamp-2">
           {product.name}
         </h3>

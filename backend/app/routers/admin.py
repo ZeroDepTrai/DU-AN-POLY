@@ -47,7 +47,7 @@ def save_upload(file: UploadFile) -> str:
 def quick_add_product(
     name: str = Form(...),
     price: float = Form(...),
-    tag: str = Form(...),
+    tags: str = Form(...),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
@@ -56,7 +56,7 @@ def quick_add_product(
     product = Product(
         name=name,
         price=price,
-        tag=tag,
+        tags=tags,
         description="",
         stock=10,
         image_url=image_url,
@@ -76,7 +76,7 @@ def admin_list_products(db: Session = Depends(get_db), _: User = Depends(require
 def create_product(
     name: str = Form(...),
     price: float = Form(...),
-    tag: str = Form(...),
+    tags: str = Form(...),
     description: str = Form(""),
     stock: int = Form(0),
     image: UploadFile = File(...),
@@ -87,7 +87,7 @@ def create_product(
     product = Product(
         name=name,
         price=price,
-        tag=tag,
+        tags=tags,
         description=description,
         stock=stock,
         image_url=image_url,
@@ -103,7 +103,7 @@ def update_product(
     product_id: int,
     name: str = Form(...),
     price: float = Form(...),
-    tag: str = Form(...),
+    tags: str = Form(...),
     description: str = Form(""),
     stock: int = Form(0),
     image: UploadFile | None = File(default=None),
@@ -116,7 +116,7 @@ def update_product(
 
     product.name = name
     product.price = price
-    product.tag = tag
+    product.tags = tags
     product.description = description
     product.stock = stock
     if image is not None and image.filename:

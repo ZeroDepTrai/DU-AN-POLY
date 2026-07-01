@@ -18,7 +18,7 @@ export interface Product {
   id: number;
   name: string;
   price: number;
-  tag: string;
+  tags: string;
   image_url: string;
   description: string;
   stock: number;
@@ -69,7 +69,7 @@ export interface BlogPost {
   image_url: string;
   author_name: string;
   created_at: string;
-  category?: string;
+  tags: string;
 }
 
 export interface BlogPostListItem {
@@ -78,5 +78,5 @@ export interface BlogPostListItem {
   slug: string;
   image_url: string;
   created_at: string;
-  category?: string;
+  tags: string;
 }

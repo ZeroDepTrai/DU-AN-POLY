@@ -228,8 +228,19 @@ def make_slug(title: str) -> str:
 # ── Public ──────────────────────────────────────────────────────────────────
 
 @router.get("/blog", response_model=list[BlogPostListResponse])
-def list_posts(db: Session = Depends(get_db)):
-    posts = db.query(BlogPost).order_by(BlogPost.id.desc()).all()
+def list_posts(
+    tag: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Returns all blog posts, optionally filtered by one or more tags (comma-separated)."""
+    query = db.query(BlogPost)
+    if tag:
+        tags = [t.strip().lower() for t in tag.split(",") if t.strip()]
+        if tags:
+            conditions = [BlogPost.category.ilike(f"%{t}%") for t in tags]
+            from sqlalchemy import or_
+            query = query.filter(or_(*conditions))
+    posts = query.order_by(BlogPost.id.desc()).all()
     return [
         BlogPostListResponse(
             id=p.id,
@@ -237,7 +248,7 @@ def list_posts(db: Session = Depends(get_db)):
             slug=p.slug,
             image_url=p.image_url,
             created_at=p.created_at,
-            category=p.category,
+            tags=p.tags,
         )
         for p in posts
     ]
@@ -256,7 +267,7 @@ def get_post(slug: str, db: Session = Depends(get_db)):
         image_url=post.image_url,
         author_name=post.author.name,
         created_at=post.created_at,
-        category=post.category,
+        tags=post.tags,
     )
 
 
@@ -268,7 +279,7 @@ def create_post(
     content: str = Form(...),
     image: UploadFile | None = File(default=None),
     cover_image_url: str | None = Form(default=None),
-    category: str | None = Form(default=None),
+    tags: str | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -291,7 +302,7 @@ def create_post(
         content=content,
         image_url=image_url,
         author_id=current_user.id,
-        category=category or "",
+        tags=tags or "",
         created_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
     )
     db.add(post)
@@ -305,7 +316,7 @@ def create_post(
         image_url=post.image_url,
         author_name=current_user.name,
         created_at=post.created_at,
-        category=post.category,
+        tags=post.tags,
     )
 
 
@@ -316,7 +327,7 @@ def update_post(
     content: str = Form(...),
     image: UploadFile | None = File(default=None),
     cover_image_url: str | None = Form(default=None),
-    category: str | None = Form(default=None),
+    tags: str | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -326,7 +337,7 @@ def update_post(
 
     post.title = title
     post.content = content
-    post.category = category or ""
+    post.tags = tags or ""
 
     if image and image.filename:
         post.image_url = save_upload(image)
@@ -343,7 +354,7 @@ def update_post(
         image_url=post.image_url,
         author_name=post.author.name,
         created_at=post.created_at,
-        category=post.category,
+        tags=post.tags,
     )
 
 

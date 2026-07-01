@@ -42,7 +42,7 @@ export default function ProductDetail() {
       <div className="mb-6 flex items-center gap-2 text-sm text-steelgray">
         <a href="/" className="hover:text-crimson transition-colors">Trang chủ</a>
         <span>/</span>
-        <a href="/" className="hover:text-crimson transition-colors capitalize">{product.tag}</a>
+        <a href="/" className="hover:text-crimson transition-colors capitalize">{product.tags}</a>
         <span>/</span>
         <span className="text-warmwhite">{product.name}</span>
       </div>
@@ -60,7 +60,7 @@ export default function ProductDetail() {
 
         <div>
           <div className="mb-3">
-            <span className="tag-badge">{product.tag}</span>
+            <span className="tag-badge">{product.tags}</span>
           </div>
           <h1 className="mb-4 text-3xl font-extrabold text-warmwhite leading-tight">{product.name}</h1>
 

@@ -86,7 +86,8 @@ export const adminApi = {
 };
 
 export const blogApi = {
-  list: () => api.get<BlogPostListItem[]>("/api/blog"),
+  list: (tags?: string) =>
+    api.get<BlogPostListItem[]>("/api/blog", { params: tags ? { tag: tags } : undefined }),
   get: (slug: string) => api.get<BlogPost>(`/api/blog/${slug}`),
 };
 

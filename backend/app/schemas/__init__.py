@@ -45,7 +45,7 @@ class ProductResponse(BaseModel):
     id: int
     name: str
     price: float
-    tag: str
+    tags: str
     image_url: str
     description: str
     stock: int
@@ -146,7 +146,7 @@ class BlogPostResponse(BaseModel):
     image_url: str
     author_name: str
     created_at: str
-    category: str = ""
+    tags: str = ""
 
     model_config = {"from_attributes": True}
 
@@ -157,7 +157,7 @@ class BlogPostListResponse(BaseModel):
     slug: str
     image_url: str
     created_at: str
-    category: str = ""
+    tags: str = ""
 
     model_config = {"from_attributes": True}
 

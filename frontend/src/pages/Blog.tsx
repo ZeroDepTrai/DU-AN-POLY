@@ -8,28 +8,27 @@ import Pagination from "../components/Pagination";
 
 const PAGE_SIZE = 6;
 
-const CATEGORY_TABS = [
-  "Tất cả",
-  "Tin công nghệ",
-  "Review sản phẩm",
-  "Mẹo hay",
+const TAG_TABS = [
+  { label: "Tất cả", value: "" },
+  { label: "Tin công nghệ", value: "tech" },
+  { label: "Review sản phẩm", value: "review" },
+  { label: "Mẹo hay", value: "tips" },
 ];
 
 export default function Blog() {
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ["blog-posts-all"],
+    queryKey: ["blog-posts", selectedTags],
     queryFn: async () => {
-      const { data } = await blogApi.list();
+      const { data } = await blogApi.list(selectedTags.length ? selectedTags.join(",") : undefined);
       return data;
     },
   });
 
-  const [featuredPost, ...restPosts] = posts;
-
-  const filtered = restPosts.filter((p) => {
+  const filtered = posts.filter((p) => {
     if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -37,6 +36,13 @@ export default function Blog() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+    setPage(1);
+  };
 
   const formattedDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString("vi-VN", {
@@ -66,15 +72,15 @@ export default function Blog() {
 
       <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
         {/* ── Featured Post ───────────────────────────────── */}
-        {!isLoading && featuredPost && (
+        {!isLoading && posts.length > 0 && (
           <Link
-            to={`/blog/${featuredPost.slug}`}
+            to={`/blog/${posts[0].slug}`}
             className="group mb-10 flex flex-col overflow-hidden rounded-2xl border border-gunmetal/60 bg-graphite transition-all hover:border-rose/30 lg:flex-row"
           >
             <div className="relative w-full overflow-hidden lg:w-1/2">
               <img
-                src={featuredPost.image_url}
-                alt={featuredPost.title}
+                src={posts[0].image_url}
+                alt={posts[0].title}
                 className="aspect-video h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 lg:aspect-auto"
               />
               <div className="absolute left-4 top-4 rounded-full bg-crimson px-3 py-1 text-xs font-bold text-white">
@@ -83,10 +89,10 @@ export default function Blog() {
             </div>
             <div className="flex flex-1 flex-col justify-center p-8 lg:w-1/2">
               <p className="mb-3 text-xs font-medium text-steelgray">
-                {formattedDate(featuredPost.created_at)}
+                {formattedDate(posts[0].created_at)}
               </p>
               <h2 className="mb-4 text-2xl font-extrabold text-warmwhite group-hover:text-sakura transition-colors line-clamp-3 lg:text-3xl">
-                {featuredPost.title}
+                {posts[0].title}
               </h2>
               <p className="mb-6 text-sm leading-relaxed text-steelgray line-clamp-2">
                 Khám phá những tin tức công nghệ mới nhất, đánh giá chi tiết sản phẩm và những mẹo hay dành cho bạn.
@@ -101,15 +107,22 @@ export default function Blog() {
           </Link>
         )}
 
-        {/* ── Category Tabs + Search ─────────────────────── */}
+        {/* ── Tag Tabs + Search ─────────────────────────────── */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
-            {CATEGORY_TABS.map((tab) => (
+            {TAG_TABS.map((tab) => (
               <button
-                key={tab}
-                className="rounded-full border border-gunmetal/60 bg-graphite px-5 py-2 text-sm font-medium text-softgray transition-all hover:border-silvergray hover:text-warmwhite cursor-default"
+                key={tab.value}
+                onClick={() => toggleTag(tab.value)}
+                className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
+                  tab.value === "" && selectedTags.length === 0
+                    ? "bg-crimson text-white"
+                    : tab.value !== "" && selectedTags.includes(tab.value)
+                    ? "bg-crimson/80 text-white"
+                    : "border border-gunmetal/60 bg-graphite text-softgray hover:border-silvergray hover:text-warmwhite"
+                }`}
               >
-                {tab}
+                {tab.label}
               </button>
             ))}
           </div>
