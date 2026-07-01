@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminBlogApi } from "../../api/client";
@@ -9,8 +10,10 @@ export default function AdminBlog() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ title: "", content: "" });
   const [image, setImage] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [error, setError] = useState("");
+  const [importing, setImporting] = useState(false);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["admin-blog"],
@@ -26,6 +29,7 @@ export default function AdminBlog() {
       fd.append("title", form.title);
       fd.append("content", form.content);
       if (image) fd.append("image", image);
+      if (coverPreview) fd.append("cover_image_url", coverPreview);
       return editing ? adminBlogApi.update(editing.id, fd) : adminBlogApi.create(fd);
     },
     onSuccess: () => {
@@ -33,6 +37,7 @@ export default function AdminBlog() {
       queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
       setForm({ title: "", content: "" });
       setImage(null);
+      setCoverPreview(null);
       setEditing(null);
       setError("");
     },
@@ -51,6 +56,7 @@ export default function AdminBlog() {
     setEditing(post);
     setForm({ title: post.title, content: post.content });
     setImage(null);
+    setCoverPreview(null);
   };
 
   const handleSubmit = () => {
@@ -64,6 +70,33 @@ export default function AdminBlog() {
     }
     setError("");
     saveMutation.mutate();
+  };
+
+  const handleImportDocx = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setError("");
+    try {
+      const { data } = await adminBlogApi.importDocx(file);
+      setForm((prev) => ({
+        ...prev,
+        title: data.title || prev.title,
+        content: data.html || prev.content,
+      }));
+      if (data.cover_image_url) {
+        setCoverPreview(data.cover_image_url);
+      }
+    } catch (err: unknown) {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.detail
+          ? err.response.data.detail
+          : "Nhập file DOCX thất bại. Vui lòng kiểm tra định dạng file.";
+      setError(String(msg));
+    } finally {
+      setImporting(false);
+      e.target.value = "";
+    }
   };
 
   if (isLoading) return <LoadingSpinner label="Đang tải blog..." />;
@@ -94,17 +127,62 @@ export default function AdminBlog() {
           placeholder="Nhập nội dung bài viết... Bạn có thể nhấn nút hình ảnh để chèn ảnh vào bài viết."
         />
 
-        {/* Cover image */}
-        <div>
-          <label className="mb-1.5 block text-sm text-steelgray">
-            Ảnh đại diện bài viết {editing ? "(bỏ trống để giữ ảnh cũ)" : ""}
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImage(e.target.files?.[0] ?? null)}
-            className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite"
-          />
+        {/* Import DOCX + cover image row */}
+        <div className="flex flex-wrap items-start gap-4">
+          {/* DOCX import */}
+          <div>
+            <label className="mb-1.5 block text-sm text-steelgray">Nhập từ DOCX</label>
+            <label className="btn-secondary cursor-pointer">
+              <input
+                type="file"
+                accept=".docx"
+                className="hidden"
+                onChange={handleImportDocx}
+                disabled={importing}
+              />
+              {importing ? (
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Đang nhập...
+                </span>
+              ) : (
+                "Chọn file DOCX"
+              )}
+            </label>
+          </div>
+
+          {/* Cover image */}
+          <div className="flex-1 min-w-0">
+            <label className="mb-1.5 block text-sm text-steelgray">
+              Ảnh đại diện {editing ? "(bỏ trống để giữ ảnh cũ)" : ""}
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                setImage(file);
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (ev) => setCoverPreview(ev.target?.result as string);
+                  reader.readAsDataURL(file);
+                } else {
+                  setCoverPreview(null);
+                }
+              }}
+              className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite"
+            />
+            {(coverPreview || (editing && editing.image_url)) && (
+              <img
+                src={coverPreview ?? editing?.image_url ?? ""}
+                alt="Cover preview"
+                className="mt-2 h-20 w-28 rounded-lg object-cover"
+              />
+            )}
+          </div>
         </div>
 
         {error && (
@@ -129,6 +207,7 @@ export default function AdminBlog() {
                 setEditing(null);
                 setForm({ title: "", content: "" });
                 setImage(null);
+                setCoverPreview(null);
               }}
               className="btn-secondary"
             >

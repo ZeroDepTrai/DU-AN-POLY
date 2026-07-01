@@ -1,8 +1,9 @@
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import ImageResize from "tiptap-extension-resize-image";
 import Placeholder from "@tiptap/extension-placeholder";
-import { useCallback } from "react";
+import { adminBlogApi } from "../api/client";
 
 interface RichTextEditorProps {
   value: string;
@@ -15,6 +16,8 @@ export default function RichTextEditor({
   onChange,
   placeholder = "Nhập nội dung bài viết...",
 }: RichTextEditorProps) {
+  const editorRef = useRef<ReturnType<typeof useEditor>>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -41,6 +44,21 @@ export default function RichTextEditor({
     },
   });
 
+  // Keep the editor in a ref so the effect below can use it
+  editorRef.current = editor;
+
+  // Sync external content changes (e.g. DOCX import) into the editor
+  useEffect(() => {
+    const ed = editorRef.current;
+    if (!ed) return;
+    const current = ed.getHTML();
+    if (current !== value) {
+      ed.commands.setContent(value, false);
+    }
+  }, [value]);
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const handleImageUpload = useCallback(() => {
     const input = document.createElement("input");
     input.type = "file";
@@ -49,12 +67,15 @@ export default function RichTextEditor({
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file || !editor) return;
 
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const base64 = ev.target?.result as string;
-        editor.chain().focus().setImage({ src: base64 }).run();
-      };
-      reader.readAsDataURL(file);
+      setUploadingImage(true);
+      try {
+        const { data } = await adminBlogApi.uploadImage(file);
+        editor.chain().focus().setImage({ src: data.url }).run();
+      } catch {
+        alert("Tải ảnh lên thất bại. Vui lòng thử lại.");
+      } finally {
+        setUploadingImage(false);
+      }
     };
     input.click();
   }, [editor]);
@@ -67,17 +88,15 @@ export default function RichTextEditor({
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const base64 = ev.target?.result as string;
-        // Insert with style for small size
-        editor
-          .chain()
-          .focus()
-          .setImage({ src: base64 })
-          .run();
-      };
-      reader.readAsDataURL(file);
+      setUploadingImage(true);
+      try {
+        const { data } = await adminBlogApi.uploadImage(file);
+        editor.chain().focus().setImage({ src: data.url }).run();
+      } catch {
+        alert("Tải ảnh lên thất bại. Vui lòng thử lại.");
+      } finally {
+        setUploadingImage(false);
+      }
     };
     input.click();
   }, [editor]);
@@ -178,16 +197,30 @@ export default function RichTextEditor({
         <ToolbarDivider />
 
         {/* Images — two options */}
-        <ToolbarButton onClick={handleImageUpload} title="Chèn ảnh (kích thước đầy đủ)">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
+        <ToolbarButton onClick={handleImageUpload} title="Chèn ảnh (kích thước đầy đủ)" disabled={uploadingImage}>
+          {uploadingImage ? (
+            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          )}
         </ToolbarButton>
-        <ToolbarButton onClick={insertSmallImage} title="Chèn ảnh nhỏ">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 8l4 4m0 0l4-4m-4 4l-4-4" />
-          </svg>
+        <ToolbarButton onClick={insertSmallImage} title="Chèn ảnh nhỏ" disabled={uploadingImage}>
+          {uploadingImage ? (
+            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 8l4 4m0 0l4-4m-4 4l-4-4" />
+            </svg>
+          )}
         </ToolbarButton>
 
         <ToolbarDivider />
