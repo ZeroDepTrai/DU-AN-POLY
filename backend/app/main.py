@@ -33,22 +33,56 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        def rename_col(table: str, from_col: str, to_col: str) -> None:
-            try:
-                exists = db.execute(
+        import logging
+        logger = logging.getLogger("uvicorn.error")
+        try:
+            # Rename products.tag -> products.tags if it exists
+            result = db.execute(
+                db.text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema='public' AND table_name='products' AND column_name='tag'"
+                )
+            ).fetchone()
+            if result:
+                db.execute(db.text("ALTER TABLE products RENAME COLUMN tag TO tags"))
+                db.commit()
+                logger.warning("[MIGRATION] Renamed products.tag -> products.tags")
+            else:
+                result2 = db.execute(
                     db.text(
-                        f"SELECT 1 FROM information_schema.columns "
-                        f"WHERE table_name='{table}' AND column_name='{from_col}'"
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_schema='public' AND table_name='products' AND column_name='tags'"
                     )
                 ).fetchone()
-                if exists:
-                    db.execute(db.text(f"ALTER TABLE {table} RENAME COLUMN {from_col} TO {to_col}"))
-                    db.commit()
-            except Exception:
-                db.rollback()
+                if result2:
+                    logger.warning("[MIGRATION] products.tags already exists, skipping")
+                else:
+                    logger.warning("[MIGRATION] Neither products.tag nor products.tags found in products table")
 
-        rename_col("products", "tag", "tags")
-        rename_col("blog_posts", "category", "tags")
+            # Rename blog_posts.category -> blog_posts.tags if it exists
+            result3 = db.execute(
+                db.text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='category'"
+                )
+            ).fetchone()
+            if result3:
+                db.execute(db.text("ALTER TABLE blog_posts RENAME COLUMN category TO tags"))
+                db.commit()
+                logger.warning("[MIGRATION] Renamed blog_posts.category -> blog_posts.tags")
+            else:
+                result4 = db.execute(
+                    db.text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='tags'"
+                    )
+                ).fetchone()
+                if result4:
+                    logger.warning("[MIGRATION] blog_posts.tags already exists, skipping")
+                else:
+                    logger.warning("[MIGRATION] Neither blog_posts.category nor blog_posts.tags found in blog_posts table")
+        except Exception as e:
+            logger.warning(f"[MIGRATION] Error during column rename: {e}")
 
         seed_admin(db)
     finally:
