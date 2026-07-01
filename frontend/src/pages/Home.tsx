@@ -18,7 +18,7 @@ export default function Home() {
     queryKey: ["home-products"],
     queryFn: async () => {
       const { data } = await productsApi.list();
-      return data.filter((p) => p.tags.includes("featured")).slice(0, 3);
+      return data.filter((p) => p.tags.toLowerCase().includes("featured")).slice(0, 3);
     },
   });
 

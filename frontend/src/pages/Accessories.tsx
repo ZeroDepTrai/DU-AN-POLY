@@ -24,7 +24,7 @@ export default function Accessories() {
     queryKey: ["accessories-products"],
     queryFn: async () => {
       const { data } = await productsApi.list("accessory");
-      return data;
+      return data.filter((p) => p.tags.toLowerCase().includes("accessory"));
     },
   });
 

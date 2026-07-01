@@ -7,7 +7,7 @@ import RichTextEditor from "../../components/RichTextEditor";
 import type { BlogPost } from "../../types";
 
 const BLOG_TAG_PRESETS = [
-  "tech", "review", "tips", "news", "guide",
+  "featured", "tech", "review", "tips", "news", "guide",
 ];
 
 export default function AdminBlog() {
