@@ -3,6 +3,19 @@ from pydantic import BaseModel, EmailStr, Field
 from app.models import OrderStatus, UserRole
 
 
+class SendCodeRequest(BaseModel):
+    email: EmailStr
+    name: str = Field(min_length=1, max_length=255)
+    password: str = Field(min_length=6, max_length=128)
+
+
+class VerifyCodeRequest(BaseModel):
+    email: EmailStr
+    name: str = Field(min_length=1, max_length=255)
+    password: str = Field(min_length=6, max_length=128)
+    code: str = Field(min_length=6, max_length=6)
+
+
 class UserRegister(BaseModel):
     email: EmailStr
     name: str = Field(min_length=1, max_length=255)
@@ -120,3 +133,19 @@ class BlogPostListResponse(BaseModel):
     created_at: str
 
     model_config = {"from_attributes": True}
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
+class AdminEmailResponse(BaseModel):
+    id: int
+    email: str
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class AdminEmailCreate(BaseModel):
+    email: EmailStr

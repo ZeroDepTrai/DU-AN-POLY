@@ -7,8 +7,16 @@ from sqlalchemy.orm import Session, joinedload
 from app.config import settings
 from app.database import get_db
 from app.deps import require_admin
-from app.models import Order, OrderItem, Product, User
-from app.schemas import LocationUpdate, OrderResponse, OrderUpdate, ProductResponse
+from app.models import AdminEmail, Order, OrderItem, Product, User
+from app.schemas import (
+    AdminEmailCreate,
+    AdminEmailResponse,
+    LocationUpdate,
+    MessageResponse,
+    OrderResponse,
+    OrderUpdate,
+    ProductResponse,
+)
 from app.services.orders import order_to_response
 from app.websocket import manager
 
@@ -179,6 +187,35 @@ async def update_order_location(
     return order_to_response(order)
 
 
+@router.get("/admin-emails", response_model=list[AdminEmailResponse])
+def list_admin_emails(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    emails = db.query(AdminEmail).order_by(AdminEmail.id.desc()).all()
+    return [AdminEmailResponse(id=e.id, email=e.email, created_at=e.created_at.isoformat()) for e in emails]
+
+
+@router.post("/admin-emails", response_model=AdminEmailResponse)
+def add_admin_email(payload: AdminEmailCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    existing = db.query(AdminEmail).filter(AdminEmail.email == payload.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already in admin list")
+
+    admin_email = AdminEmail(email=payload.email)
+    db.add(admin_email)
+    db.commit()
+    db.refresh(admin_email)
+    return AdminEmailResponse(id=admin_email.id, email=admin_email.email, created_at=admin_email.created_at.isoformat())
+
+
+@router.delete("/admin-emails/{email_id}")
+def delete_admin_email(email_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    admin_email = db.get(AdminEmail, email_id)
+    if admin_email is None:
+        raise HTTPException(status_code=404, detail="Admin email not found")
+    db.delete(admin_email)
+    db.commit()
+    return {"ok": True}
+
+
 @router.patch("/orders/{order_id}", response_model=OrderResponse)
 async def update_order(
     order_id: int,
@@ -218,3 +255,32 @@ async def update_order(
     )
 
     return order_to_response(order)
+
+
+@router.get("/admin-emails", response_model=list[AdminEmailResponse])
+def list_admin_emails(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    emails = db.query(AdminEmail).order_by(AdminEmail.id.desc()).all()
+    return [AdminEmailResponse(id=e.id, email=e.email, created_at=e.created_at.isoformat()) for e in emails]
+
+
+@router.post("/admin-emails", response_model=AdminEmailResponse)
+def add_admin_email(payload: AdminEmailCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    existing = db.query(AdminEmail).filter(AdminEmail.email == payload.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already in admin list")
+
+    admin_email = AdminEmail(email=payload.email)
+    db.add(admin_email)
+    db.commit()
+    db.refresh(admin_email)
+    return AdminEmailResponse(id=admin_email.id, email=admin_email.email, created_at=admin_email.created_at.isoformat())
+
+
+@router.delete("/admin-emails/{email_id}")
+def delete_admin_email(email_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    admin_email = db.get(AdminEmail, email_id)
+    if admin_email is None:
+        raise HTTPException(status_code=404, detail="Admin email not found")
+    db.delete(admin_email)
+    db.commit()
+    return {"ok": True}

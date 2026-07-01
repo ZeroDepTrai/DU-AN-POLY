@@ -59,6 +59,7 @@ export default function Navbar() {
               <Link to="/admin/products" className="btn-ghost text-sm">Sản phẩm</Link>
               <Link to="/admin/orders" className="btn-ghost text-sm">Đơn hàng</Link>
               <Link to="/admin/blog" className="btn-ghost text-sm">Blog</Link>
+              <Link to="/admin/settings" className="btn-ghost text-sm">Cài đặt</Link>
             </>
           )}
 

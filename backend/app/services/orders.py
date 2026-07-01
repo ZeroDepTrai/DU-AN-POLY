@@ -1,10 +1,13 @@
 import secrets
 import string
+from asyncio import to_thread
+from functools import partial
 
 from sqlalchemy.orm import Session, joinedload
 
 from app.config import settings
-from app.models import Order, OrderItem, OrderStatus, Product, User
+from app.email import send_order_notification_to_admins
+from app.models import AdminEmail, Order, OrderItem, OrderStatus, Product, User
 from app.schemas import OrderCreate, OrderResponse, OrderItemResponse
 from app.services.geocoding import geocode_address
 
@@ -59,7 +62,36 @@ async def create_order(db: Session, user: User, payload: OrderCreate) -> Order:
         .filter(Order.id == order.id)
         .first()
     )
-    return loaded or order
+    order = loaded or order
+
+    _notify_admins(db, order, user.name)
+
+    return order
+
+
+def _notify_admins(db: Session, order: Order, customer_name: str) -> None:
+    admin_emails = db.query(AdminEmail).filter(AdminEmail.is_active == True).all()
+    if not admin_emails:
+        return
+
+    items_summary = "".join(
+        f"<tr><td style='padding:8px 0; border-bottom:1px solid #e5e7eb;'>{item.product.name}</td>"
+        f"<td style='padding:8px 0; border-bottom:1px solid #e5e7eb; text-align:center;'>{item.quantity}</td>"
+        f"<td style='padding:8px 0; border-bottom:1px solid #e5e7eb; text-align:right;'>{item.unit_price:,.0f} VND</td></tr>"
+        for item in order.items
+    )
+    items_html = f"<table style='width:100%; border-collapse:collapse;'><tr style='color:#6b7280; font-size:12px;'><th style='text-align:left; padding:4px 0;'>Sản phẩm</th><th style='text-align:center;'>SL</th><th style='text-align:right;'>Giá</th></tr>{items_summary}</table>"
+
+    to_thread(
+        send_order_notification_to_admins,
+        [e.email for e in admin_emails],
+        order.id,
+        order.tracking_code,
+        customer_name,
+        order.delivery_address,
+        order.delivery_phone,
+        items_html,
+    )
 
 
 def order_to_response(order: Order) -> OrderResponse:
