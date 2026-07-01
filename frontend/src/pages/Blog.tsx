@@ -54,10 +54,9 @@ export default function Blog() {
     return true;
   });
 
-  const [featured, ...rest] = filtered;
-  const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const paginated = rest.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div>
