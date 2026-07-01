@@ -1,7 +1,6 @@
 import secrets
 import string
-from asyncio import to_thread
-from functools import partial
+import threading
 
 from sqlalchemy.orm import Session, joinedload
 
@@ -70,7 +69,7 @@ async def create_order(db: Session, user: User, payload: OrderCreate) -> Order:
 
 
 def _notify_admins(db: Session, order: Order, customer_name: str) -> None:
-    admin_emails = db.query(AdminEmail).filter(AdminEmail.is_active == True).all()
+    admin_emails = db.query(AdminEmail).all()
     if not admin_emails:
         return
 
@@ -82,16 +81,18 @@ def _notify_admins(db: Session, order: Order, customer_name: str) -> None:
     )
     items_html = f"<table style='width:100%; border-collapse:collapse;'><tr style='color:#6b7280; font-size:12px;'><th style='text-align:left; padding:4px 0;'>Sản phẩm</th><th style='text-align:center;'>SL</th><th style='text-align:right;'>Giá</th></tr>{items_summary}</table>"
 
-    to_thread(
-        send_order_notification_to_admins,
-        [e.email for e in admin_emails],
-        order.id,
-        order.tracking_code,
-        customer_name,
-        order.delivery_address,
-        order.delivery_phone,
-        items_html,
-    )
+    threading.Thread(
+        target=send_order_notification_to_admins,
+        args=(
+            [e.email for e in admin_emails],
+            order.id,
+            order.tracking_code,
+            customer_name,
+            order.delivery_address,
+            order.delivery_phone,
+            items_html,
+        ),
+    ).start()
 
 
 def order_to_response(order: Order) -> OrderResponse:

@@ -60,7 +60,7 @@ def verify_code(payload: VerifyCodeRequest, db: Session = Depends(get_db)):
     if verification is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification code")
 
-    if datetime.now(timezone.utc) > verification.expires_at:
+    if datetime.now(timezone.utc).replace(tzinfo=None) > verification.expires_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verification code has expired")
 
     user = User(
