@@ -10,6 +10,7 @@ const PAGE_SIZE = 6;
 
 const TAG_TABS = [
   { label: "Tất cả", value: "" },
+  { label: "Nổi bật", value: "featured" },
   { label: "Tin công nghệ", value: "tech" },
   { label: "Review sản phẩm", value: "review" },
   { label: "Mẹo hay", value: "tips" },
@@ -20,13 +21,31 @@ export default function Blog() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const { data: posts = [], isLoading } = useQuery({
+  // Always fetch featured posts for the hero section
+  const { data: featuredPosts = [] } = useQuery({
+    queryKey: ["blog-featured"],
+    queryFn: async () => {
+      const { data } = await blogApi.list("featured");
+      return data;
+    },
+  });
+
+  // Main posts query — filtered by selected tags
+  const { data: allPosts = [], isLoading } = useQuery({
     queryKey: ["blog-posts", selectedTags],
     queryFn: async () => {
       const { data } = await blogApi.list(selectedTags.length ? selectedTags.join(",") : undefined);
       return data;
     },
   });
+
+  // Featured hero: always the most recent featured post
+  const featuredPost = featuredPosts[0];
+
+  // Exclude featured post from the grid to avoid duplication
+  const posts = featuredPost
+    ? allPosts.filter((p) => p.id !== featuredPost.id)
+    : allPosts;
 
   const filtered = posts.filter((p) => {
     if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
@@ -44,8 +63,8 @@ export default function Blog() {
     setPage(1);
   };
 
-  const featuredTags = posts[0]?.tags
-    ? posts[0].tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+  const featuredTags = featuredPost?.tags
+    ? featuredPost.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
     : [];
 
   const formattedDate = (dateStr: string) =>
@@ -76,15 +95,15 @@ export default function Blog() {
 
       <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
         {/* ── Featured Post ───────────────────────────────── */}
-        {!isLoading && posts.length > 0 && (
+        {!isLoading && featuredPost && (
           <Link
-            to={`/blog/${posts[0].slug}`}
+            to={`/blog/${featuredPost.slug}`}
             className="group mb-10 flex flex-col overflow-hidden rounded-2xl border border-gunmetal/60 bg-graphite transition-all hover:border-rose/30 lg:flex-row"
           >
             <div className="relative w-full overflow-hidden lg:w-1/2">
               <img
-                src={posts[0].image_url}
-                alt={posts[0].title}
+                src={featuredPost.image_url}
+                alt={featuredPost.title}
                 className="aspect-video h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 lg:aspect-auto"
               />
               <div className="absolute left-4 top-4 rounded-full bg-crimson px-3 py-1 text-xs font-bold text-white">
@@ -102,10 +121,10 @@ export default function Blog() {
                 </div>
               )}
               <p className="mb-3 text-xs font-medium text-steelgray">
-                {formattedDate(posts[0].created_at)}
+                {formattedDate(featuredPost.created_at)}
               </p>
               <h2 className="mb-4 text-2xl font-extrabold text-warmwhite group-hover:text-sakura transition-colors line-clamp-3 lg:text-3xl">
-                {posts[0].title}
+                {featuredPost.title}
               </h2>
               <p className="mb-6 text-sm leading-relaxed text-steelgray line-clamp-2">
                 Khám phá những tin tức công nghệ mới nhất, đánh giá chi tiết sản phẩm và những mẹo hay dành cho bạn.
