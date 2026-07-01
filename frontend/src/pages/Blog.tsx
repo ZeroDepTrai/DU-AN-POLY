@@ -21,6 +21,10 @@ const BRANDS = [
   { label: "OPPO", icon: "📞" },
 ];
 
+// Hero banner image
+const BLOG_BANNER =
+  "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=1152&q=85&auto=format&fit=crop";
+
 const PAGE_SIZE = 6;
 
 export default function Blog() {
@@ -56,10 +60,34 @@ export default function Blog() {
   const paginated = rest.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      {/* ── Brand Categories ───────────────────────────── */}
-      <section className="border-b border-gunmetal/40 bg-graphite/50 mb-10">
-        <div className="flex items-center justify-center gap-6 overflow-x-auto px-4 py-5 sm:gap-12">
+    <div>
+      {/* ── Hero Banner ──────────────────────────────────── */}
+      <section className="relative h-[640px] w-full overflow-hidden">
+        <img
+          src={BLOG_BANNER}
+          alt="Blog"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/60 via-charcoal/40 to-charcoal/80" />
+
+        <div className="relative z-10 flex h-full flex-col justify-end px-16 pb-14">
+          {/* Breadcrumb */}
+          <div className="mb-5 flex items-center gap-2 text-sm text-softgray">
+            <Link to="/" className="hover:text-crimson transition-colors">Trang chủ</Link>
+            <span>/</span>
+            <span className="text-warmwhite">Blog</span>
+          </div>
+
+          {/* Large white title */}
+          <h1 className="text-[80px] font-extrabold leading-none text-warmwhite tracking-tight">
+            BLOG
+          </h1>
+        </div>
+      </section>
+
+      {/* ── Brand Categories ─────────────────────────────── */}
+      <section className="border-b border-gunmetal/40 bg-graphite/50">
+        <div className="mx-auto flex max-w-7xl items-center justify-center gap-6 overflow-x-auto px-4 py-5 sm:gap-12">
           {BRANDS.map((brand) => (
             <button
               key={brand.label}
@@ -76,153 +104,105 @@ export default function Blog() {
         </div>
       </section>
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-px w-8 bg-crimson" />
-          <span className="text-xs font-medium uppercase tracking-widest text-crimson">Blog</span>
+      {/* ── Category Tabs + Search ───────────────────────── */}
+      <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.value}
+                onClick={() => { setCategory(c.value); setPage(1); }}
+                className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
+                  category === c.value
+                    ? "bg-crimson text-white"
+                    : "border border-gunmetal/60 bg-graphite text-softgray hover:border-silvergray hover:text-warmwhite"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-steelgray pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Tìm kiếm bài viết..."
+              className="input-field pl-10 w-full sm:w-64"
+            />
+          </div>
         </div>
-        <h1 className="text-3xl font-extrabold text-warmwhite">Tin công nghệ & Reviews</h1>
-        <p className="mt-2 text-sm text-steelgray">Những bài viết mới nhất về điện thoại, công nghệ và xu hướng</p>
-      </div>
 
-      {/* Featured Post */}
-      {featured && !search && (
-        <a
-          href={`/blog/${featured.slug}`}
-          className="group mb-10 grid overflow-hidden rounded-2xl border border-gunmetal/60 bg-graphite transition-all hover:border-rose/30 md:grid-cols-2"
-        >
-          {featured.image_url && (
-            <div className="aspect-video overflow-hidden md:aspect-auto">
-              <img
-                src={featured.image_url}
-                alt={featured.title}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            </div>
-          )}
-          <div className="flex flex-col justify-between p-6">
-            <div>
-              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-rose/20 bg-rose/10 px-3 py-1 text-xs font-medium text-sakura">
-                <span className="h-1.5 w-1.5 rounded-full bg-crimson" />
-                Bài viết nổi bật
-              </div>
-              <h2 className="text-2xl font-bold text-warmwhite group-hover:text-sakura transition-colors leading-tight">
-                {featured.title}
-              </h2>
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm text-steelgray">
-                {new Date(featured.created_at).toLocaleDateString("vi-VN", {
-                  day: "numeric", month: "long", year: "numeric",
-                })}
-              </span>
-              <span className="flex items-center gap-1 text-sm font-medium text-crimson group-hover:text-sakura transition-colors">
-                Đọc ngay
-                <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        {/* ── Blog Grid ─────────────────────────────────── */}
+        {postsLoading ? (
+          <LoadingSpinner label="Đang tải blog..." />
+        ) : paginated.length === 0 ? (
+          <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-16 text-center">
+            <div className="mb-4 flex justify-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gunmetal/40">
+                <svg className="h-10 w-10 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                 </svg>
-              </span>
+              </div>
             </div>
+            <h3 className="text-xl font-bold text-warmwhite mb-2">Chưa có bài viết nào</h3>
+            <p className="text-sm text-steelgray">Quay lại sau để đọc những bài viết thú vị nhất!</p>
           </div>
-        </a>
-      )}
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {paginated.map((post) => (
+              <BlogCard key={post.id} post={post} />
+            ))}
+          </div>
+        )}
 
-      {/* Tabs + Search */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.value}
-              onClick={() => { setCategory(c.value); setPage(1); }}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                category === c.value
-                  ? "bg-crimson text-white"
-                  : "border border-gunmetal/60 bg-graphite text-softgray hover:border-silvergray hover:text-warmwhite"
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-        <div className="relative">
-          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-steelgray pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Tìm kiếm bài viết..."
-            className="input-field pl-10 w-full sm:w-64"
-          />
-        </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-10">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </div>
-
-      {/* Grid */}
-      {postsLoading ? (
-        <LoadingSpinner label="Đang tải blog..." />
-      ) : paginated.length === 0 ? (
-        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-16 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gunmetal/40">
-              <svg className="h-10 w-10 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-              </svg>
-            </div>
-          </div>
-          <h3 className="text-xl font-bold text-warmwhite mb-2">Chưa có bài viết nào</h3>
-          <p className="text-sm text-steelgray">Quay lại sau để đọc những bài viết thú vị nhất!</p>
-        </div>
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {paginated.map((post) => (
-            <BlogCard key={post.id} post={post} />
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-10">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setPage}
-          />
-        </div>
-      )}
 
       {/* ── Featured Products ─────────────────────────────── */}
       {!search && (
-        <section className="mt-20">
-          <div className="mb-8 flex items-end justify-between">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <div className="h-px w-8 bg-crimson" />
-                <span className="text-xs font-medium uppercase tracking-widest text-crimson">Bạn có thể thích</span>
+        <section className="mt-20 border-t border-gunmetal/40">
+          <div className="mx-auto max-w-7xl px-4 pt-16 sm:px-6">
+            <div className="mb-8 flex items-end justify-between">
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <div className="h-px w-8 bg-crimson" />
+                  <span className="text-xs font-medium uppercase tracking-widest text-crimson">Bạn có thể thích</span>
+                </div>
+                <h2 className="text-2xl font-extrabold text-warmwhite">Sản phẩm nổi bật</h2>
               </div>
-              <h2 className="text-2xl font-extrabold text-warmwhite">Sản phẩm nổi bật</h2>
+              <Link
+                to="/products"
+                className="hidden items-center gap-1 text-sm font-medium text-crimson transition-colors hover:text-sakura sm:flex"
+              >
+                Xem tất cả
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
-            <Link
-              to="/products"
-              className="hidden items-center gap-1 text-sm font-medium text-crimson transition-colors hover:text-sakura sm:flex"
-            >
-              Xem tất cả
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+            {productsLoading ? (
+              <LoadingSpinner label="Đang tải sản phẩm..." />
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} variant="small" />
+                ))}
+              </div>
+            )}
           </div>
-          {productsLoading ? (
-            <LoadingSpinner label="Đang tải sản phẩm..." />
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} variant="small" />
-              ))}
-            </div>
-          )}
         </section>
       )}
     </div>
