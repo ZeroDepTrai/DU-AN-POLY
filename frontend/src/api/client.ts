@@ -78,6 +78,20 @@ export const adminBlogApi = {
       headers: { "Content-Type": "multipart/form-data" },
     }),
   delete: (id: number) => api.delete(`/api/admin/blog/${id}`),
+  uploadImage: (file: File) => {
+    const fd = new FormData();
+    fd.append("image", file);
+    return api.post<{ url: string }>("/api/admin/blog/image", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  importDocx: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post<{ html: string; cover_image_url: string; title: string }>("/api/admin/blog/import", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 export default api;

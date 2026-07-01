@@ -16,14 +16,14 @@ export default function OrderConfirmation() {
   });
 
   if (isLoading) {
-    return <LoadingSpinner label="Dang tai don hang..." />;
+    return <LoadingSpinner label="Đang tải thông tin đơn hàng..." />;
   }
 
   if (error || !order) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center">
-        <h2 className="text-2xl font-bold text-warmwhite">Don hang khong ton tai</h2>
-        <Link to="/" className="btn-primary mt-6">Quay ve trang chu</Link>
+        <h2 className="text-2xl font-bold text-warmwhite">Đơn hàng không tồn tại</h2>
+        <Link to="/" className="btn-primary mt-6">Quay về trang chủ</Link>
       </div>
     );
   }
@@ -39,27 +39,27 @@ export default function OrderConfirmation() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="text-2xl font-extrabold text-warmwhite">Dat hang thanh cong!</h1>
-        <p className="mt-2 text-softgray">Cam on ban da dat hang tai CellZone. Don hang cua ban dang duoc xu ly.</p>
-      </div>
+        <h1 className="text-2xl font-extrabold text-warmwhite">Đặt hàng thành công!</h1>
+            <p className="mt-2 text-softgray">Cảm ơn bạn đã đặt hàng tại CellZone. Đơn hàng của bạn đang được xử lý.</p>
+          </div>
 
       {/* Order details */}
       <div className="mb-6 rounded-xl border border-gunmetal/60 bg-graphite p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-bold text-warmwhite">Thong tin don hang</h2>
+          <h2 className="font-bold text-warmwhite">Thông tin đơn hàng</h2>
           <span className="tag-badge">{order.status.replace("_", " ")}</span>
         </div>
         <div className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <p className="text-steelgray">Ma theo doi</p>
+            <p className="text-steelgray">Mã theo dõi</p>
             <p className="font-mono font-bold text-crimson">{order.tracking_code}</p>
           </div>
           <div>
-            <p className="text-steelgray">So dien thoai</p>
+            <p className="text-steelgray">Số điện thoại</p>
             <p className="font-medium text-warmwhite">{order.delivery_phone}</p>
           </div>
           <div className="sm:col-span-2">
-            <p className="text-steelgray">Dia chi giao hang</p>
+            <p className="text-steelgray">Địa chỉ giao hàng</p>
             <p className="font-medium text-warmwhite">{order.delivery_address}</p>
           </div>
         </div>
@@ -67,7 +67,7 @@ export default function OrderConfirmation() {
 
       {/* Items */}
       <div className="mb-6 rounded-xl border border-gunmetal/60 bg-graphite p-6">
-        <h2 className="mb-4 font-bold text-warmwhite">San pham da dat</h2>
+        <h2 className="mb-4 font-bold text-warmwhite">Sản phẩm đã đặt</h2>
         <div className="space-y-3">
           {order.items.map((item) => (
             <div key={item.product_id} className="flex items-center justify-between text-sm">
@@ -84,7 +84,7 @@ export default function OrderConfirmation() {
           ))}
         </div>
         <div className="mt-4 border-t border-gunmetal/40 pt-4 flex justify-between items-center">
-          <span className="font-bold text-warmwhite">Tong cong</span>
+          <span className="font-bold text-warmwhite">Tổng cộng</span>
           <span className="text-xl font-extrabold text-crimson">
             {new Intl.NumberFormat("vi-VN").format(total)} VND
           </span>
@@ -97,13 +97,13 @@ export default function OrderConfirmation() {
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
           </svg>
-          Theo doi giao hang
+          Theo dõi giao hàng
         </Link>
         <Link to="/" className="btn-secondary flex-1 justify-center py-3">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
-          Tiep tuc mua sam
+          Tiếp tục mua sắm
         </Link>
       </div>
     </div>
