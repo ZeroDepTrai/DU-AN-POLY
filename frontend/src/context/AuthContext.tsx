@@ -15,6 +15,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  registerWithCode: (name: string, email: string, password: string, code: string) => Promise<void>;
   logout: () => void;
   isAdmin: boolean;
 }
@@ -58,6 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadUser();
   };
 
+  const registerWithCode = async (name: string, email: string, password: string, code: string) => {
+    const { data } = await authApi.verifyCode({ name, email, password, code });
+    localStorage.setItem("token", data.access_token);
+    await loadUser();
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
@@ -69,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       login,
       register,
+      registerWithCode,
       logout,
       isAdmin: user?.role === "admin",
     }),

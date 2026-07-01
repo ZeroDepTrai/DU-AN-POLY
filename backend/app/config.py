@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     admin_password: str = "admin123"
     cors_origins: str = "http://localhost:5173"
     upload_dir: str = "/data/uploads"
+    resend_api_key: str = ""
+    email_from: str = "Phone Store <onboarding@resend.dev>"
 
     @property
     def cors_origin_list(self) -> list[str]:

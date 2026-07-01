@@ -7,6 +7,7 @@ import AdminBlog from "./pages/admin/AdminBlog";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminSettings from "./pages/admin/AdminSettings";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import CartPage from "./pages/Cart";
@@ -72,6 +73,14 @@ export default function App() {
               element={
                 <ProtectedRoute adminOnly>
                   <AdminBlog />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <ProtectedRoute adminOnly>
+                  <AdminSettings />
                 </ProtectedRoute>
               }
             />

@@ -14,6 +14,10 @@ api.interceptors.request.use((config) => {
 });
 
 export const authApi = {
+  sendVerificationCode: (data: { email: string; name: string; password: string }) =>
+    api.post<{ message: string }>("/api/auth/register/send-code", data),
+  verifyCode: (data: { email: string; name: string; password: string; code: string }) =>
+    api.post<{ access_token: string }>("/api/auth/register/verify", data),
   register: (data: { email: string; name: string; password: string }) =>
     api.post<{ access_token: string }>("/api/auth/register", data),
   login: (data: { email: string; password: string }) =>
@@ -60,6 +64,10 @@ export const adminApi = {
     id: number,
     data: { delivery_address: string; delivery_phone: string; status: string }
   ) => api.patch<Order>(`/api/admin/orders/${id}`, data),
+  listAdminEmails: () => api.get<{ id: number; email: string; created_at: string }[]>("/api/admin/admin-emails"),
+  addAdminEmail: (email: string) =>
+    api.post<{ id: number; email: string; created_at: string }>("/api/admin/admin-emails", { email }),
+  deleteAdminEmail: (id: number) => api.delete(`/api/admin/admin-emails/${id}`),
 };
 
 export const blogApi = {
