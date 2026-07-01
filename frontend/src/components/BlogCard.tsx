@@ -13,6 +13,10 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
     year: "numeric",
   });
 
+  const tagList = post.tags
+    ? post.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+    : [];
+
   return (
     <Link
       to={`/blog/${post.slug}`}
@@ -28,8 +32,17 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
         </div>
       )}
       <div className="flex flex-1 flex-col p-5">
-        <p className="mb-3 text-xs font-medium text-steelgray">{formattedDate}</p>
-        <h3 className="flex-1 text-lg font-bold text-warmwhite group-hover:text-sakura transition-colors line-clamp-3">
+        {tagList.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-1">
+            {tagList.map((t: string) => (
+              <span key={t} className="rounded-full bg-crimson/20 px-2.5 py-0.5 text-xs font-medium text-sakura">
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
+        <p className="text-xs font-medium text-steelgray">{formattedDate}</p>
+        <h3 className="mt-1 flex-1 text-lg font-bold text-warmwhite group-hover:text-sakura transition-colors line-clamp-3">
           {post.title}
         </h3>
         <div className="mt-4 flex items-center gap-1 text-sm font-medium text-crimson group-hover:text-sakura transition-colors">

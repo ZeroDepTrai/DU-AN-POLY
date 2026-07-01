@@ -5,8 +5,8 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import type { Product } from "../../types";
 
 const TAG_PRESETS = [
-  "iPhone", "Android", "Samsung", "Xiaomi", "Flagship",
-  "Budget", "5G", "Gaming", "Featured", "Accessory",
+  "iPhone", "Android", "Samsung", "Xiaomi", "OPPO",
+  "Flagship", "Budget", "5G", "Gaming", "Featured", "Accessory",
 ];
 
 const emptyForm = { name: "", price: "", tags: "", description: "", stock: "10" };
@@ -21,23 +21,16 @@ export default function AdminProducts() {
   const [quickImage, setQuickImage] = useState<File | null>(null);
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState("");
-  const [tagInput, setTagInput] = useState("");
-  const [customTags, setCustomTags] = useState<string[]>([]);
   const [quickTagChips, setQuickTagChips] = useState<string[]>([]);
   const [fullTagChips, setFullTagChips] = useState<string[]>([]);
 
-  const allTags = [...TAG_PRESETS, ...customTags];
-
-  const addTagChip = (tag: string, chips: string[], setChips: React.Dispatch<React.SetStateAction<string[]>>) => {
+  const toggleTag = (tag: string, chips: string[], setChips: React.Dispatch<React.SetStateAction<string[]>>) => {
     const t = tag.trim().toLowerCase();
-    if (t && !chips.includes(t)) setChips((p) => [...p, t]);
-    setTagInput("");
-  };
-
-  const addCustomTag = () => {
-    const t = tagInput.trim();
-    if (t && !allTags.includes(t)) setCustomTags((p) => [...p, t]);
-    setTagInput("");
+    if (chips.includes(t)) {
+      setChips(chips.filter((c) => c !== t));
+    } else {
+      setChips([...chips, t]);
+    }
   };
 
   const { data: products = [], isLoading } = useQuery({
@@ -107,36 +100,26 @@ export default function AdminProducts() {
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-extrabold text-warmwhite">Quản lý sản phẩm</h1>
 
-      {/* Tag management bar */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <input
-          type="text"
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); addCustomTag(); }
-          }}
-          placeholder="Thêm nhãn mới..."
-          list="admin-all-tags"
-          className="input-field w-48 text-sm"
-        />
-        <datalist id="admin-all-tags">
-          {allTags.map((t) => <option key={t} value={t} />)}
-        </datalist>
-        <button type="button" onClick={addCustomTag} className="btn-secondary text-sm whitespace-nowrap">+ Thêm nhãn</button>
-        <div className="flex flex-wrap gap-1.5 ml-2">
-          <span className="text-xs text-steelgray self-center">Có sẵn:</span>
-          {allTags.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => { addTagChip(t, quickTagChips, setQuickTagChips); addTagChip(t, fullTagChips, setFullTagChips); }}
-              className="tag-badge cursor-pointer hover:opacity-80"
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+      {/* Tag selection bar */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        <span className="self-center text-xs text-steelgray mr-1">Chọn nhãn:</span>
+        {TAG_PRESETS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => {
+              toggleTag(t, quickTagChips, setQuickTagChips);
+              toggleTag(t, fullTagChips, setFullTagChips);
+            }}
+            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+              quickTagChips.includes(t.toLowerCase()) || fullTagChips.includes(t.toLowerCase())
+                ? "bg-crimson text-white"
+                : "border border-gunmetal/60 bg-graphite text-steelgray hover:border-silvergray hover:text-warmwhite"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
       </div>
 
       {/* Form tabs */}
@@ -167,28 +150,18 @@ export default function AdminProducts() {
                 className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-crimson file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white" />
             </div>
           </div>
-          {/* Tag chips */}
+          {/* Selected tag chips */}
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Nhãn đã chọn (nhấn nhãn bên trên để thêm):</label>
-            <div className="mb-2 flex flex-wrap gap-1.5 min-h-[28px]">
+            <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
+            <div className="flex flex-wrap gap-1.5 min-h-[32px]">
               {quickTagChips.map((t) => (
                 <span key={t} className="tag-badge flex items-center gap-1">
                   {t}
                   <button type="button" onClick={() => setQuickTagChips((p) => p.filter((x) => x !== t))} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
                 </span>
               ))}
-              {quickTagChips.length === 0 && <span className="text-xs text-steelgray">Chưa chọn nhãn nào...</span>}
+              {quickTagChips.length === 0 && <span className="text-xs text-steelgray italic">Nhấn nhãn bên trên để chọn...</span>}
             </div>
-            <input type="text" value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); addTagChip(tagInput, quickTagChips, setQuickTagChips); }
-                if (e.key === "Backspace" && !tagInput && quickTagChips.length > 0)
-                  setQuickTagChips((p) => p.slice(0, -1));
-              }}
-              placeholder="Gõ nhãn → Enter để thêm, Backspace để xóa..."
-              list="admin-all-tags"
-              className="input-field text-sm w-full" />
           </div>
           {error && <p className="text-sm text-rose">{error}</p>}
           <button type="submit" disabled={quickMutation.isPending} className="btn-primary">
@@ -210,28 +183,18 @@ export default function AdminProducts() {
               onChange={(e) => setForm({ ...form, price: e.target.value })} className="input-field" />
             <input type="number" placeholder="Số lượng tồn kho" value={form.stock}
               onChange={(e) => setForm({ ...form, stock: e.target.value })} className="input-field" />
-            {/* Tag chips */}
+            {/* Selected tag chips */}
             <div>
-              <label className="mb-1 block text-xs text-steelgray">Nhãn đã chọn:</label>
-              <div className="mb-1.5 flex flex-wrap gap-1.5 min-h-[28px]">
+              <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
+              <div className="flex flex-wrap gap-1.5 min-h-[40px]">
                 {fullTagChips.map((t) => (
                   <span key={t} className="tag-badge flex items-center gap-1">
                     {t}
                     <button type="button" onClick={() => setFullTagChips((p) => p.filter((x) => x !== t))} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
                   </span>
                 ))}
-                {fullTagChips.length === 0 && <span className="text-xs text-steelgray self-center">Chưa chọn nhãn...</span>}
+                {fullTagChips.length === 0 && <span className="text-xs text-steelgray italic self-center">Nhấn nhãn bên trên để chọn...</span>}
               </div>
-              <input type="text" value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); addTagChip(tagInput, fullTagChips, setFullTagChips); }
-                  if (e.key === "Backspace" && !tagInput && fullTagChips.length > 0)
-                    setFullTagChips((p) => p.slice(0, -1));
-                }}
-                placeholder="Gõ nhãn → Enter..."
-                list="admin-all-tags"
-                className="input-field text-sm w-full" />
             </div>
           </div>
           <textarea placeholder="Mô tả sản phẩm" value={form.description}

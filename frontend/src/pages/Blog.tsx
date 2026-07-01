@@ -44,6 +44,10 @@ export default function Blog() {
     setPage(1);
   };
 
+  const featuredTags = posts[0]?.tags
+    ? posts[0].tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+    : [];
+
   const formattedDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString("vi-VN", {
       day: "numeric",
@@ -87,7 +91,16 @@ export default function Blog() {
                 Nổi bật
               </div>
             </div>
-            <div className="flex flex-1 flex-col justify-center p-8 lg:w-1/2">
+            <div className="flex flex-col justify-center p-8 lg:w-1/2">
+              {featuredTags.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {featuredTags.map((t: string) => (
+                    <span key={t} className="rounded-full bg-crimson/20 px-3 py-0.5 text-xs font-medium text-sakura">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
               <p className="mb-3 text-xs font-medium text-steelgray">
                 {formattedDate(posts[0].created_at)}
               </p>

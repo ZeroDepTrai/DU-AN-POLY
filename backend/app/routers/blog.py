@@ -237,7 +237,7 @@ def list_posts(
     if tag:
         tags = [t.strip().lower() for t in tag.split(",") if t.strip()]
         if tags:
-            conditions = [BlogPost.category.ilike(f"%{t}%") for t in tags]
+            conditions = [BlogPost.tags.ilike(f"%{t}%") for t in tags]
             from sqlalchemy import or_
             query = query.filter(or_(*conditions))
     posts = query.order_by(BlogPost.id.desc()).all()

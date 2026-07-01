@@ -6,6 +6,10 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import RichTextEditor from "../../components/RichTextEditor";
 import type { BlogPost } from "../../types";
 
+const BLOG_TAG_PRESETS = [
+  "tech", "review", "tips", "news", "guide",
+];
+
 export default function AdminBlog() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ title: "", content: "" });
@@ -14,6 +18,7 @@ export default function AdminBlog() {
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [error, setError] = useState("");
   const [importing, setImporting] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["admin-blog"],
@@ -23,11 +28,18 @@ export default function AdminBlog() {
     },
   });
 
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const fd = new FormData();
       fd.append("title", form.title);
       fd.append("content", form.content);
+      fd.append("tags", selectedTags.join(","));
       if (image) fd.append("image", image);
       if (coverPreview) fd.append("cover_image_url", coverPreview);
       return editing ? adminBlogApi.update(editing.id, fd) : adminBlogApi.create(fd);
@@ -40,6 +52,7 @@ export default function AdminBlog() {
       setCoverPreview(null);
       setEditing(null);
       setError("");
+      setSelectedTags([]);
     },
     onError: (err: Error) => setError(err.message || "Lỗi lưu bài viết"),
   });
@@ -57,6 +70,10 @@ export default function AdminBlog() {
     setForm({ title: post.title, content: post.content });
     setImage(null);
     setCoverPreview(null);
+    const tags = post.tags
+      ? post.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+      : [];
+    setSelectedTags(tags);
   };
 
   const handleSubmit = () => {
@@ -104,6 +121,44 @@ export default function AdminBlog() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-extrabold text-warmwhite">Quản lý Blog</h1>
+
+      {/* Tag selector */}
+      <div className="mb-6 flex flex-wrap gap-2 items-center">
+        <span className="text-xs text-steelgray mr-1">Nhãn bài viết:</span>
+        {BLOG_TAG_PRESETS.map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            onClick={() => toggleTag(tag)}
+            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+              selectedTags.includes(tag)
+                ? "bg-crimson text-white"
+                : "border border-gunmetal/60 bg-graphite text-steelgray hover:border-silvergray hover:text-warmwhite"
+            }`}
+          >
+            {tag}
+          </button>
+        ))}
+        {selectedTags.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setSelectedTags([])}
+            className="text-xs text-steelgray hover:text-rose ml-2 underline"
+          >
+            Xóa tất cả
+          </button>
+        )}
+        {selectedTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2 w-full">
+            {selectedTags.map((t) => (
+              <span key={t} className="tag-badge flex items-center gap-1">
+                {t}
+                <button type="button" onClick={() => toggleTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Editor */}
       <div className="mb-8 space-y-4 rounded-xl border border-gunmetal/60 bg-graphite p-6">
@@ -208,6 +263,7 @@ export default function AdminBlog() {
                 setForm({ title: "", content: "" });
                 setImage(null);
                 setCoverPreview(null);
+                setSelectedTags([]);
               }}
               className="btn-secondary"
             >
@@ -230,6 +286,7 @@ export default function AdminBlog() {
               <tr className="border-b border-gunmetal/40 text-left text-steelgray">
                 <th className="px-4 py-3">Ảnh</th>
                 <th className="px-4 py-3">Tiêu đề</th>
+                <th className="px-4 py-3">Nhãn</th>
                 <th className="px-4 py-3">Slug</th>
                 <th className="px-4 py-3">Tác giả</th>
                 <th className="px-4 py-3">Ngày</th>
@@ -237,48 +294,61 @@ export default function AdminBlog() {
               </tr>
             </thead>
             <tbody>
-              {posts.map((post) => (
-                <tr
-                  key={post.id}
-                  className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors"
-                >
-                  <td className="px-4 py-3">
-                    {post.image_url && (
-                      <img
-                        src={post.image_url}
-                        alt=""
-                        className="h-10 w-10 rounded-lg object-cover"
-                      />
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-warmwhite max-w-xs truncate">
-                    {post.title}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-steelgray">{post.slug}</td>
-                  <td className="px-4 py-3 text-softgray">{post.author_name}</td>
-                  <td className="px-4 py-3 text-steelgray">{post.created_at}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => startEdit(post)}
-                        className="text-sm text-crimson hover:text-sakura transition-colors"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Xóa bài "${post.title}"?`)) {
-                            deleteMutation.mutate(post.id);
-                          }
-                        }}
-                        className="text-sm text-deeprose hover:text-rose transition-colors"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {posts.map((post) => {
+                const tagList = post.tags
+                  ? post.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+                  : [];
+                return (
+                  <tr
+                    key={post.id}
+                    className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      {post.image_url && (
+                        <img
+                          src={post.image_url}
+                          alt=""
+                          className="h-10 w-10 rounded-lg object-cover"
+                        />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-warmwhite max-w-xs truncate">
+                      {post.title}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {tagList.map((t: string) => (
+                          <span key={t} className="tag-badge text-xs">{t}</span>
+                        ))}
+                        {tagList.length === 0 && <span className="text-xs text-steelgray">—</span>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-steelgray">{post.slug}</td>
+                    <td className="px-4 py-3 text-softgray">{post.author_name}</td>
+                    <td className="px-4 py-3 text-steelgray">{post.created_at}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => startEdit(post)}
+                          className="text-sm text-crimson hover:text-sakura transition-colors"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Xóa bài "${post.title}"?`)) {
+                              deleteMutation.mutate(post.id);
+                            }
+                          }}
+                          className="text-sm text-deeprose hover:text-rose transition-colors"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
