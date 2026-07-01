@@ -1,7 +1,7 @@
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { adminBlogApi, blogApi } from "../../api/client";
+import { adminBlogApi } from "../../api/client";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import RichTextEditor from "../../components/RichTextEditor";
 import type { BlogPost } from "../../types";
@@ -65,10 +65,9 @@ export default function AdminBlog() {
     },
   });
 
-  // Sync: just open the edit panel immediately
   const startEdit = (post: BlogPost) => {
     setEditing(post);
-    setForm({ title: post.title, content: "" }); // content loaded async below
+    setForm({ title: post.title, content: post.content || "" });
     setImage(null);
     setCoverPreview(null);
     setError("");
@@ -77,27 +76,6 @@ export default function AdminBlog() {
       : [];
     setSelectedTags(tags);
   };
-
-  // Async: load full post content after the panel opens
-  useEffect(() => {
-    if (!editing) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await blogApi.get(editing.slug);
-        if (!cancelled) {
-          setForm((f) => ({ ...f, content: data.content }));
-          const tags = data.tags
-            ? data.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
-            : [];
-          setSelectedTags(tags);
-        }
-      } catch {
-        // ignore — form already has title
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [editing?.id]);
 
   const handleSubmit = () => {
     if (!form.title.trim()) {

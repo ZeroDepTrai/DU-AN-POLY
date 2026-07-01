@@ -155,6 +155,7 @@ class BlogPostListResponse(BaseModel):
     id: int
     title: str
     slug: str
+    content: str = ""
     image_url: str
     created_at: str
     tags: str = ""

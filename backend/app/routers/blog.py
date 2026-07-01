@@ -246,6 +246,7 @@ def list_posts(
             id=p.id,
             title=p.title,
             slug=p.slug,
+            content=p.content or "",
             image_url=p.image_url,
             created_at=p.created_at,
             tags=p.tags,
