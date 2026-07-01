@@ -33,18 +33,22 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        # Rename columns idempotently (ignore errors if already renamed or doesn't exist)
-        def try_rename(sql: str) -> None:
+        def rename_col(table: str, from_col: str, to_col: str) -> None:
             try:
-                db.execute(db.text(sql))
-                db.commit()
+                exists = db.execute(
+                    db.text(
+                        f"SELECT 1 FROM information_schema.columns "
+                        f"WHERE table_name='{table}' AND column_name='{from_col}'"
+                    )
+                ).fetchone()
+                if exists:
+                    db.execute(db.text(f"ALTER TABLE {table} RENAME COLUMN {from_col} TO {to_col}"))
+                    db.commit()
             except Exception:
                 db.rollback()
 
-        # products.tag -> products.tags
-        try_rename("ALTER TABLE products RENAME COLUMN tag TO tags")
-        # blog_posts.category -> blog_posts.tags
-        try_rename("ALTER TABLE blog_posts RENAME COLUMN category TO tags")
+        rename_col("products", "tag", "tags")
+        rename_col("blog_posts", "category", "tags")
 
         seed_admin(db)
     finally:

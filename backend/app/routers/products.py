@@ -13,7 +13,7 @@ def list_products(tag: str | None = Query(default=None), db: Session = Depends(g
     """Returns all products, optionally filtered by tag. Backward-compatible."""
     query = db.query(Product)
     if tag:
-        query = query.filter(Product.tag == tag)
+        query = query.filter(Product.tags.ilike(f"%{tag}%"))
     return query.order_by(Product.id.desc()).all()
 
 
@@ -30,9 +30,9 @@ def search_products(
     """New paginated/filtered search endpoint for Products and Accessories pages."""
     query = db.query(Product)
     if tag:
-        query = query.filter(Product.tag == tag)
+        query = query.filter(Product.tags.ilike(f"%{tag}%"))
     if brand:
-        query = query.filter(Product.tag.ilike(f"%{brand}%"))
+        query = query.filter(Product.tags.ilike(f"%{brand}%"))
     if search:
         query = query.filter(Product.name.ilike(f"%{search}%"))
 
@@ -64,7 +64,7 @@ def get_related_products(product_id: int, limit: int = Query(default=4, ge=1, le
         raise HTTPException(status_code=404, detail="Product not found")
     related = (
         db.query(Product)
-        .filter(Product.id != product_id, Product.tag == product.tag)
+        .filter(Product.id != product_id, Product.tags.ilike(f"%{product.tags.split(',')[0].strip()}%"))
         .order_by(Product.id.desc())
         .limit(limit)
         .all()
