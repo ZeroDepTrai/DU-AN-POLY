@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     upload_dir: str = "/data/uploads"
     resend_api_key: str = ""
-    email_from: str = "Phone Store <noreply@phonestore.com>"
+    email_from: str = "Phone Store <onboarding@resend.dev>"
 
     @property
     def cors_origin_list(self) -> list[str]:
