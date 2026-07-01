@@ -78,26 +78,6 @@ def verify_code(payload: VerifyCodeRequest, db: Session = Depends(get_db)):
     return TokenResponse(access_token=token)
 
 
-@router.post("/register", response_model=TokenResponse)
-def register(payload: UserRegister, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == payload.email).first()
-    if existing:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
-
-    user = User(
-        email=payload.email,
-        name=payload.name,
-        password_hash=hash_password(payload.password),
-        role=UserRole.customer,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    token = create_access_token(user.id, user.role)
-    return TokenResponse(access_token=token)
-
-
 @router.post("/login", response_model=TokenResponse)
 def login(payload: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
