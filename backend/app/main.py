@@ -5,6 +5,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.config import settings
 from app.database import Base, SessionLocal, engine
@@ -38,18 +39,18 @@ async def lifespan(app: FastAPI):
         try:
             # Rename products.tag -> products.tags if it exists
             result = db.execute(
-                db.text(
+                text(
                     "SELECT column_name FROM information_schema.columns "
                     "WHERE table_schema='public' AND table_name='products' AND column_name='tag'"
                 )
             ).fetchone()
             if result:
-                db.execute(db.text("ALTER TABLE products RENAME COLUMN tag TO tags"))
+                db.execute(text("ALTER TABLE products RENAME COLUMN tag TO tags"))
                 db.commit()
                 logger.warning("[MIGRATION] Renamed products.tag -> products.tags")
             else:
                 result2 = db.execute(
-                    db.text(
+                    text(
                         "SELECT column_name FROM information_schema.columns "
                         "WHERE table_schema='public' AND table_name='products' AND column_name='tags'"
                     )
@@ -61,18 +62,18 @@ async def lifespan(app: FastAPI):
 
             # Rename blog_posts.category -> blog_posts.tags if it exists
             result3 = db.execute(
-                db.text(
+                text(
                     "SELECT column_name FROM information_schema.columns "
                     "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='category'"
                 )
             ).fetchone()
             if result3:
-                db.execute(db.text("ALTER TABLE blog_posts RENAME COLUMN category TO tags"))
+                db.execute(text("ALTER TABLE blog_posts RENAME COLUMN category TO tags"))
                 db.commit()
                 logger.warning("[MIGRATION] Renamed blog_posts.category -> blog_posts.tags")
             else:
                 result4 = db.execute(
-                    db.text(
+                    text(
                         "SELECT column_name FROM information_schema.columns "
                         "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='tags'"
                     )
