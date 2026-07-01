@@ -69,6 +69,7 @@ export interface BlogPost {
   image_url: string;
   author_name: string;
   created_at: string;
+  category?: string;
 }
 
 export interface BlogPostListItem {
@@ -77,4 +78,5 @@ export interface BlogPostListItem {
   slug: string;
   image_url: string;
   created_at: string;
+  category?: string;
 }

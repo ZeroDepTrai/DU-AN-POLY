@@ -237,6 +237,7 @@ def list_posts(db: Session = Depends(get_db)):
             slug=p.slug,
             image_url=p.image_url,
             created_at=p.created_at,
+            category=p.category,
         )
         for p in posts
     ]
@@ -255,6 +256,7 @@ def get_post(slug: str, db: Session = Depends(get_db)):
         image_url=post.image_url,
         author_name=post.author.name,
         created_at=post.created_at,
+        category=post.category,
     )
 
 
@@ -266,6 +268,7 @@ def create_post(
     content: str = Form(...),
     image: UploadFile | None = File(default=None),
     cover_image_url: str | None = Form(default=None),
+    category: str | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -288,6 +291,7 @@ def create_post(
         content=content,
         image_url=image_url,
         author_id=current_user.id,
+        category=category or "",
         created_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
     )
     db.add(post)
@@ -301,6 +305,7 @@ def create_post(
         image_url=post.image_url,
         author_name=current_user.name,
         created_at=post.created_at,
+        category=post.category,
     )
 
 
@@ -311,6 +316,7 @@ def update_post(
     content: str = Form(...),
     image: UploadFile | None = File(default=None),
     cover_image_url: str | None = Form(default=None),
+    category: str | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -320,6 +326,7 @@ def update_post(
 
     post.title = title
     post.content = content
+    post.category = category or ""
 
     if image and image.filename:
         post.image_url = save_upload(image)
@@ -336,6 +343,7 @@ def update_post(
         image_url=post.image_url,
         author_name=post.author.name,
         created_at=post.created_at,
+        category=post.category,
     )
 
 

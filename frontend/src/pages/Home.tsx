@@ -18,7 +18,7 @@ export default function Home() {
     queryKey: ["home-products"],
     queryFn: async () => {
       const { data } = await productsApi.list();
-      return data.slice(0, 6);
+      return data.filter((p) => p.tag === "featured").slice(0, 3);
     },
   });
 
@@ -66,9 +66,8 @@ export default function Home() {
           <div>
             <div className="mb-2 flex items-center gap-2">
               <div className="h-px w-8 bg-crimson" />
-              <span className="text-xs font-medium uppercase tracking-widest text-crimson">Sản phẩm nổi bật</span>
             </div>
-            <h2 className="text-3xl font-extrabold text-warmwhite">Điện thoại thông minh</h2>
+            <h2 className="text-3xl font-extrabold text-warmwhite">Sản phẩm nổi bật</h2>
           </div>
           <Link
             to="/products"

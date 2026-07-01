@@ -58,7 +58,7 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   },
 ];
 
-const TAG_PRESETS = ["iPhone", "Android", "Samsung", "Xiaomi", "Flagship", "Budget", "5G", "Gaming"];
+const TAG_PRESETS = ["iPhone", "Android", "Samsung", "Xiaomi", "Flagship", "Budget", "5G", "Gaming", "Featured", "Accessory"];
 const ORDER_STATUSES: { value: OrderStatus; label: string }[] = [
   { value: "pending", label: "Chờ xác nhận" },
   { value: "processing", label: "Đang xử lý" },
@@ -253,6 +253,20 @@ function ProductsTab({ products }: { products: Product[] }) {
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState("");
+
+  const allTags = [...TAG_PRESETS, ...customTags];
+
+  const addCustomTag = () => {
+    const trimmed = newTagInput.trim();
+    if (trimmed && !allTags.includes(trimmed)) {
+      setCustomTags((prev) => [...prev, trimmed]);
+      setQuickForm((f) => ({ ...f, tag: trimmed }));
+      setFullForm((f) => ({ ...f, tag: trimmed }));
+    }
+    setNewTagInput("");
+  };
 
   const filtered = products.filter((p) =>
     !search || p.name.toLowerCase().includes(search.toLowerCase())
@@ -335,16 +349,24 @@ function ProductsTab({ products }: { products: Product[] }) {
 
       {formTab === "quick" && (
         <form onSubmit={(e) => { e.preventDefault(); quickMutation.mutate(); }}
-          className="mb-6 grid gap-4 rounded-2xl border border-gunmetal/60 bg-graphite p-5 md:grid-cols-2 lg:grid-cols-4">
+          className="mb-6 grid gap-4 rounded-2xl border border-gunmetal/60 bg-graphite p-5 md:grid-cols-2 lg:grid-cols-5">
           <input required placeholder="Tên sản phẩm" value={quickForm.name}
             onChange={(e) => setQuickForm({ ...quickForm, name: e.target.value })} className="input-field" />
           <input required type="number" step="1000" placeholder="Giá (VND)" value={quickForm.price}
             onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })} className="input-field" />
-          <select required value={quickForm.tag}
-            onChange={(e) => setQuickForm({ ...quickForm, tag: e.target.value })} className="input-field">
-            <option value="">Chọn nhãn...</option>
-            {TAG_PRESETS.map((t) => <option key={t} value={t.toLowerCase()}>{t}</option>)}
-          </select>
+          <div className="flex flex-col gap-1">
+            <input
+              required
+              list="quick-tags-datalist"
+              placeholder="Nhãn (gõ hoặc chọn)"
+              value={quickForm.tag}
+              onChange={(e) => setQuickForm({ ...quickForm, tag: e.target.value })}
+              className="input-field w-full"
+            />
+            <datalist id="quick-tags-datalist">
+              {allTags.map((t) => <option key={t} value={t} />)}
+            </datalist>
+          </div>
           <div>
             <label className="mb-1.5 block text-sm text-steelgray">Hình ảnh</label>
             <input required type="file" accept="image/*"
@@ -353,7 +375,7 @@ function ProductsTab({ products }: { products: Product[] }) {
           </div>
           {error && <p className="col-span-full text-sm text-rose">{error}</p>}
           <button type="submit" disabled={quickMutation.isPending}
-            className="col-span-full btn-primary lg:w-auto">
+            className="col-span-full btn-primary lg:col-span-1 lg:col-start-5">
             {quickMutation.isPending ? "Đang thêm..." : "Thêm sản phẩm"}
           </button>
         </form>
@@ -370,8 +392,19 @@ function ProductsTab({ products }: { products: Product[] }) {
               onChange={(e) => setFullForm({ ...fullForm, name: e.target.value })} className="input-field" />
             <input required type="number" step="1000" placeholder="Giá (VND)" value={fullForm.price}
               onChange={(e) => setFullForm({ ...fullForm, price: e.target.value })} className="input-field" />
-            <input required placeholder="Nhãn" value={fullForm.tag}
-              onChange={(e) => setFullForm({ ...fullForm, tag: e.target.value })} className="input-field" />
+            <div className="flex flex-col gap-1">
+              <input
+                required
+                list="full-tags-datalist"
+                placeholder="Nhãn (gõ hoặc chọn)"
+                value={fullForm.tag}
+                onChange={(e) => setFullForm({ ...fullForm, tag: e.target.value })}
+                className="input-field w-full"
+              />
+              <datalist id="full-tags-datalist">
+                {allTags.map((t) => <option key={t} value={t} />)}
+              </datalist>
+            </div>
             <input type="number" placeholder="Số lượng tồn kho" value={fullForm.stock}
               onChange={(e) => setFullForm({ ...fullForm, stock: e.target.value })} className="input-field" />
           </div>
@@ -397,6 +430,42 @@ function ProductsTab({ products }: { products: Product[] }) {
           </div>
         </form>
       )}
+
+      {/* Custom tag management */}
+      <div className="mb-4 flex items-center gap-2">
+        <input
+          type="text"
+          value={newTagInput}
+          onChange={(e) => setNewTagInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
+          placeholder="Tên nhãn tùy chỉnh..."
+          className="input-field w-64 text-sm"
+        />
+        <button
+          type="button"
+          onClick={addCustomTag}
+          className="btn-secondary text-sm"
+        >
+          + Thêm nhãn
+        </button>
+        {customTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <span className="text-xs text-steelgray self-center">Nhãn tùy chỉnh:</span>
+            {customTags.map((t) => (
+              <span key={t} className="tag-badge">
+                {t}
+                <button
+                  type="button"
+                  onClick={() => setCustomTags((prev) => prev.filter((x) => x !== t))}
+                  className="ml-1.5 text-warmwhite/60 hover:text-warmwhite"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Table */}
       <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
@@ -589,7 +658,7 @@ function OrdersTab({ orders }: { orders: Order[] }) {
 // ── Blog Tab ───────────────────────────────────────────────
 function BlogTab() {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ title: "", content: "" });
+  const [form, setForm] = useState({ title: "", content: "", category: "" });
   const [image, setImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [editing, setEditing] = useState<import("../../types").BlogPost | null>(null);
@@ -605,13 +674,14 @@ function BlogTab() {
     mutationFn: async () => {
       const fd = new FormData();
       fd.append("title", form.title); fd.append("content", form.content);
+      if (form.category.trim()) fd.append("category", form.category.trim());
       if (image) fd.append("image", image);
       return editing ? adminBlogApi.update(editing.id, fd) : adminBlogApi.create(fd);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-blog"] });
       queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
-      setForm({ title: "", content: "" }); setImage(null); setCoverPreview(null); setEditing(null); setError("");
+      setForm({ title: "", content: "", category: "" }); setImage(null); setCoverPreview(null); setEditing(null); setError("");
     },
     onError: (err: Error) => setError(err.message),
   });
@@ -656,6 +726,14 @@ function BlogTab() {
         <input required placeholder="Tiêu đề bài viết" value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           className="input-field text-lg font-semibold" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <input
+            placeholder="Danh mục (vd: tech, review, tips)"
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            className="input-field"
+          />
+        </div>
         <RichTextEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} />
         <div className="flex flex-wrap items-start gap-4">
           <div>
@@ -685,7 +763,7 @@ function BlogTab() {
             {saveMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật bài viết" : "Đăng bài viết"}
           </button>
           {editing && (
-            <button onClick={() => { setEditing(null); setForm({ title: "", content: "" }); setImage(null); setCoverPreview(null); }}
+            <button onClick={() => { setEditing(null); setForm({ title: "", content: "", category: "" }); setImage(null); setCoverPreview(null); }}
               className="btn-secondary">Hủy</button>
           )}
         </div>
@@ -704,6 +782,7 @@ function BlogTab() {
               <tr className="text-left text-steelgray">
                 <th className="px-4 py-3">Ảnh</th>
                 <th className="px-4 py-3">Tiêu đề</th>
+                <th className="px-4 py-3">Danh mục</th>
                 <th className="px-4 py-3">Slug</th>
                 <th className="px-4 py-3">Tác giả</th>
                 <th className="px-4 py-3">Thao tác</th>
@@ -716,11 +795,22 @@ function BlogTab() {
                     {post.image_url && <img src={post.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />}
                   </td>
                   <td className="px-4 py-3 font-medium text-warmwhite max-w-[200px] truncate">{post.title}</td>
+                  <td className="px-4 py-3">
+                    {post.category ? (
+                      <span className="tag-badge">{post.category}</span>
+                    ) : (
+                      <span className="text-steelgray text-xs">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs text-steelgray">{post.slug}</td>
                   <td className="px-4 py-3 text-softgray">{post.author_name}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-3">
-                      <button onClick={() => { setEditing(post); setForm({ title: post.title, content: post.content }); setImage(null); setCoverPreview(null); }}
+                      <button onClick={() => {
+                        setEditing(post);
+                        setForm({ title: post.title, content: post.content, category: post.category ?? "" });
+                        setImage(null); setCoverPreview(null);
+                      }}
                         className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
                       <button onClick={() => { if (confirm(`Xóa "${post.title}"?`)) deleteMutation.mutate(post.id); }}
                         className="text-sm text-deeprose hover:text-rose transition-colors">Xóa</button>

@@ -123,5 +123,6 @@ class BlogPost(Base):
     image_url: Mapped[str] = mapped_column(String(500), default="", nullable=False)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[str] = mapped_column(String(30), nullable=False)
+    category: Mapped[str] = mapped_column(String(100), default="", nullable=False)
 
     author: Mapped["User"] = relationship(back_populates=None)
