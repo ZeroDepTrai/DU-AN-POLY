@@ -1,6 +1,11 @@
+import logging
+import traceback
+
 import resend
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def send_verification_email(to_email: str, code: str) -> bool:
@@ -31,6 +36,7 @@ def send_verification_email(to_email: str, code: str) -> bool:
         )
         return True
     except Exception:
+        logger.error(f"Resend email error: {traceback.format_exc()}")
         return False
 
 
@@ -66,6 +72,7 @@ def send_order_notification(to_email: str, order_id: int, tracking_code: str, cu
         )
         return True
     except Exception:
+        logger.error(f"Resend email error: {traceback.format_exc()}")
         return False
 
 
