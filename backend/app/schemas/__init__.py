@@ -53,6 +53,25 @@ class ProductResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PaginatedProductsResponse(BaseModel):
+    products: list[ProductResponse]
+    total: int
+    page: int
+    limit: int
+    category: str
+    brand: str
+
+
+class CategoryBrandItem(BaseModel):
+    name: str
+    count: int
+
+
+class CategoryResponse(BaseModel):
+    phone: list[str]
+    accessory: list[str]
+
+
 class OrderItemCreate(BaseModel):
     product_id: int
     quantity: int = Field(ge=1)
@@ -62,6 +81,12 @@ class OrderCreate(BaseModel):
     delivery_address: str = Field(min_length=5)
     delivery_phone: str = Field(min_length=5, max_length=50)
     items: list[OrderItemCreate] = Field(min_length=1)
+    payment_method: str | None = Field(default="cod", pattern="^(cod|transfer|card)$")
+
+
+class ShippingUpdate(BaseModel):
+    delivery_address: str | None = Field(default=None, min_length=5)
+    delivery_phone: str | None = Field(default=None, min_length=5, max_length=50)
 
 
 class OrderItemResponse(BaseModel):
@@ -149,3 +174,26 @@ class AdminEmailResponse(BaseModel):
 
 class AdminEmailCreate(BaseModel):
     email: EmailStr
+
+
+# --- Driver schemas ---
+
+class DriverLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class DriverRegister(BaseModel):
+    email: EmailStr
+    name: str = Field(min_length=1, max_length=255)
+    phone: str = Field(min_length=5, max_length=20)
+    password: str = Field(min_length=6, max_length=128)
+
+
+class DriverResponse(BaseModel):
+    id: int
+    name: str
+    phone: str
+    is_active: bool
+
+    model_config = {"from_attributes": True}

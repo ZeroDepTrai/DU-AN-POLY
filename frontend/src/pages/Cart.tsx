@@ -17,37 +17,45 @@ export default function CartPage() {
         <h1 className="mb-2 text-2xl font-bold text-warmwhite">Giỏ hàng trống</h1>
         <p className="mb-8 text-steelgray">Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
         <Link to="/" className="btn-primary">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
           Tiếp tục mua sắm
         </Link>
       </div>
     );
   }
 
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-warmwhite">
-        <span className="text-crimson">Giỏ hàng</span> của bạn
-        <span className="ml-2 text-base font-normal text-steelgray">({items.length} sản phẩm)</span>
-      </h1>
+  const shipping = 0;
+  const tax = Math.round(totalPrice * 0.1);
+  const grand = totalPrice + shipping + tax;
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-3 lg:col-span-2">
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <div className="mb-8">
+        <div className="mb-1 flex items-center gap-2">
+          <div className="h-px w-8 bg-crimson" />
+          <span className="text-xs font-medium uppercase tracking-widest text-crimson">Giỏ hàng</span>
+        </div>
+        <h1 className="text-3xl font-extrabold text-warmwhite">
+          Giỏ hàng
+          <span className="ml-2 text-base font-normal text-steelgray">({items.length} sản phẩm)</span>
+        </h1>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Items */}
+        <div className="lg:col-span-2 space-y-3">
           {items.map((item) => (
             <div
               key={item.product.id}
-              className="flex gap-4 rounded-xl border border-gunmetal/60 bg-graphite p-4"
+              className="flex items-center gap-4 rounded-2xl border border-gunmetal/60 bg-graphite p-4"
             >
               <Link to={`/products/${item.product.id}`} className="shrink-0">
                 <img
                   src={item.product.image_url}
                   alt={item.product.name}
-                  className="h-24 w-24 rounded-lg object-cover"
+                  className="h-24 w-24 rounded-xl object-cover"
                 />
               </Link>
-              <div className="flex flex-1 flex-col justify-between">
+              <div className="flex flex-1 flex-col justify-between gap-2">
                 <div>
                   <Link
                     to={`/products/${item.product.id}`}
@@ -56,7 +64,7 @@ export default function CartPage() {
                     {item.product.name}
                   </Link>
                   <span className="ml-2 tag-badge text-xs">{item.product.tag}</span>
-                  <p className="mt-1 text-sm text-steelgray">
+                  <p className="mt-1 text-sm font-bold text-crimson">
                     {new Intl.NumberFormat("vi-VN").format(item.product.price)} VND
                   </p>
                 </div>
@@ -64,16 +72,16 @@ export default function CartPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-gunmetal/60 bg-charcoal text-warmwhite hover:bg-gunmetal transition-colors"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-gunmetal/60 bg-charcoal text-warmwhite hover:bg-gunmetal transition-colors text-lg font-light"
                     >
                       −
                     </button>
-                    <span className="w-8 text-center text-sm font-medium text-warmwhite">
+                    <span className="w-8 text-center text-sm font-semibold text-warmwhite">
                       {item.quantity}
                     </span>
                     <button
                       onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-gunmetal/60 bg-charcoal text-warmwhite hover:bg-gunmetal transition-colors"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-gunmetal/60 bg-charcoal text-warmwhite hover:bg-gunmetal transition-colors text-lg font-light"
                     >
                       +
                     </button>
@@ -99,10 +107,12 @@ export default function CartPage() {
           ))}
         </div>
 
-        <div className="lg:col-span-1">
-          <div className="sticky top-24 rounded-xl border border-gunmetal/60 bg-graphite p-6">
-            <h2 className="mb-4 font-bold text-warmwhite">Tổng cộng</h2>
-            <div className="mb-4 space-y-2">
+        {/* Summary */}
+        <div>
+          <div className="sticky top-24 rounded-2xl border border-gunmetal/60 bg-graphite p-6">
+            <h2 className="mb-4 text-lg font-bold text-warmwhite">Tóm tắt đơn hàng</h2>
+
+            <div className="mb-4 space-y-3">
               <div className="flex justify-between text-sm text-steelgray">
                 <span>Tạm tính</span>
                 <span>{new Intl.NumberFormat("vi-VN").format(totalPrice)} VND</span>
@@ -111,14 +121,20 @@ export default function CartPage() {
                 <span>Phí giao hàng</span>
                 <span className="text-crimson">Miễn phí</span>
               </div>
-              <div className="border-t border-gunmetal/40 pt-2" />
-              <div className="flex justify-between text-lg font-bold text-warmwhite">
-                <span>Tổng</span>
-                <span className="text-crimson">
-                  {new Intl.NumberFormat("vi-VN").format(totalPrice)} VND
-                </span>
+              <div className="flex justify-between text-sm text-steelgray">
+                <span>Thuế (VAT 10%)</span>
+                <span>{new Intl.NumberFormat("vi-VN").format(tax)} VND</span>
+              </div>
+              <div className="border-t border-gunmetal/40 pt-3">
+                <div className="flex justify-between text-base font-bold text-warmwhite">
+                  <span>Tổng cộng</span>
+                  <span className="text-crimson">
+                    {new Intl.NumberFormat("vi-VN").format(grand)} VND
+                  </span>
+                </div>
               </div>
             </div>
+
             <Link to="/checkout" className="btn-primary w-full py-3 text-base">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />

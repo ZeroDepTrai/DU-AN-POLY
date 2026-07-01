@@ -4,14 +4,50 @@ import { ordersApi } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 
+const PAYMENT_METHODS = [
+  {
+    id: "cod",
+    label: "Thẻ Tín dụng/Ghi nợ",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      </svg>
+    ),
+  },
+  {
+    id: "transfer",
+    label: "Ví điện tử (Apple Pay, Google Pay)",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  {
+    id: "installment",
+    label: "Thanh toán khi nhận hàng (COD)",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+  },
+];
+
 export default function Checkout() {
   const { items, clearCart, totalPrice } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
+  const [payment, setPayment] = useState("cod");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const shipping = 0;
+  const tax = Math.round(totalPrice * 0.1);
+  const grand = totalPrice + shipping + tax;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -45,37 +81,37 @@ export default function Checkout() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-warmwhite">Thanh toán đơn hàng</h1>
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <div className="mb-8">
+        <div className="mb-1 flex items-center gap-2">
+          <div className="h-px w-8 bg-crimson" />
+          <span className="text-xs font-medium uppercase tracking-widest text-crimson">Thanh toán</span>
+        </div>
+        <h1 className="text-3xl font-extrabold text-warmwhite">Phương thức thanh toán</h1>
         <p className="mt-1 text-sm text-steelgray">
-          {items.length} sản phẩm &mdash; Tổng: {new Intl.NumberFormat("vi-VN").format(totalPrice)} VND
+          {items.length} sản phẩm — Tổng: {new Intl.NumberFormat("vi-VN").format(grand)} VND
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <form onSubmit={handleSubmit} className="space-y-5 lg:col-span-3">
-          <div className="rounded-xl border border-gunmetal/60 bg-graphite p-6">
-            <h2 className="mb-4 flex items-center gap-2 font-bold text-warmwhite">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-crimson/10 text-crimson text-sm font-bold">1</div>
-              Địa chỉ giao hàng
-            </h2>
+      <div className="grid gap-8 lg:grid-cols-[760px_1fr]">
+        {/* Left: Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Shipping */}
+          <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-crimson/10 text-sm font-bold text-crimson">1</div>
+              <h2 className="text-lg font-bold text-warmwhite">Địa chỉ giao hàng</h2>
+            </div>
             <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-softgray">Họ và tên</label>
-                <input
-                  disabled
-                  value={user.name}
-                  className="input-field opacity-60"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-softgray">Email</label>
-                <input
-                  disabled
-                  value={user.email}
-                  className="input-field opacity-60"
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-softgray">Họ và tên</label>
+                  <input disabled value={user.name} className="input-field opacity-60" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-softgray">Email</label>
+                  <input disabled value={user.email} className="input-field opacity-60" />
+                </div>
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-softgray">Số điện thoại *</label>
@@ -101,23 +137,32 @@ export default function Checkout() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-gunmetal/60 bg-graphite p-6">
-            <h2 className="mb-4 flex items-center gap-2 font-bold text-warmwhite">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-crimson/10 text-crimson text-sm font-bold">2</div>
-              Phương thức thanh toán
-            </h2>
+          {/* Payment */}
+          <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-crimson/10 text-sm font-bold text-crimson">2</div>
+              <h2 className="text-lg font-bold text-warmwhite">Phương thức thanh toán</h2>
+            </div>
             <div className="space-y-2">
-              {[
-                "Thanh toán khi nhận hàng (COD)",
-                "Chuyển khoản ngân hàng",
-                "Trả góp 0% lãi suất",
-              ].map((opt) => (
+              {PAYMENT_METHODS.map((m) => (
                 <label
-                  key={opt}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-gunmetal/60 bg-charcoal p-3 text-sm transition-colors hover:border-silvergray/40"
+                  key={m.id}
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-colors ${
+                    payment === m.id
+                      ? "border-crimson bg-crimson/5"
+                      : "border-gunmetal/60 bg-charcoal hover:border-silvergray/40"
+                  }`}
                 >
-                  <input type="radio" name="payment" defaultChecked={opt === "Thanh toán khi nhận hàng (COD)"} className="accent-rose" />
-                  <span className="text-warmwhite">{opt}</span>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value={m.id}
+                    checked={payment === m.id}
+                    onChange={() => setPayment(m.id)}
+                    className="accent-rose"
+                  />
+                  <span className="text-warmwhite">{m.icon}</span>
+                  <span className="flex-1 text-sm font-medium text-warmwhite">{m.label}</span>
                 </label>
               ))}
             </div>
@@ -150,16 +195,18 @@ export default function Checkout() {
           </button>
         </form>
 
-        <div className="lg:col-span-2">
-          <div className="sticky top-24 rounded-xl border border-gunmetal/60 bg-graphite p-5">
-            <h3 className="mb-4 font-bold text-warmwhite">Đơn hàng của bạn</h3>
+        {/* Right: Summary */}
+        <div>
+          <div className="sticky top-24 rounded-2xl border border-gunmetal/60 bg-graphite p-6">
+            <h3 className="mb-4 text-lg font-bold text-warmwhite">Tóm tắt đơn hàng</h3>
+
             <div className="mb-4 space-y-3">
               {items.map((item) => (
                 <div key={item.product.id} className="flex items-center gap-3">
                   <img
                     src={item.product.image_url}
                     alt={item.product.name}
-                    className="h-12 w-12 rounded-lg object-cover"
+                    className="h-14 w-14 rounded-xl object-cover"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="truncate text-sm font-medium text-warmwhite">{item.product.name}</p>
@@ -171,7 +218,8 @@ export default function Checkout() {
                 </div>
               ))}
             </div>
-            <div className="border-t border-gunmetal/40 pt-3 space-y-2">
+
+            <div className="border-t border-gunmetal/40 pt-4 space-y-2">
               <div className="flex justify-between text-sm text-steelgray">
                 <span>Tạm tính</span>
                 <span>{new Intl.NumberFormat("vi-VN").format(totalPrice)} VND</span>
@@ -180,10 +228,23 @@ export default function Checkout() {
                 <span>Phí giao hàng</span>
                 <span className="text-crimson">Miễn phí</span>
               </div>
-              <div className="flex justify-between text-lg font-bold text-warmwhite">
-                <span>Tổng cộng</span>
-                <span className="text-crimson">{new Intl.NumberFormat("vi-VN").format(totalPrice)} VND</span>
+              <div className="flex justify-between text-sm text-steelgray">
+                <span>Thuế (VAT 10%)</span>
+                <span>{new Intl.NumberFormat("vi-VN").format(tax)} VND</span>
               </div>
+              <div className="flex justify-between border-t border-gunmetal/40 pt-3 text-lg font-bold text-warmwhite">
+                <span>Tổng cộng</span>
+                <span className="text-crimson">
+                  {new Intl.NumberFormat("vi-VN").format(grand)} VND
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2 text-xs text-steelgray">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Thanh toán an toàn & bảo mật
             </div>
           </div>
         </div>

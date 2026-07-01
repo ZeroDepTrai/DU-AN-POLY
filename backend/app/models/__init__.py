@@ -10,6 +10,7 @@ from app.database import Base
 class UserRole(str, enum.Enum):
     customer = "customer"
     admin = "admin"
+    driver = "driver"
 
 
 class OrderStatus(str, enum.Enum):
@@ -32,6 +33,19 @@ class User(Base):
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
 
 
+class Driver(Base):
+    __tablename__ = "drivers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates=None)
+    orders: Mapped[list["Order"]] = relationship(back_populates="driver")
+
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -51,6 +65,7 @@ class Order(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    driver_id: Mapped[int | None] = mapped_column(ForeignKey("drivers.id"), nullable=True, index=True)
     status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.pending, nullable=False)
     delivery_address: Mapped[str] = mapped_column(Text, nullable=False)
     delivery_phone: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -61,6 +76,7 @@ class Order(Base):
     tracking_code: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="orders")
+    driver: Mapped["Driver"] = relationship(back_populates="orders")
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
 
 

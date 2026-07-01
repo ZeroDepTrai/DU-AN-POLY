@@ -28,7 +28,17 @@ export const authApi = {
 export const productsApi = {
   list: (tag?: string) =>
     api.get<Product[]>("/api/products", { params: tag ? { tag } : undefined }),
+  search: (params?: { tag?: string; brand?: string; sort?: string; page?: number; limit?: number; search?: string }) =>
+    api.get<{ products: Product[]; total: number; page: number; limit: number; category: string; brand: string }>(
+      "/api/products/search", { params }
+    ),
   get: (id: number) => api.get<Product>(`/api/products/${id}`),
+  getRelated: (id: number, limit = 4) =>
+    api.get<Product[]>(`/api/products/${id}/related`, { params: { limit } }),
+};
+
+export const categoriesApi = {
+  get: () => api.get<{ phone: string[]; accessory: string[] }>("/api/categories"),
 };
 
 export const ordersApi = {
@@ -36,8 +46,13 @@ export const ordersApi = {
     delivery_address: string;
     delivery_phone: string;
     items: { product_id: number; quantity: number }[];
+    payment_method?: string;
   }) => api.post<Order>("/api/orders", data),
   track: (trackingCode: string) => api.get<Order>(`/api/orders/track/${trackingCode}`),
+  updateShipping: (
+    orderId: number,
+    data: { delivery_address?: string; delivery_phone?: string }
+  ) => api.patch<Order>(`/api/orders/${orderId}/shipping`, data),
 };
 
 export const adminApi = {
