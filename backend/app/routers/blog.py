@@ -9,10 +9,11 @@ from app.database import get_db
 from app.deps import require_admin
 from app.models import BlogPost, User
 from app.schemas import BlogPostCreate, BlogPostListResponse, BlogPostResponse
+from app.config import settings
 
 router = APIRouter(prefix="/api", tags=["blog"])
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
+UPLOAD_DIR = Path(settings.upload_dir)
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
