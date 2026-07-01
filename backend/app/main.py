@@ -60,28 +60,33 @@ async def lifespan(app: FastAPI):
                 else:
                     logger.warning("[MIGRATION] Neither products.tag nor products.tags found in products table")
 
-            # Rename blog_posts.category -> blog_posts.tags if it exists
-            result3 = db.execute(
+            # Ensure blog_posts has tags column
+            blog_tags_exists = db.execute(
                 text(
                     "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='category'"
+                    "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='tags'"
                 )
             ).fetchone()
-            if result3:
-                db.execute(text("ALTER TABLE blog_posts RENAME COLUMN category TO tags"))
-                db.commit()
-                logger.warning("[MIGRATION] Renamed blog_posts.category -> blog_posts.tags")
-            else:
-                result4 = db.execute(
+            if not blog_tags_exists:
+                # Check if old category column exists to copy data from
+                old_cat = db.execute(
                     text(
                         "SELECT column_name FROM information_schema.columns "
-                        "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='tags'"
+                        "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='category'"
                     )
                 ).fetchone()
-                if result4:
-                    logger.warning("[MIGRATION] blog_posts.tags already exists, skipping")
+                if old_cat:
+                    db.execute(text("ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS tags TEXT DEFAULT ''"))
+                    db.execute(text("UPDATE blog_posts SET tags = category WHERE tags = '' OR tags IS NULL"))
+                    db.commit()
+                    logger.warning("[MIGRATION] Added tags column to blog_posts and migrated from category")
                 else:
-                    logger.warning("[MIGRATION] Neither blog_posts.category nor blog_posts.tags found in blog_posts table")
+                    # No tags, no category — just add empty tags column
+                    db.execute(text("ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS tags TEXT DEFAULT ''"))
+                    db.commit()
+                    logger.warning("[MIGRATION] Added empty tags column to blog_posts")
+            else:
+                logger.warning("[MIGRATION] blog_posts.tags already exists, skipping")
         except Exception as e:
             logger.warning(f"[MIGRATION] Error during column rename: {e}")
 
