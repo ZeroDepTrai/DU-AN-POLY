@@ -27,8 +27,8 @@ export default function Footer() {
             <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-warmwhite">Sản phẩm</h4>
             <ul className="space-y-3">
               {[
-                { label: "Điện thoại", to: "/products" },
-                { label: "Phụ kiện", to: "/accessories" },
+                { label: "Smartphones", to: "/products" },
+                { label: "Accessories", to: "/accessories" },
               ].map((item) => (
                 <li key={item.to}>
                   <Link to={item.to} className="text-sm text-steelgray transition-colors hover:text-crimson">
@@ -44,9 +44,8 @@ export default function Footer() {
             <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-warmwhite">Hỗ trợ</h4>
             <ul className="space-y-3">
               {[
-                { label: "Liên hệ", to: "/#contact" },
-                { label: "Chính sách đổi trả", to: "/#policies" },
-                { label: "Câu hỏi thường gặp", to: "/#faq" },
+                { label: "Support", to: "/#contact" },
+                { label: "Contact Us", to: "/#contact" },
               ].map((item) => (
                 <li key={item.label}>
                   <Link to={item.to} className="text-sm text-steelgray transition-colors hover:text-crimson">
@@ -62,8 +61,8 @@ export default function Footer() {
             <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-warmwhite">Pháp lý</h4>
             <ul className="space-y-3">
               {[
-                { label: "Chính sách bảo mật", to: "/privacy" },
-                { label: "Điều khoản sử dụng", to: "/terms" },
+                { label: "Privacy Policy", to: "/privacy" },
+                { label: "Terms of Service", to: "/terms" },
               ].map((item) => (
                 <li key={item.label}>
                   <Link to={item.to} className="text-sm text-steelgray transition-colors hover:text-crimson">
@@ -77,7 +76,7 @@ export default function Footer() {
 
         <div className="mt-10 border-t border-gunmetal/40 pt-6 text-center">
           <p className="text-sm text-steelgray">
-            &copy; 2026 CellZone. All rights reserved.
+            &copy; 2026 CellZone Tech. All rights reserved.
           </p>
         </div>
       </div>
