@@ -1,6 +1,6 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
+import ImageResize from "tiptap-extension-resize-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useCallback } from "react";
 
@@ -18,7 +18,7 @@ export default function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Image.configure({
+      ImageResize.configure({
         inline: false,
         allowBase64: true,
         HTMLAttributes: {
@@ -251,8 +251,11 @@ export default function RichTextEditor({
           border-radius: 8px;
           margin: 1em auto;
           display: block;
-          cursor: nwse-resize;
-          resize: both;
+        }
+        .tiptap .image-resizer {
+          display: block;
+          border-radius: 8px;
+          margin: 1em auto;
         }
         .tiptap p.is-editor-empty:first-child::before {
           color: #8A858A;
