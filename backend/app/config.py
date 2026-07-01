@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     admin_email: str = "admin@phone-store.com"
     admin_password: str = "admin123"
     cors_origins: str = "http://localhost:5173"
+    upload_dir: str = "/data/uploads"
 
     @property
     def cors_origin_list(self) -> list[str]:

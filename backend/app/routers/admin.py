@@ -14,7 +14,7 @@ from app.websocket import manager
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
+UPLOAD_DIR = Path(settings.upload_dir)
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024
 

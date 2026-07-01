@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # This matches what uvicorn app.main:app expects when WORKDIR is /app.
 COPY backend/ .
 
-RUN mkdir -p /app/uploads
+RUN mkdir -p /data/uploads
 
 EXPOSE 8000
 
