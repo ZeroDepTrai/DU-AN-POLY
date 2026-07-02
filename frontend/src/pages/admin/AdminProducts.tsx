@@ -1,7 +1,9 @@
+import axios from "axios";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "../../api/client";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import RichTextEditor from "../../components/RichTextEditor";
 import type { Product } from "../../types";
 
 const TAG_PRESETS = [
@@ -9,7 +11,31 @@ const TAG_PRESETS = [
   "Flagship", "Budget", "5G", "Gaming", "Featured", "Accessory",
 ];
 
-const emptyForm = { name: "", price: "", tags: "", description: "", stock: "10" };
+const SPEC_FIELDS = [
+  "Hệ điều hành",
+  "Chipset",
+  "Bộ nhớ trong",
+  "Loại CPU",
+  "GPU",
+  "Kích thước màn hình",
+  "Công nghệ màn hình",
+  "Độ phân giải màn hình",
+  "Camera Sau",
+  "Camera trước",
+  "Hỗ trợ mạng",
+  "Thẻ SIM",
+  "Công nghệ NFC",
+  "Thời điểm ra mắt",
+];
+
+const emptyForm = {
+  name: "",
+  price: "",
+  tags: "",
+  description: "",
+  specifications: {} as Record<string, string>,
+  stock: "10",
+};
 const emptyQuickForm = { name: "", price: "", tags: "" };
 
 export default function AdminProducts() {
@@ -23,6 +49,7 @@ export default function AdminProducts() {
   const [error, setError] = useState("");
   const [quickTagChips, setQuickTagChips] = useState<string[]>([]);
   const [fullTagChips, setFullTagChips] = useState<string[]>([]);
+  const [importing, setImporting] = useState(false);
 
   const toggleTag = (tag: string, chips: string[], setChips: React.Dispatch<React.SetStateAction<string[]>>) => {
     const t = tag.trim().toLowerCase();
@@ -31,6 +58,34 @@ export default function AdminProducts() {
     } else {
       setChips([...chips, t]);
     }
+  };
+
+  const buildSpecsString = (specs: Record<string, string>) => {
+    return SPEC_FIELDS
+      .map((label) => {
+        const val = specs[label]?.trim();
+        return val ? `${label}: ${val}` : "";
+      })
+      .filter(Boolean)
+      .join("\n");
+  };
+
+  const parseSpecsString = (specsStr: string): Record<string, string> => {
+    const result: Record<string, string> = {};
+    const lines = specsStr.split("\n").map((l) => l.trim()).filter(Boolean);
+    for (const label of SPEC_FIELDS) {
+      for (const line of lines) {
+        if (line.toLowerCase().startsWith(label.toLowerCase() + ":") ||
+            line.toLowerCase().startsWith(label.toLowerCase() + " –") ||
+            line.toLowerCase().startsWith(label.toLowerCase() + " -")) {
+          const parts = line.split(/[:–—]/);
+          if (parts.length >= 2) {
+            result[label] = parts.slice(1).join(":").trim();
+          }
+        }
+      }
+    }
+    return result;
   };
 
   const { data: products = [], isLoading } = useQuery({
@@ -48,6 +103,7 @@ export default function AdminProducts() {
       formData.append("price", form.price);
       formData.append("tags", fullTagChips.join(","));
       formData.append("description", form.description);
+      formData.append("specifications", buildSpecsString(form.specifications));
       formData.append("stock", form.stock);
       if (image) formData.append("image", image);
       else if (!editing) throw new Error("Hình ảnh bắt buộc cho sản phẩm mới");
@@ -56,6 +112,7 @@ export default function AdminProducts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product"] });
       setForm(emptyForm); setImage(null); setEditing(null); setError("");
       setTab("quick"); setFullTagChips([]);
     },
@@ -90,8 +147,43 @@ export default function AdminProducts() {
     setEditing(p); setTab("full");
     const chips = p.tags ? p.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
     setFullTagChips(chips);
-    setForm({ name: p.name, price: String(p.price), tags: p.tags, description: p.description, stock: String(p.stock) });
+    const specs = p.specifications ? parseSpecsString(p.specifications) : {};
+    setForm({
+      name: p.name,
+      price: String(p.price),
+      tags: p.tags,
+      description: p.description,
+      specifications: specs,
+      stock: String(p.stock),
+    });
     setImage(null);
+  };
+
+  const handleImportDocx = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setError("");
+    try {
+      const { data } = await adminApi.importDocx(file);
+      setForm((prev) => ({ ...prev, description: data.html || prev.description }));
+    } catch (err: unknown) {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.detail
+          ? err.response.data.detail
+          : "Nhập file DOCX thất bại. Vui lòng kiểm tra định dạng file.";
+      setError(String(msg));
+    } finally {
+      setImporting(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleSpecChange = (label: string, value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      specifications: { ...prev.specifications, [label]: value },
+    }));
   };
 
   if (isLoading) return <LoadingSpinner label="Đang tải sản phẩm..." />;
@@ -172,12 +264,14 @@ export default function AdminProducts() {
 
       {tab === "full" && (
         <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }}
-          className="mb-8 space-y-4 rounded-xl border border-gunmetal/60 bg-graphite p-6">
+          className="mb-8 space-y-6 rounded-xl border border-gunmetal/60 bg-graphite p-6">
           <h2 className="text-base font-bold text-warmwhite">
             {editing ? `Sửa: ${editing.name}` : "Thêm sản phẩm đầy đủ"}
           </h2>
+
+          {/* Name, Price, Stock */}
           <div className="grid gap-4 md:grid-cols-2">
-            <input required placeholder="Tên" value={form.name}
+            <input required placeholder="Tên sản phẩm" value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" />
             <input required type="number" step="1000" placeholder="Giá (VND)" value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })} className="input-field" />
@@ -197,9 +291,57 @@ export default function AdminProducts() {
               </div>
             </div>
           </div>
-          <textarea placeholder="Mô tả sản phẩm" value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="input-field resize-none" rows={3} />
+
+          {/* Description — Rich text editor + DOCX import */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm text-steelgray font-medium">Mô tả sản phẩm (hỗ trợ DOCX)</label>
+              <label className="btn-secondary cursor-pointer text-xs py-1.5 px-3">
+                <input
+                  type="file"
+                  accept=".docx"
+                  className="hidden"
+                  onChange={handleImportDocx}
+                  disabled={importing}
+                />
+                {importing ? (
+                  <span className="flex items-center gap-1">
+                    <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Đang nhập...
+                  </span>
+                ) : "Nhập từ DOCX"}
+              </label>
+            </div>
+            <RichTextEditor
+              value={form.description}
+              onChange={(html) => setForm((prev) => ({ ...prev, description: html }))}
+              placeholder="Nhập mô tả sản phẩm... Hỗ trợ in đậm, in nghiêng, tiêu đề, danh sách, ảnh..."
+            />
+          </div>
+
+          {/* Specifications */}
+          <div>
+            <label className="block text-sm text-steelgray font-medium mb-3">Thông số kỹ thuật</label>
+            <div className="grid gap-3 md:grid-cols-2">
+              {SPEC_FIELDS.map((label) => (
+                <div key={label} className="flex items-center gap-2">
+                  <label className="text-sm text-steelgray w-48 shrink-0">{label}</label>
+                  <input
+                    type="text"
+                    value={form.specifications[label] || ""}
+                    onChange={(e) => handleSpecChange(label, e.target.value)}
+                    placeholder="—"
+                    className="input-field flex-1"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Image */}
           <div>
             <label className="mb-1.5 block text-sm text-steelgray">
               Hình ảnh {editing ? "(bỏ trống để giữ hình cũ)" : ""}
@@ -207,7 +349,11 @@ export default function AdminProducts() {
             <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)}
               className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite" />
           </div>
-          {error && <p className="text-sm text-rose">{error}</p>}
+
+          {error && (
+            <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">{error}</div>
+          )}
+
           <div className="flex gap-3">
             <button type="submit" disabled={saveMutation.isPending} className="btn-primary">
               {saveMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm sản phẩm"}

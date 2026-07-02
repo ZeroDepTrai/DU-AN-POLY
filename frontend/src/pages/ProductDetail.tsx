@@ -4,6 +4,65 @@ import { productsApi } from "../api/client";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useCart } from "../context/CartContext";
 
+const SPEC_LABELS: Record<string, string> = {
+  "Hệ điều hành": "os",
+  "Chipset": "chipset",
+  "Bộ nhớ trong": "ram",
+  "Loại CPU": "cpu_type",
+  "GPU": "gpu",
+  "Kích thước màn hình": "screen_size",
+  "Công nghệ màn hình": "screen_tech",
+  "Độ phân giải màn hình": "screen_res",
+  "Camera Sau": "cam_back",
+  "Camera trước": "cam_front",
+  "Hỗ trợ mạng": "network",
+  "Thẻ SIM": "sim",
+  "Công nghệ NFC": "nfc",
+  "Thời điểm ra mắt": "launch",
+};
+
+function parseSpecValue(specs: string, key: string): string {
+  const lines = specs.split("\n").map((l) => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    if (line.toLowerCase().includes(key.toLowerCase())) {
+      const parts = line.split(/[:–—]/);
+      if (parts.length >= 2) {
+        return parts.slice(1).join(":").trim();
+      }
+    }
+  }
+  return "";
+}
+
+function SpecsTable({ specs }: { specs: string }) {
+  if (!specs) return null;
+
+  const rows = Object.entries(SPEC_LABELS).map(([label, key]) => {
+    const value = parseSpecValue(specs, key);
+    return { label, value };
+  }).filter((r) => r.value);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="mt-10">
+      <h2 className="text-xl font-extrabold text-warmwhite mb-4">Thông số kỹ thuật</h2>
+      <div className="rounded-xl border border-gunmetal/60 bg-graphite overflow-hidden">
+        <table className="w-full text-sm">
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={row.label} className={`border-t border-gunmetal/40 ${i % 2 === 0 ? "bg-charcoal/30" : ""}`}>
+                <td className="px-4 py-3 text-steelgray font-medium w-1/2">{row.label}</td>
+                <td className="px-4 py-3 text-warmwhite">{row.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function ProductDetail() {
   const { id } = useParams();
   const { addItem } = useCart();
@@ -47,7 +106,8 @@ export default function ProductDetail() {
         <span className="text-warmwhite">{product.name}</span>
       </div>
 
-      <div className="grid gap-10 lg:grid-cols-2">
+      {/* Top section: image + info side by side */}
+      <div className="grid gap-10 lg:grid-cols-2 mb-10">
         <div className="overflow-hidden rounded-2xl border border-gunmetal/60 bg-graphite">
           <div className="aspect-square overflow-hidden">
             <img
@@ -99,13 +159,6 @@ export default function ProductDetail() {
             )}
           </div>
 
-          <div className="mb-8">
-            <h3 className="mb-2 font-semibold text-warmwhite">Mô tả sản phẩm</h3>
-            <p className="text-sm leading-relaxed text-softgray">
-              {product.description || "Chưa có mô tả cho sản phẩm này."}
-            </p>
-          </div>
-
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
               onClick={() => addItem(product)}
@@ -142,6 +195,62 @@ export default function ProductDetail() {
           </div>
         </div>
       </div>
+
+      {/* Below-image section: Description + Specifications */}
+      <div className="mt-4 space-y-8">
+        {/* Product Description — rich HTML like blog */}
+        {(product.description || product.description !== "") && (
+          <div>
+            <h2 className="text-xl font-extrabold text-warmwhite mb-4">Mô tả sản phẩm</h2>
+            <div
+              className="prose-product max-w-none"
+              dangerouslySetInnerHTML={{ __html: product.description || "" }}
+            />
+          </div>
+        )}
+
+        {/* Specifications */}
+        <SpecsTable specs={product.specifications || ""} />
+      </div>
+
+      {/* Blog content styles */}
+      <style>{`
+        .prose-product h2 { font-size: 1.5rem; font-weight: 700; color: #EEE7E8; margin: 1.5em 0 0.75em; }
+        .prose-product h3 { font-size: 1.2rem; font-weight: 600; color: #EEE7E8; margin: 1.25em 0 0.5em; }
+        .prose-product p { color: #C9C4C6; margin: 1em 0; line-height: 1.75; }
+        .prose-product ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; color: #C9C4C6; }
+        .prose-product ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; color: #C9C4C6; }
+        .prose-product li { margin: 0.4em 0; }
+        .prose-product blockquote {
+          border-left: 4px solid #D94A63;
+          padding-left: 1em;
+          color: #C9C4C6;
+          margin: 1.5em 0;
+          font-style: italic;
+        }
+        .prose-product code {
+          background: #353039;
+          padding: 0.15em 0.4em;
+          border-radius: 4px;
+          font-size: 0.875em;
+          font-family: monospace;
+          color: #F28CA6;
+        }
+        .prose-product pre {
+          background: #353039;
+          padding: 1.25em;
+          border-radius: 8px;
+          overflow-x: auto;
+          margin: 1.5em 0;
+        }
+        .prose-product pre code { background: none; padding: 0; color: #C9C4C6; }
+        .prose-product img {
+          max-width: 100%;
+          border-radius: 12px;
+          margin: 1.5em auto;
+          display: block;
+        }
+      `}</style>
     </div>
   );
 }

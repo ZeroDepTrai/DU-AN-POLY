@@ -70,6 +70,13 @@ export const adminApi = {
       headers: { "Content-Type": "multipart/form-data" },
     }),
   deleteProduct: (id: number) => api.delete(`/api/admin/products/${id}`),
+  importDocx: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post<{ html: string; cover_image_url: string }>("/api/admin/products/import", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
   listOrders: () => api.get<Order[]>("/api/admin/orders"),
   updateLocation: (
     id: number,
