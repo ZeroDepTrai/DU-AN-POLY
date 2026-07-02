@@ -86,12 +86,12 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-gunmetal/40 bg-graphite md:flex">
         <div className="flex h-16 items-center gap-2 border-b border-gunmetal/40 px-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-crimson">
+          <a href="/" className="flex h-8 w-8 items-center justify-center rounded-lg bg-crimson">
             <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
-          </div>
-          <span className="font-bold text-warmwhite">CellZone</span>
+          </a>
+          <a href="/" className="font-bold text-warmwhite hover:text-sakura transition-colors">CellZone</a>
           <span className="ml-auto rounded-full bg-crimson/10 px-2 py-0.5 text-xs font-semibold text-crimson">Admin</span>
         </div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">

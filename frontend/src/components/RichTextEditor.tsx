@@ -46,9 +46,9 @@ const YouTube = Node.create({
 
   addNodeView() {
     return ReactNodeViewRenderer(
-      ({ node }) => (
+      ({ node, deleteNode, updateAttributes }) => (
         <NodeViewWrapper>
-          <div className="video-wrapper" style={{ margin: "1.5em 0" }}>
+          <div className="video-wrapper relative group" style={{ margin: "1.5em 0" }}>
             <iframe
               src={node.attrs.src}
               title={node.attrs.title || "Video"}
@@ -58,8 +58,35 @@ const YouTube = Node.create({
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               loading="lazy"
-              style={{ width: "100%", borderRadius: "12px", display: "block" }}
+              style={{ width: node.attrs.width || "100%", height: node.attrs.height || 400, borderRadius: "12px", display: "block" }}
             />
+            {/* Control bar */}
+            <div className="video-controls absolute bottom-2 left-2 right-2 flex items-center justify-between rounded-lg bg-black/70 px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1">
+                {(["560", "840", "100%"] as const).map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => updateAttributes({ width: w, height: w === "100%" ? "400" : w === "840" ? "473" : "315" })}
+                    className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                      node.attrs.width === w ? "bg-crimson text-white" : "bg-gunmetal/60 text-steelgray hover:text-warmwhite"
+                    }`}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={deleteNode}
+                className="flex h-7 w-7 items-center justify-center rounded-md bg-deeprose/60 text-rose hover:bg-deeprose transition-colors"
+                title="Xóa video"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
           </div>
         </NodeViewWrapper>
       ),
@@ -96,15 +123,42 @@ const LocalVideo = Node.create({
 
   addNodeView() {
     return ReactNodeViewRenderer(
-      ({ node }) => (
+      ({ node, deleteNode, updateAttributes }) => (
         <NodeViewWrapper>
-          <div className="video-wrapper" style={{ margin: "1.5em 0" }}>
+          <div className="video-wrapper relative group" style={{ margin: "1.5em 0" }}>
             <video
               src={node.attrs.src}
               poster={node.attrs.poster}
               controls
-              style={{ width: "100%", borderRadius: "12px", display: "block" }}
+              style={{ width: node.attrs.width || "100%", borderRadius: "12px", display: "block" }}
             />
+            {/* Control bar */}
+            <div className="video-controls absolute bottom-2 left-2 right-2 flex items-center justify-between rounded-lg bg-black/70 px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1">
+                {(["480", "720", "100%"] as const).map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => updateAttributes({ width: w })}
+                    className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                      node.attrs.width === w ? "bg-crimson text-white" : "bg-gunmetal/60 text-steelgray hover:text-warmwhite"
+                    }`}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={deleteNode}
+                className="flex h-7 w-7 items-center justify-center rounded-md bg-deeprose/60 text-rose hover:bg-deeprose transition-colors"
+                title="Xóa video"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
           </div>
         </NodeViewWrapper>
       ),

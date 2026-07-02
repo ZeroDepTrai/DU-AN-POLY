@@ -25,6 +25,7 @@ from app.websocket import manager
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
+UPLOAD_DIR = Path(settings.upload_dir)
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".avi"}
 IMAGE_MAX_SIZE = 5 * 1024 * 1024
