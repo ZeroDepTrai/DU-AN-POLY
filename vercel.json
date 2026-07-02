@@ -1,0 +1,27 @@
+{
+  "rootDirectory": "frontend",
+  "projects": [
+    {
+      "path": "frontend",
+      "framework": "vite",
+      "buildCommand": "npm install && npm run build",
+      "devCommand": "npm run dev",
+      "installCommand": "npm install",
+      "outputDirectory": "dist"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://du-an-poly-production.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/uploads/:file*",
+      "destination": "https://du-an-poly-production.up.railway.app/uploads/:file*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
