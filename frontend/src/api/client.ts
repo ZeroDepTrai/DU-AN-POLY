@@ -77,6 +77,13 @@ export const adminApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+  uploadMedia: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post<{ url: string }>("/api/admin/upload/media", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
   listOrders: () => api.get<Order[]>("/api/admin/orders"),
   updateLocation: (
     id: number,

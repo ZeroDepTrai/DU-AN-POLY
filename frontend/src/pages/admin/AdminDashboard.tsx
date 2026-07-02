@@ -242,53 +242,107 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
 }
 
 // ── Products Tab ──────────────────────────────────────────
+const TAG_PRESETS = [
+  "iPhone", "Android", "Samsung", "Xiaomi", "OPPO",
+  "Flagship", "Budget", "5G", "Gaming", "Featured", "Accessory",
+];
+
+const SPEC_LABELS = [
+  "Hệ điều hành",
+  "Chipset",
+  "Bộ nhớ trong",
+  "Loại CPU",
+  "GPU",
+  "Kích thước màn hình",
+  "Công nghệ màn hình",
+  "Độ phân giải màn hình",
+  "Camera Sau",
+  "Camera trước",
+  "Hỗ trợ mạng",
+  "Thẻ SIM",
+  "Công nghệ NFC",
+  "Thời điểm ra mắt",
+];
+
+const EMPTY_FORM = {
+  name: "",
+  price: "",
+  tags: "",
+  description: "",
+  specifications: {} as Record<string, string>,
+  stock: "10",
+};
+
 function ProductsTab({ products }: { products: Product[] }) {
   const queryClient = useQueryClient();
+
+  // ── State ──────────────────────────────────────────────
   const [formTab, setFormTab] = useState<"quick" | "full">("quick");
-  const [quickForm, setQuickForm] = useState({ name: "", price: "", tags: "" });
-  const [fullForm, setFullForm] = useState({ name: "", price: "", tags: "", description: "", stock: "10" });
-  const [quickImage, setQuickImage] = useState<File | null>(null);
-  const [fullImage, setFullImage] = useState<File | null>(null);
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [customTags, setCustomTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
+
+  // Quick form
+  const [quickForm, setQuickForm] = useState({ name: "", price: "" });
+  const [quickImage, setQuickImage] = useState<File | null>(null);
   const [quickTagChips, setQuickTagChips] = useState<string[]>([]);
+
+  // Full form
+  const [fullForm, setFullForm] = useState(EMPTY_FORM);
+  const [fullImage, setFullImage] = useState<File | null>(null);
   const [fullTagChips, setFullTagChips] = useState<string[]>([]);
+  const [importing, setImporting] = useState(false);
 
-  const allPresets = ["iPhone", "Android", "Samsung", "Xiaomi", "Flagship", "Budget", "5G", "Gaming", "Featured", "Accessory"];
-  const allTags = [...allPresets, ...customTags];
+  // ── Spec helpers ───────────────────────────────────────
+  const buildSpecsStr = (specs: Record<string, string>) =>
+    SPEC_LABELS
+      .map((l) => {
+        const v = specs[l]?.trim();
+        return v ? `${l}: ${v}` : "";
+      })
+      .filter(Boolean)
+      .join("\n");
 
-  const addCustomTag = () => {
-    const trimmed = tagInput.trim();
-    if (trimmed && !allTags.includes(trimmed)) {
-      setCustomTags((prev) => [...prev, trimmed]);
+  const parseSpecsStr = (str: string): Record<string, string> => {
+    const result: Record<string, string> = {};
+    for (const label of SPEC_LABELS) {
+      const lines = str.split("\n");
+      for (const line of lines) {
+        const lower = line.toLowerCase();
+        const pat = label.toLowerCase();
+        if (
+          lower.startsWith(pat + ":") ||
+          lower.startsWith(pat + " –") ||
+          lower.startsWith(pat + " -")
+        ) {
+          const parts = line.split(/[:–—]/);
+          if (parts.length >= 2) {
+            result[label] = parts.slice(1).join(":").trim();
+          }
+        }
+      }
     }
-    setTagInput("");
+    return result;
   };
 
-  const addTagToForms = (tag: string) => {
-    if (!quickTagChips.includes(tag)) setQuickTagChips((p) => [...p, tag]);
-    if (!fullTagChips.includes(tag)) setFullTagChips((p) => [...p, tag]);
-  };
-
-  const filtered = products.filter((p) =>
-    !search || p.name.toLowerCase().includes(search.toLowerCase())
-  );
-
+  // ── Mutations ───────────────────────────────────────────
   const quickMutation = useMutation({
     mutationFn: async () => {
       if (!quickImage) throw new Error("Hình ảnh bắt buộc");
       const fd = new FormData();
-      fd.append("name", quickForm.name); fd.append("price", quickForm.price);
-      fd.append("tags", quickTagChips.join(",")); fd.append("image", quickImage);
+      fd.append("name", quickForm.name);
+      fd.append("price", quickForm.price);
+      fd.append("tags", quickTagChips.join(","));
+      fd.append("image", quickImage);
       return adminApi.quickAddProduct(fd);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      setQuickForm({ name: "", price: "", tags: "" }); setQuickTagChips([]); setQuickImage(null);
+      setQuickForm({ name: "", price: "" });
+      setQuickTagChips([]);
+      setQuickImage(null);
+      setError("");
     },
     onError: (err: Error) => setError(err.message),
   });
@@ -296,8 +350,11 @@ function ProductsTab({ products }: { products: Product[] }) {
   const fullMutation = useMutation({
     mutationFn: async () => {
       const fd = new FormData();
-      fd.append("name", fullForm.name); fd.append("price", fullForm.price);
-      fd.append("tags", fullTagChips.join(",")); fd.append("description", fullForm.description);
+      fd.append("name", fullForm.name);
+      fd.append("price", fullForm.price);
+      fd.append("tags", fullTagChips.join(","));
+      fd.append("description", fullForm.description);
+      fd.append("specifications", buildSpecsStr(fullForm.specifications));
       fd.append("stock", fullForm.stock);
       if (fullImage) fd.append("image", fullImage);
       return editing ? adminApi.updateProduct(editing.id, fd) : adminApi.createProduct(fd);
@@ -306,7 +363,7 @@ function ProductsTab({ products }: { products: Product[] }) {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setEditing(null);
-      setFullForm({ name: "", price: "", tags: "", description: "", stock: "10" });
+      setFullForm(EMPTY_FORM);
       setFullTagChips([]);
       setFullImage(null);
       setFormTab("quick");
@@ -323,101 +380,165 @@ function ProductsTab({ products }: { products: Product[] }) {
     },
   });
 
+  // ── Handlers ──────────────────────────────────────────
   const startEdit = (p: Product) => {
-    setEditing(p); setFormTab("full");
-    const existingChips = p.tags ? p.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
-    setFullTagChips(existingChips);
-    setFullForm({ name: p.name, price: String(p.price), tags: p.tags, description: p.description, stock: String(p.stock) });
+    setEditing(p);
+    setFormTab("full");
+    const chips = p.tags
+      ? p.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+      : [];
+    setFullTagChips(chips);
+    setFullForm({
+      name: p.name,
+      price: String(p.price),
+      tags: p.tags,
+      description: p.description,
+      specifications: p.specifications ? parseSpecsStr(p.specifications) : {},
+      stock: String(p.stock),
+    });
     setFullImage(null);
   };
 
+  const cancelEdit = () => {
+    setEditing(null);
+    setFullForm(EMPTY_FORM);
+    setFullTagChips([]);
+    setFullImage(null);
+    setFormTab("quick");
+    setError("");
+  };
+
+  const handleImportDocx = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setError("");
+    try {
+      const { data } = await adminApi.importDocx(file);
+      setFullForm((prev) => ({ ...prev, description: data.html || prev.description }));
+    } catch {
+      setError("Nhập file DOCX thất bại.");
+    } finally {
+      setImporting(false);
+      e.target.value = "";
+    }
+  };
+
+  const toggleTag = (tag: string) => {
+    const t = tag.trim().toLowerCase();
+    if (!quickTagChips.includes(t)) setQuickTagChips((p) => [...p, t]);
+    if (!fullTagChips.includes(t)) setFullTagChips((p) => [...p, t]);
+  };
+
+  const removeQuickTag = (t: string) => setQuickTagChips((p) => p.filter((x) => x !== t));
+  const removeFullTag = (t: string) => setFullTagChips((p) => p.filter((x) => x !== t));
+
+  const filtered = products.filter(
+    (p) => !search || p.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      {/* Header + Search */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-extrabold text-warmwhite">Quản lý sản phẩm</h1>
         <input
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Tìm sản phẩm..."
-          className="input-field w-64"
+          className="input-field w-full sm:w-64"
         />
       </div>
 
-      {/* Tag management */}
-      <div className="mb-4 flex items-center gap-2 flex-wrap">
-        <input
-          type="text"
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTagToForms(tagInput.trim()); addCustomTag(); } }}
-          placeholder="Gõ nhãn..."
-          list="product-all-tags"
-          className="input-field w-48 text-sm"
-        />
-        <datalist id="product-all-tags">
-          {allTags.map((t) => <option key={t} value={t} />)}
-        </datalist>
-        <button type="button" onClick={() => { addTagToForms(tagInput.trim()); addCustomTag(); setTagInput(""); }} className="btn-secondary text-sm">+ Thêm nhãn</button>
-        <div className="flex flex-wrap gap-1.5 ml-2">
-          <span className="text-xs text-steelgray self-center">Nhãn có sẵn:</span>
-          {[...allPresets, ...customTags].map((t) => (
-            <button key={t} type="button"
-              onClick={() => addTagToForms(t)}
-              className="tag-badge cursor-pointer hover:opacity-80">{t}</button>
-          ))}
-        </div>
+      {/* Tag presets */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <span className="self-center text-xs text-steelgray mr-1">Chọn nhãn:</span>
+        {TAG_PRESETS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => toggleTag(t)}
+            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+              quickTagChips.includes(t.toLowerCase()) || fullTagChips.includes(t.toLowerCase())
+                ? "bg-crimson text-white"
+                : "border border-gunmetal/60 bg-graphite text-steelgray hover:border-silvergray hover:text-warmwhite"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
       </div>
 
-      {/* Add Form */}
-      <div className="mb-6 flex gap-1 rounded-xl bg-charcoal p-1 border border-gunmetal/40 w-fit">
-        <button onClick={() => { setFormTab("quick"); setEditing(null); setError(""); }}
-          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${formTab === "quick" ? "bg-crimson text-white" : "text-steelgray hover:text-warmwhite"}`}>
+      {/* Form tabs */}
+      <div className="mb-4 flex gap-1 rounded-xl bg-charcoal p-1 border border-gunmetal/40 w-fit">
+        <button
+          onClick={() => { setFormTab("quick"); setEditing(null); setError(""); }}
+          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${
+            formTab === "quick" ? "bg-crimson text-white" : "text-steelgray hover:text-warmwhite"
+          }`}
+        >
           Thêm nhanh
         </button>
-        <button onClick={() => { setFormTab("full"); setEditing(null); setError(""); }}
-          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${formTab === "full" ? "bg-crimson text-white" : "text-steelgray hover:text-warmwhite"}`}>
+        <button
+          onClick={() => { setFormTab("full"); setEditing(null); setError(""); }}
+          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${
+            formTab === "full" ? "bg-crimson text-white" : "text-steelgray hover:text-warmwhite"
+          }`}
+        >
           Thêm đầy đủ
         </button>
       </div>
 
+      {/* ── Quick add form ── */}
       {formTab === "quick" && (
-        <form onSubmit={(e) => { e.preventDefault(); quickMutation.mutate(); }}
-          className="mb-6 space-y-3 rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+        <form
+          onSubmit={(e) => { e.preventDefault(); quickMutation.mutate(); }}
+          className="mb-6 space-y-4 rounded-2xl border border-gunmetal/60 bg-graphite p-5"
+        >
+          <h3 className="text-base font-bold text-sakura">Thêm sản phẩm nhanh</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <input required placeholder="Tên sản phẩm" value={quickForm.name}
-              onChange={(e) => setQuickForm({ ...quickForm, name: e.target.value })} className="input-field" />
-            <input required type="number" step="1000" placeholder="Giá (VND)" value={quickForm.price}
-              onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })} className="input-field" />
+            <input
+              required
+              placeholder="Tên sản phẩm (VD: iPhone 15 Pro)"
+              value={quickForm.name}
+              onChange={(e) => setQuickForm({ ...quickForm, name: e.target.value })}
+              className="input-field"
+            />
+            <input
+              required
+              type="number"
+              step="1000"
+              placeholder="Giá (VND)"
+              value={quickForm.price}
+              onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })}
+              className="input-field"
+            />
             <div>
-              <label className="mb-1 block text-xs text-steelgray">Hình ảnh</label>
-              <input required type="file" accept="image/*"
+              <label className="mb-1 block text-xs text-steelgray">Hình ảnh sản phẩm</label>
+              <input
+                required
+                type="file"
+                accept="image/*"
                 onChange={(e) => setQuickImage(e.target.files?.[0] ?? null)}
-                className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-crimson file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white" />
+                className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-crimson file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+              />
             </div>
           </div>
-          {/* Tag chips for quick form */}
+          {/* Selected quick tags */}
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Nhãn đã chọn:</label>
-            <div className="mb-2 flex flex-wrap gap-1.5 min-h-[28px]">
+            <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
+            <div className="flex flex-wrap gap-1.5 min-h-[32px]">
               {quickTagChips.map((t) => (
                 <span key={t} className="tag-badge flex items-center gap-1">
                   {t}
-                  <button type="button" onClick={() => setQuickTagChips((p) => p.filter((x) => x !== t))} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+                  <button type="button" onClick={() => removeQuickTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
                 </span>
               ))}
-              {quickTagChips.length === 0 && <span className="text-xs text-steelgray">Nhấn nhãn bên trên để thêm...</span>}
+              {quickTagChips.length === 0 && (
+                <span className="text-xs text-steelgray italic">Nhấn nhãn bên trên để chọn...</span>
+              )}
             </div>
-            <input type="text" value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); addTagToForms(tagInput.trim()); }
-                if (e.key === "Backspace" && !tagInput && quickTagChips.length > 0)
-                  setQuickTagChips((p) => p.slice(0, -1));
-              }}
-              placeholder="Gõ nhãn và nhấn Enter để thêm..."
-              list="product-all-tags"
-              className="input-field text-sm w-full" />
           </div>
           {error && <p className="text-sm text-rose">{error}</p>}
           <button type="submit" disabled={quickMutation.isPending} className="btn-primary">
@@ -426,67 +547,146 @@ function ProductsTab({ products }: { products: Product[] }) {
         </form>
       )}
 
+      {/* ── Full add/edit form ── */}
       {formTab === "full" && (
-        <form onSubmit={(e) => { e.preventDefault(); fullMutation.mutate(); }}
-          className="mb-6 space-y-3 rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+        <form
+          onSubmit={(e) => { e.preventDefault(); fullMutation.mutate(); }}
+          className="mb-6 space-y-6 rounded-2xl border border-gunmetal/60 bg-graphite p-5"
+        >
           <h3 className="text-base font-bold text-warmwhite">
             {editing ? `Sửa: ${editing.name}` : "Thêm sản phẩm đầy đủ"}
           </h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <input required placeholder="Tên" value={fullForm.name}
-              onChange={(e) => setFullForm({ ...fullForm, name: e.target.value })} className="input-field" />
-            <input required type="number" step="1000" placeholder="Giá (VND)" value={fullForm.price}
-              onChange={(e) => setFullForm({ ...fullForm, price: e.target.value })} className="input-field" />
-            <input type="number" placeholder="Số lượng tồn kho" value={fullForm.stock}
-              onChange={(e) => setFullForm({ ...fullForm, stock: e.target.value })} className="input-field" />
-            {/* Tag chips for full form */}
-            <div>
-              <label className="mb-1 block text-xs text-steelgray">Nhãn đã chọn:</label>
-              <div className="mb-1.5 flex flex-wrap gap-1 min-h-[28px]">
-                {fullTagChips.map((t) => (
-                  <span key={t} className="tag-badge flex items-center gap-1">
-                    {t}
-                    <button type="button" onClick={() => setFullTagChips((p) => p.filter((x) => x !== t))} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
-                  </span>
-                ))}
-                {fullTagChips.length === 0 && <span className="text-xs text-steelgray self-center">Nhấn nhãn bên trên để thêm...</span>}
-              </div>
-              <input type="text" value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); addTagToForms(tagInput.trim()); }
-                  if (e.key === "Backspace" && !tagInput && fullTagChips.length > 0)
-                    setFullTagChips((p) => p.slice(0, -1));
-                }}
-                placeholder="Gõ nhãn và nhấn Enter..."
-                list="product-all-tags"
-                className="input-field text-sm w-full" />
+
+          {/* Name, Price, Stock */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <input
+              required
+              placeholder="Tên sản phẩm"
+              value={fullForm.name}
+              onChange={(e) => setFullForm({ ...fullForm, name: e.target.value })}
+              className="input-field"
+            />
+            <input
+              required
+              type="number"
+              step="1000"
+              placeholder="Giá (VND)"
+              value={fullForm.price}
+              onChange={(e) => setFullForm({ ...fullForm, price: e.target.value })}
+              className="input-field"
+            />
+            <input
+              type="number"
+              placeholder="Số lượng tồn kho"
+              value={fullForm.stock}
+              onChange={(e) => setFullForm({ ...fullForm, stock: e.target.value })}
+              className="input-field"
+            />
+          </div>
+
+          {/* Selected full tags */}
+          <div>
+            <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
+            <div className="flex flex-wrap gap-1.5 min-h-[36px]">
+              {fullTagChips.map((t) => (
+                <span key={t} className="tag-badge flex items-center gap-1">
+                  {t}
+                  <button type="button" onClick={() => removeFullTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+                </span>
+              ))}
+              {fullTagChips.length === 0 && (
+                <span className="text-xs text-steelgray italic self-center">Nhấn nhãn bên trên để chọn...</span>
+              )}
             </div>
           </div>
-          <textarea placeholder="Mô tả sản phẩm" value={fullForm.description}
-            onChange={(e) => setFullForm({ ...fullForm, description: e.target.value })}
-            className="input-field resize-none" rows={3} />
+
+          {/* Description — Tiptap + DOCX import */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm text-steelgray font-medium">Mô tả sản phẩm (hỗ trợ DOCX)</label>
+              <label className="btn-secondary cursor-pointer text-xs py-1.5 px-3">
+                <input
+                  type="file"
+                  accept=".docx"
+                  className="hidden"
+                  onChange={handleImportDocx}
+                  disabled={importing}
+                />
+                {importing ? (
+                  <span className="flex items-center gap-1">
+                    <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Đang nhập...
+                  </span>
+                ) : "Nhập từ DOCX"}
+              </label>
+            </div>
+            <RichTextEditor
+              value={fullForm.description}
+              onChange={(html) => setFullForm((prev) => ({ ...prev, description: html }))}
+              placeholder="Nhập mô tả sản phẩm... Hỗ trợ in đậm, in nghiêng, tiêu đề, danh sách, ảnh..."
+            />
+          </div>
+
+          {/* Specifications */}
+          <div>
+            <label className="block text-sm text-steelgray font-medium mb-3">Thông số kỹ thuật</label>
+            <div className="grid gap-3 md:grid-cols-2">
+              {SPEC_LABELS.map((label) => (
+                <div key={label} className="flex items-center gap-2">
+                  <label className="text-sm text-steelgray w-48 shrink-0">{label}</label>
+                  <input
+                    type="text"
+                    value={fullForm.specifications[label] || ""}
+                    onChange={(e) =>
+                      setFullForm((prev) => ({
+                        ...prev,
+                        specifications: { ...prev.specifications, [label]: e.target.value },
+                      }))
+                    }
+                    placeholder="—"
+                    className="input-field flex-1"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Image */}
           <div>
             <label className="mb-1.5 block text-sm text-steelgray">
               Hình ảnh {editing ? "(bỏ trống để giữ hình cũ)" : ""}
             </label>
-            <input type="file" accept="image/*" onChange={(e) => setFullImage(e.target.files?.[0] ?? null)}
-              className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite" />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setFullImage(e.target.files?.[0] ?? null)}
+              className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite"
+            />
           </div>
-          {error && <p className="text-sm text-rose">{error}</p>}
+
+          {error && (
+            <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">
+              {error}
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button type="submit" disabled={fullMutation.isPending} className="btn-primary">
               {fullMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm sản phẩm"}
             </button>
             {editing && (
-              <button type="button" onClick={() => { setEditing(null); setFormTab("quick"); setFullTagChips([]); setFullForm({ name: "", price: "", tags: "", description: "", stock: "10" }); }}
-                className="btn-secondary">Hủy</button>
+              <button type="button" onClick={cancelEdit} className="btn-secondary">
+                Hủy
+              </button>
             )}
           </div>
         </form>
       )}
 
-      {/* Table */}
+      {/* Products table */}
       <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
         <div className="border-b border-gunmetal/40 px-4 py-3">
           <span className="text-sm text-steelgray">{filtered.length} sản phẩm</span>
@@ -497,7 +697,7 @@ function ProductsTab({ products }: { products: Product[] }) {
           <table className="w-full text-sm">
             <thead className="border-b border-gunmetal/40 bg-charcoal/50">
               <tr className="text-left text-steelgray">
-                <th className="px-4 py-3">Hình</th>
+                <th className="px-4 py-3">Hình ảnh</th>
                 <th className="px-4 py-3">Tên sản phẩm</th>
                 <th className="px-4 py-3">Giá</th>
                 <th className="px-4 py-3">Nhãn</th>
@@ -507,27 +707,52 @@ function ProductsTab({ products }: { products: Product[] }) {
             </thead>
             <tbody>
               {filtered.map((p) => {
-                const tagChips = p.tags ? p.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
+                const tagChips = p.tags
+                  ? p.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+                  : [];
                 return (
-                  <tr key={p.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors">
-                    <td className="px-4 py-3"><img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-xl object-cover" /></td>
-                    <td className="px-4 py-3 font-medium text-warmwhite max-w-[200px] truncate">{p.name}</td>
+                  <tr
+                    key={p.id}
+                    className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
+                    </td>
+                    <td className="px-4 py-3 font-medium text-warmwhite max-w-[200px] truncate">
+                      {p.name}
+                    </td>
                     <td className="px-4 py-3 font-semibold text-crimson">
                       {new Intl.NumberFormat("vi-VN").format(p.price)} VND
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {tagChips.map((t: string) => <span key={t} className="tag-badge">{t}</span>)}
+                        {tagChips.map((t: string) => (
+                          <span key={t} className="tag-badge">{t}</span>
+                        ))}
+                        {tagChips.length === 0 && <span className="text-xs text-steelgray">—</span>}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={p.stock < 5 ? "text-deeprose font-semibold" : "text-warmwhite"}>{p.stock}</span>
+                      <span className={p.stock < 5 ? "text-deeprose font-semibold" : "text-warmwhite"}>
+                        {p.stock}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-3">
-                        <button onClick={() => startEdit(p)} className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
-                        <button onClick={() => { if (confirm(`Xóa "${p.name}"?`)) deleteMutation.mutate(p.id); }}
-                          className="text-sm text-deeprose hover:text-rose transition-colors">Xóa</button>
+                        <button
+                          onClick={() => startEdit(p)}
+                          className="text-sm text-crimson hover:text-sakura transition-colors"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Xóa "${p.name}"?`)) deleteMutation.mutate(p.id);
+                          }}
+                          className="text-sm text-deeprose hover:text-rose transition-colors"
+                        >
+                          Xóa
+                        </button>
                       </div>
                     </td>
                   </tr>
