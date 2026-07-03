@@ -19,12 +19,25 @@ const SPEC_LABELS: Record<string, string> = {
   "Thẻ SIM": "sim",
   "Công nghệ NFC": "nfc",
   "Thời điểm ra mắt": "launch",
+  "Pin": "pin",
+  "Sạc": "sac",
+  "Bảo mật": "bao_mat",
+  "RAM": "ram",
+  "Thẻ nhớ": "the_nho",
 };
 
-function parseSpecValue(specs: string, key: string): string {
+function parseSpecValue(specs: string, label: string): string {
+  // Match lines that START with the full label (case-insensitive), not just any substring,
+  // so e.g. "RAM" doesn't accidentally match "Bộ nhớ trong: 8GB".
   const lines = specs.split("\n").map((l) => l.trim()).filter(Boolean);
+  const labelLower = label.toLowerCase();
   for (const line of lines) {
-    if (line.toLowerCase().includes(key.toLowerCase())) {
+    const lower = line.toLowerCase();
+    if (
+      lower.startsWith(labelLower + ":") ||
+      lower.startsWith(labelLower + " –") ||
+      lower.startsWith(labelLower + " -")
+    ) {
       const parts = line.split(/[:–—]/);
       if (parts.length >= 2) {
         return parts.slice(1).join(":").trim();
@@ -37,8 +50,8 @@ function parseSpecValue(specs: string, key: string): string {
 function SpecsTable({ specs }: { specs: string }) {
   if (!specs) return null;
 
-  const rows = Object.entries(SPEC_LABELS).map(([label, key]) => {
-    const value = parseSpecValue(specs, key);
+  const rows = Object.entries(SPEC_LABELS).map(([label]) => {
+    const value = parseSpecValue(specs, label);
     return { label, value };
   }).filter((r) => r.value);
 

@@ -262,6 +262,11 @@ const SPEC_LABELS = [
   "Thẻ SIM",
   "Công nghệ NFC",
   "Thời điểm ra mắt",
+  "Pin",
+  "Sạc",
+  "Bảo mật",
+  "RAM",
+  "Thẻ nhớ",
 ];
 
 const EMPTY_FORM = {

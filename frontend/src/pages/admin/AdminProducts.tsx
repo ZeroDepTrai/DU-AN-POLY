@@ -26,6 +26,11 @@ const SPEC_FIELDS = [
   "Thẻ SIM",
   "Công nghệ NFC",
   "Thời điểm ra mắt",
+  "Pin",
+  "Sạc",
+  "Bảo mật",
+  "RAM",
+  "Thẻ nhớ",
 ];
 
 const emptyForm = {
@@ -50,6 +55,8 @@ export default function AdminProducts() {
   const [quickTagChips, setQuickTagChips] = useState<string[]>([]);
   const [fullTagChips, setFullTagChips] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
+  const [customSpecLabel, setCustomSpecLabel] = useState("");
+  const [customSpecLabels, setCustomSpecLabels] = useState<string[]>([]);
 
   const toggleTag = (tag: string, chips: string[], setChips: React.Dispatch<React.SetStateAction<string[]>>) => {
     const t = tag.trim().toLowerCase();
@@ -114,7 +121,7 @@ export default function AdminProducts() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product"] });
       setForm(emptyForm); setImage(null); setEditing(null); setError("");
-      setTab("quick"); setFullTagChips([]);
+      setTab("quick"); setFullTagChips([]); setCustomSpecLabels([]); setCustomSpecLabel("");
     },
     onError: (err: Error) => setError(err.message || "Lỗi lưu sản phẩm"),
   });
@@ -184,6 +191,26 @@ export default function AdminProducts() {
       ...prev,
       specifications: { ...prev.specifications, [label]: value },
     }));
+  };
+
+  const addCustomSpec = () => {
+    const label = customSpecLabel.trim();
+    if (!label) return;
+    const existsInPresets = SPEC_FIELDS.includes(label);
+    const existsInCustom = customSpecLabels.includes(label);
+    if (!existsInPresets && !existsInCustom) {
+      setCustomSpecLabels((prev) => [...prev, label]);
+    }
+    setCustomSpecLabel("");
+  };
+
+  const removeCustomSpec = (label: string) => {
+    setCustomSpecLabels((prev) => prev.filter((l) => l !== label));
+    setForm((prev) => {
+      const next = { ...prev.specifications };
+      delete next[label];
+      return { ...prev, specifications: next };
+    });
   };
 
   if (isLoading) return <LoadingSpinner label="Đang tải sản phẩm..." />;
@@ -324,11 +351,38 @@ export default function AdminProducts() {
 
           {/* Specifications */}
           <div>
-            <label className="block text-sm text-steelgray font-medium mb-3">Thông số kỹ thuật</label>
+            <div className="mb-3 flex items-center justify-between">
+              <label className="block text-sm text-steelgray font-medium">Thông số kỹ thuật</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customSpecLabel}
+                  onChange={(e) => setCustomSpecLabel(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSpec(); } }}
+                  placeholder="Thêm spec mới (VD: Khối lượng)"
+                  className="input-field text-sm h-9 w-64"
+                />
+                <button type="button" onClick={addCustomSpec} className="btn-secondary text-xs py-1.5 px-3">
+                  + Thêm
+                </button>
+              </div>
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
-              {SPEC_FIELDS.map((label) => (
+              {[...SPEC_FIELDS, ...customSpecLabels].map((label) => (
                 <div key={label} className="flex items-center gap-2">
-                  <label className="text-sm text-steelgray w-48 shrink-0">{label}</label>
+                  <label className="text-sm text-steelgray w-48 shrink-0 flex items-center gap-1">
+                    {label}
+                    {customSpecLabels.includes(label) && (
+                      <button
+                        type="button"
+                        onClick={() => removeCustomSpec(label)}
+                        className="ml-1 text-deeprose hover:text-rose"
+                        title="Xóa spec"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </label>
                   <input
                     type="text"
                     value={form.specifications[label] || ""}
