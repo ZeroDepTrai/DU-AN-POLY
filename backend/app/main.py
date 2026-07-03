@@ -90,6 +90,40 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"[MIGRATION] Error during column rename: {e}")
 
+        # Ensure products.specifications exists
+        try:
+            specs = db.execute(
+                text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema='public' AND table_name='products' AND column_name='specifications'"
+                )
+            ).fetchone()
+            if not specs:
+                db.execute(text("ALTER TABLE products ADD COLUMN specifications TEXT NOT NULL DEFAULT ''"))
+                db.commit()
+                logger.warning("[MIGRATION] Added specifications column to products")
+            else:
+                logger.warning("[MIGRATION] products.specifications already exists, skipping")
+        except Exception as e:
+            logger.warning(f"[MIGRATION] Error adding specifications: {e}")
+
+        # Ensure products.description exists
+        try:
+            desc = db.execute(
+                text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema='public' AND table_name='products' AND column_name='description'"
+                )
+            ).fetchone()
+            if not desc:
+                db.execute(text("ALTER TABLE products ADD COLUMN description TEXT NOT NULL DEFAULT ''"))
+                db.commit()
+                logger.warning("[MIGRATION] Added description column to products")
+            else:
+                logger.warning("[MIGRATION] products.description already exists, skipping")
+        except Exception as e:
+            logger.warning(f"[MIGRATION] Error adding description: {e}")
+
         seed_admin(db)
     finally:
         db.close()
