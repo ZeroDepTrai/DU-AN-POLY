@@ -45,14 +45,33 @@ def apply_schema_changes():
         except Exception:
             conn.commit()
 
+    with conn.begin():
+        try:
+            conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS specifications TEXT NOT NULL DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            conn.commit()
+
+    with conn.begin():
+        try:
+            conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            conn.commit()
+
+    with conn.begin():
+        try:
+            conn.execute(text("ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS tags VARCHAR(500) NOT NULL DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            conn.commit()
+
     conn.close()
     print("Schema changes applied.")
 
 
 def run_migrations():
     cfg = Config("alembic.ini")
-    command.stamp(cfg, "001")
-    print("Stamped at 001.")
     command.upgrade(cfg, "head")
     print("Migrations complete.")
 
