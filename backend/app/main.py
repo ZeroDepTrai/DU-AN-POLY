@@ -51,13 +51,22 @@ async def lifespan(app: FastAPI):
             return False
 
     def _force_add(conn, table: str, column: str, ddl: str) -> None:
-        """Add a column via AUTOCOMMIT so the change is visible immediately."""
+        """Add a column via a fresh connection in AUTOCOMMIT so the change is visible immediately.
+
+        We open a *new* connection scoped to this ALTER — re-using `conn` is
+        unreliable because once any prior SELECT has run on it, SQLAlchemy
+        autobegins a transaction that prevents flipping isolation_level.
+        """
         if _has_column(conn, table, column):
             logger.warning(f"[MIGRATION] {table}.{column} already exists, skipping")
             return
         try:
-            conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(ddl))
-            logger.warning(f"[MIGRATION] Added {table}.{column}")
+            alt = engine.connect().execution_options(isolation_level="AUTOCOMMIT")
+            try:
+                alt.execute(text(ddl))
+                logger.warning(f"[MIGRATION] Added {table}.{column}")
+            finally:
+                alt.close()
         except SQLAlchemyError as e:
             logger.warning(f"[MIGRATION] Could not add {table}.{column}: {e}")
 
@@ -68,10 +77,12 @@ async def lifespan(app: FastAPI):
             # Rename products.tag -> products.tags if old single-column schema exists
             if _has_column(conn, "products", "tag") and not _has_column(conn, "products", "tags"):
                 try:
-                    conn.execution_options(isolation_level="AUTOCOMMIT").execute(
-                        text("ALTER TABLE products RENAME COLUMN tag TO tags")
-                    )
-                    logger.warning("[MIGRATION] Renamed products.tag -> products.tags")
+                    alt = engine.connect().execution_options(isolation_level="AUTOCOMMIT")
+                    try:
+                        alt.execute(text("ALTER TABLE products RENAME COLUMN tag TO tags"))
+                        logger.warning("[MIGRATION] Renamed products.tag -> products.tags")
+                    finally:
+                        alt.close()
                 except SQLAlchemyError as e:
                     logger.warning(f"[MIGRATION] Rename failed: {e}")
 

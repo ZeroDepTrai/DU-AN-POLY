@@ -6,32 +6,36 @@ from app.config import settings
 
 
 def _col_exists(conn, table: str, column: str) -> bool:
-    row = conn.execute(
-        text(
-            "SELECT 1 FROM information_schema.columns "
-            "WHERE table_name=:t AND column_name=:c"
-        ),
-        {"t": table, "c": column},
-    ).first()
-    return row is not None
+    try:
+        row = conn.execute(
+            text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name=:t AND column_name=:c"
+            ),
+            {"t": table, "c": column},
+        ).first()
+        return row is not None
+    except Exception:
+        # If the table doesn't exist yet (no rows for it in information_schema),
+        # treat the column as missing so the caller can add it.
+        return False
 
 
 def apply_schema_changes():
     from sqlalchemy import inspect
+    from sqlalchemy.engine import Connection
 
-    db = create_engine(settings.database_url_final)
+    db = create_engine(settings.database_url_final, isolation_level="AUTOCOMMIT")
     insp = inspect(db)
-    conn = db.connect()
+    # Use a long-lived AUTOCOMMIT connection: every SQL run in its own txn.
+    conn: Connection = db.connect()
 
     def safe_alter(sql: str, label: str):
-        with conn.begin():
-            try:
-                conn.execute(text(sql))
-                conn.commit()
-                print(f"[MIGRATION] {label}: applied")
-            except Exception as e:
-                conn.commit()
-                print(f"[MIGRATION] {label}: SKIPPED ({type(e).__name__}: {e})")
+        try:
+            conn.execute(text(sql))
+            print(f"[MIGRATION] {label}: applied")
+        except Exception as e:
+            print(f"[MIGRATION] {label}: SKIPPED ({type(e).__name__}: {e})")
 
     def table_exists(name: str) -> bool:
         try:
@@ -40,12 +44,7 @@ def apply_schema_changes():
             return False
 
     # --- userrole enum: add 'driver' if missing ---
-    with conn.begin():
-        try:
-            conn.execute(text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'driver'"))
-            conn.commit()
-        except Exception:
-            conn.commit()
+    safe_alter("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'driver'", "userrole.driver enum")
 
     # --- drivers table ---
     safe_alter(
@@ -71,19 +70,6 @@ def apply_schema_changes():
         "ix_orders_driver_id",
     )
 
-    # --- orders.coupon_id (added later for the coupon module) ---
-    if not _col_exists(conn, "orders", "coupon_id"):
-        safe_alter(
-            "ALTER TABLE orders ADD COLUMN coupon_id INTEGER REFERENCES coupons(id)",
-            "orders.coupon_id (ADDED)",
-        )
-    else:
-        print("[MIGRATION] orders.coupon_id: already exists, skipping")
-    safe_alter(
-        "CREATE INDEX IF NOT EXISTS ix_orders_coupon_id ON orders (coupon_id)",
-        "ix_orders_coupon_id",
-    )
-
     # --- products columns ---
     if not _col_exists(conn, "products", "specifications"):
         safe_alter(
@@ -101,7 +87,7 @@ def apply_schema_changes():
     else:
         print("[MIGRATION] products.description: already exists, skipping")
 
-    # --- blog_posts.tags ---
+    # --- blog_posts columns ---
     if not _col_exists(conn, "blog_posts", "tags"):
         safe_alter(
             "ALTER TABLE blog_posts ADD COLUMN tags VARCHAR(500) NOT NULL DEFAULT ''",
@@ -111,24 +97,7 @@ def apply_schema_changes():
         print("[MIGRATION] blog_posts.tags: already exists, skipping")
 
     # --- new tables for products media, coupons, wheel/spin ---
-    safe_alter(
-        """
-        CREATE TABLE IF NOT EXISTS product_media (
-            id SERIAL PRIMARY KEY,
-            product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-            url VARCHAR(500) NOT NULL,
-            media_type VARCHAR(16) NOT NULL DEFAULT 'image',
-            position INTEGER NOT NULL DEFAULT 0,
-            is_cover BOOLEAN NOT NULL DEFAULT false
-        )
-        """,
-        "product_media table",
-    )
-    safe_alter(
-        "CREATE INDEX IF NOT EXISTS ix_product_media_product_id ON product_media (product_id)",
-        "ix_product_media_product_id",
-    )
-
+    # IMPORTANT: create `coupons` BEFORE adding `orders.coupon_id` (FK reference).
     safe_alter(
         """
         CREATE TABLE IF NOT EXISTS coupons (
@@ -149,6 +118,41 @@ def apply_schema_changes():
         "coupons table",
     )
 
+    # --- orders.coupon_id (referencing the now-existing coupons table) ---
+    if not _col_exists(conn, "orders", "coupon_id"):
+        safe_alter(
+            "ALTER TABLE orders ADD COLUMN coupon_id INTEGER REFERENCES coupons(id)",
+            "orders.coupon_id (ADDED)",
+        )
+    else:
+        print("[MIGRATION] orders.coupon_id: already exists, skipping")
+    safe_alter(
+        "CREATE INDEX IF NOT EXISTS ix_orders_coupon_id ON orders (coupon_id)",
+        "ix_orders_coupon_id",
+    )
+
+    safe_alter(
+        """
+        CREATE TABLE IF NOT EXISTS product_media (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+            url VARCHAR(500) NOT NULL,
+            media_type VARCHAR(16) NOT NULL DEFAULT 'image',
+            position INTEGER NOT NULL DEFAULT 0,
+            is_cover BOOLEAN NOT NULL DEFAULT false
+        )
+        """,
+        "product_media table",
+    )
+    safe_alter(
+        "CREATE INDEX IF NOT EXISTS ix_product_media_product_id ON product_media (product_id)",
+        "ix_product_media_product_id",
+    )
+    safe_alter(
+        "CREATE INDEX IF NOT EXISTS ix_product_media_id ON product_media (id)",
+        "ix_product_media_id",
+    )
+
     safe_alter(
         """
         CREATE TABLE IF NOT EXISTS wheel_config (
@@ -166,30 +170,28 @@ def apply_schema_changes():
     # Seed a default wheel row the first time the schema is set up.
     if table_exists("wheel_config"):
         try:
-            with conn.begin():
-                res = conn.execute(text("SELECT COUNT(*) FROM wheel_config")).scalar()
-                if not res:
-                    default_prizes = (
-                        '['
-                        '{"name":"Mã giảm giá 2%","image":"/uploads/case.png","weight":35,"jackpot":false,"coupon_id":null,"icon":""},'
-                        '{"name":"Cường Lực","image":"/uploads/screen.png","weight":25,"jackpot":false,"coupon_id":null,"icon":""},'
-                        '{"name":"Ốp Iphone","image":"/uploads/cable.png","weight":20,"jackpot":false,"coupon_id":null,"icon":""},'
-                        '{"name":"Dây sạc","image":"/uploads/charger.png","weight":14,"jackpot":false,"coupon_id":null,"icon":""},'
-                        '{"name":"Mã giảm giá 5%","image":"/uploads/airpod.png","weight":5,"jackpot":false,"coupon_id":null,"icon":""},'
-                        '{"name":"Chúc bạn may mắn lần sau","image":"/uploads/smartwatch.png","weight":0.5,"jackpot":false,"coupon_id":null,"icon":""},'
-                        '{"name":"Apple Watch","image":"/uploads/watch.png","weight":0.4,"jackpot":true,"coupon_id":null,"icon":""},'
-                        '{"name":"IPhone 17 Pro Max","image":"/uploads/iphone.png","weight":0.1,"jackpot":true,"coupon_id":null,"icon":""}'
-                        ']'
-                    )
-                    conn.execute(
-                        text(
-                            "INSERT INTO wheel_config (id, title, background_url, prizes_json, spend_per_spin_vnd) "
-                            "VALUES (1, :t, '', :p, 3000000)"
-                        ),
-                        {"t": "CellZone · Spin & Win", "p": default_prizes},
-                    )
-                    conn.commit()
-                    print("[MIGRATION] wheel_config seeded with default prizes")
+            res = conn.execute(text("SELECT COUNT(*) FROM wheel_config")).scalar()
+            if not res:
+                default_prizes = (
+                    '['
+                    '{"name":"Mã giảm giá 2%","image":"/uploads/case.png","weight":35,"jackpot":false,"coupon_id":null,"icon":""},'
+                    '{"name":"Cường Lực","image":"/uploads/screen.png","weight":25,"jackpot":false,"coupon_id":null,"icon":""},'
+                    '{"name":"Ốp Iphone","image":"/uploads/cable.png","weight":20,"jackpot":false,"coupon_id":null,"icon":""},'
+                    '{"name":"Dây sạc","image":"/uploads/charger.png","weight":14,"jackpot":false,"coupon_id":null,"icon":""},'
+                    '{"name":"Mã giảm giá 5%","image":"/uploads/airpod.png","weight":5,"jackpot":false,"coupon_id":null,"icon":""},'
+                    '{"name":"Chúc bạn may mắn lần sau","image":"/uploads/smartwatch.png","weight":0.5,"jackpot":false,"coupon_id":null,"icon":""},'
+                    '{"name":"Apple Watch","image":"/uploads/watch.png","weight":0.4,"jackpot":true,"coupon_id":null,"icon":""},'
+                    '{"name":"IPhone 17 Pro Max","image":"/uploads/iphone.png","weight":0.1,"jackpot":true,"coupon_id":null,"icon":""}'
+                    ']'
+                )
+                conn.execute(
+                    text(
+                        "INSERT INTO wheel_config (id, title, background_url, prizes_json, spend_per_spin_vnd) "
+                        "VALUES (1, :t, '', :p, 3000000)"
+                    ),
+                    {"t": "CellZone · Spin & Win", "p": default_prizes},
+                )
+                print("[MIGRATION] wheel_config seeded with default prizes")
         except Exception as e:
             print(f"[MIGRATION] wheel_config seed: skipped ({type(e).__name__}: {e})")
 
