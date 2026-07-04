@@ -204,19 +204,3 @@ def admin_update_wheel(
         user_credits=0,
         lifetime_spend_vnd=0,
     )
-
-
-def parse_prizes(raw) -> list[dict]:
-    """Module-level helper (kept for back-compat with old imports)."""
-    import json
-
-    if isinstance(raw, str):
-        try:
-            data = json.loads(raw or "[]")
-        except Exception:
-            data = []
-    elif isinstance(raw, list):
-        data = raw
-    else:
-        data = []
-    return data if isinstance(data, list) else []

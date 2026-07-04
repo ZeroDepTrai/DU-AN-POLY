@@ -200,6 +200,17 @@ async def mark_delivered(
 
     order.status = OrderStatus.delivered
     order.driver_id = None
+
+    # Grant spin credits when an order is delivered (driver flow). This is
+    # the path that real orders take in production — without it, the user
+    # never earns spin credits even after the order is fully delivered.
+    try:
+        from app.services.spin import grant_credits_for_delivered_order
+        grant_credits_for_delivered_order(db, order)
+    except Exception as _e:
+        import logging
+        logging.getLogger(__name__).warning("grant_credits_for_delivered_order failed: %s", _e)
+
     db.commit()
     db.refresh(order)
 
