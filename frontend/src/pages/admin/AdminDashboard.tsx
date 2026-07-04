@@ -1883,12 +1883,34 @@ function SpinTab() {
   const [error, setError] = useState("");
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
 
+  // Helpers to classify a saved prize — keeps backwards-compatibility with the
+  // existing data on the backend (which may have product_id/coupon_id only and
+  // no reward_type yet).
+  const detectRewardType = (p: WheelPrize): WheelPrize["reward_type"] => {
+    if (p.reward_type) return p.reward_type;
+    if (p.product_id) return "free_product";
+    if (p.coupon_id || p.coupon_discount_type || p.coupon_discount_value) return "coupon";
+    if (p.jackpot) return "jackpot";
+    return "consolation";
+  };
+
   const { data: cfg, isLoading } = useQuery({
     queryKey: ["admin-wheel"],
     queryFn: async () => {
       const { data } = await adminSpinApi.get();
       return data;
     },
+  });
+
+  // Catalog we render in pickers.
+  const { data: products = [] } = useQuery({
+    queryKey: ["admin-products"],
+    queryFn: async () => (await adminApi.listProducts()).data,
+  });
+
+  const { data: coupons = [] } = useQuery({
+    queryKey: ["admin-coupons"],
+    queryFn: async () => (await adminCouponsApi.list()).data,
   });
 
   const saveMutation = useMutation({
@@ -1898,11 +1920,36 @@ function SpinTab() {
         const r = await adminApi.uploadMedia(backgroundFile);
         backgroundUrl = r.data.url;
       }
+      // Sanitize prizes to only carry the fields the backend expects. We
+      // normalise every prize so the stored reward_type matches the chosen
+      // picker value (avoids inconsistencies from older rows).
+      const payloadPrizes = form.prizes.map((p) => {
+        const base: WheelPrize = {
+          name: p.name || "Quà",
+          image: p.image || "",
+          weight: Number(p.weight ?? 0),
+          jackpot: !!p.jackpot,
+          icon: p.icon || "",
+        };
+        const r = detectRewardType(p);
+        base.reward_type = r;
+        if (r === "free_product") {
+          base.product_id = p.product_id ?? null;
+        } else if (r === "coupon") {
+          if (p.coupon_id) {
+            base.coupon_id = p.coupon_id;
+          } else {
+            base.coupon_discount_type = p.coupon_discount_type ?? "percent";
+            base.coupon_discount_value = Number(p.coupon_discount_value ?? 0);
+          }
+        }
+        return base;
+      });
       return adminSpinApi.update({
         title: form.title,
         background_url: backgroundUrl,
         spend_per_spin_vnd: form.spend_per_spin_vnd,
-        prizes: form.prizes,
+        prizes: payloadPrizes,
       });
     },
     onSuccess: () => {
@@ -1925,7 +1972,10 @@ function SpinTab() {
       title: cfg.title,
       background_url: cfg.background_url,
       spend_per_spin_vnd: cfg.spend_per_spin_vnd,
-      prizes: cfg.prizes,
+      prizes: cfg.prizes.map((p) => ({
+        ...p,
+        reward_type: detectRewardType(p),
+      })),
     });
   }
 
@@ -1937,10 +1987,41 @@ function SpinTab() {
     });
   };
 
+  const setRewardType = (idx: number, type: NonNullable<WheelPrize["reward_type"]>) => {
+    setForm((prev) => {
+      const next = [...prev.prizes];
+      const cur = { ...next[idx], reward_type: type };
+      // Strip unrelated fields so the persisted payload stays clean.
+      if (type !== "free_product") cur.product_id = null;
+      if (type !== "coupon") {
+        cur.coupon_id = null;
+        cur.coupon_discount_type = null;
+        cur.coupon_discount_value = null;
+      }
+      if (type !== "jackpot" && type !== "free_product" && type !== "coupon") {
+        cur.jackpot = false;
+      }
+      next[idx] = cur;
+      return { ...prev, prizes: next };
+    });
+  };
+
   const addPrize = () => {
     setForm((prev) => ({
       ...prev,
-      prizes: [...prev.prizes, { name: "Quà mới", image: "", weight: 1, jackpot: false, coupon_id: null, icon: "" }],
+      prizes: [
+        ...prev.prizes,
+        {
+          name: "Quà mới",
+          image: "",
+          weight: 1,
+          jackpot: false,
+          coupon_id: null,
+          product_id: null,
+          icon: "",
+          reward_type: "consolation",
+        } as WheelPrize,
+      ],
     }));
   };
 
@@ -2011,53 +2092,203 @@ function SpinTab() {
             <button onClick={addPrize} className="btn-secondary text-xs py-1.5 px-3">+ Thêm phần thưởng</button>
           </div>
           <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
-            {form.prizes.map((p, idx) => (
-              <div key={idx} className="rounded-xl border border-gunmetal/40 bg-charcoal p-3">
-                <div className="mb-2 flex items-center gap-2">
-                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-graphite">
-                    {p.image ? <img src={p.image} alt="" className="h-full w-full object-cover" /> : null}
+            {form.prizes.map((p, idx) => {
+              const rtype = detectRewardType(p);
+              const pickedProduct = p.product_id
+                ? products.find((prod) => prod.id === p.product_id)
+                : null;
+              const pickedCoupon = p.coupon_id
+                ? coupons.find((c) => c.id === p.coupon_id)
+                : null;
+              return (
+                <div key={idx} className="rounded-xl border border-gunmetal/40 bg-charcoal p-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-graphite">
+                      {p.image ? <img src={p.image} alt="" className="h-full w-full object-cover" /> : null}
+                    </div>
+                    <input
+                      value={p.name}
+                      onChange={(e) => updatePrize(idx, { name: e.target.value })}
+                      placeholder="Tên phần thưởng"
+                      className="input-field flex-1"
+                    />
+                    <label className="cursor-pointer rounded-lg bg-gunmetal px-2 py-1.5 text-xs text-warmwhite hover:bg-gunmetal/80">
+                      📷
+                      <input type="file" accept="image/*" className="hidden" onChange={onPickImage(idx)} />
+                    </label>
                   </div>
-                  <input
-                    value={p.name}
-                    onChange={(e) => updatePrize(idx, { name: e.target.value })}
-                    placeholder="Tên phần thưởng"
-                    className="input-field flex-1"
-                  />
-                  <label className="cursor-pointer rounded-lg bg-gunmetal px-2 py-1.5 text-xs text-warmwhite hover:bg-gunmetal/80">
-                    📷
-                    <input type="file" accept="image/*" className="hidden" onChange={onPickImage(idx)} />
-                  </label>
+
+                  {/* Reward-type picker */}
+                  <div className="mb-2 flex flex-wrap gap-1.5 text-xs">
+                    {[
+                      { v: "consolation", label: "🎁 Khác" },
+                      { v: "coupon", label: "🎟️ Mã giảm giá" },
+                      { v: "free_product", label: "📱 Sản phẩm miễn phí" },
+                      { v: "jackpot", label: "🔥 Jackpot" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() => setRewardType(idx, opt.v as any)}
+                        className={`rounded-full px-3 py-1 transition-all ${
+                          rtype === opt.v
+                            ? "bg-crimson text-white"
+                            : "border border-gunmetal/60 bg-graphite text-steelgray hover:text-warmwhite"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Conditional inputs by reward type */}
+                  {rtype === "free_product" && (
+                    <div className="mb-2 rounded-lg bg-graphite p-2">
+                      <label className="mb-1 block text-[11px] uppercase tracking-wider text-steelgray">
+                        Sản phẩm tặng cho user
+                      </label>
+                      <select
+                        value={p.product_id ?? ""}
+                        onChange={(e) =>
+                          updatePrize(idx, {
+                            product_id: e.target.value ? Number(e.target.value) : null,
+                          })
+                        }
+                        className="input-field h-8 text-xs"
+                      >
+                        <option value="">— Chọn sản phẩm —</option>
+                        {products.map((prod) => (
+                          <option key={prod.id} value={prod.id}>
+                            #{prod.id} — {prod.name} ({new Intl.NumberFormat("vi-VN").format(prod.price)} VND)
+                          </option>
+                        ))}
+                      </select>
+                      {pickedProduct ? (
+                        <div className="mt-2 flex items-center gap-2 rounded-lg bg-charcoal p-2">
+                          <img
+                            src={pickedProduct.image_url}
+                            alt=""
+                            className="h-10 w-10 rounded-md object-cover"
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-medium text-warmwhite">
+                              {pickedProduct.name}
+                            </p>
+                            <p className="text-[10px] text-steelgray">
+                              Tặng miễn phí · tồn kho: {pickedProduct.stock}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-[11px] text-rose">
+                          Hãy chọn sản phẩm — khi user trúng, hệ thống tự tạo đơn delivered với unit_price=0.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {rtype === "coupon" && (
+                    <div className="mb-2 space-y-2 rounded-lg bg-graphite p-2">
+                      <div>
+                        <label className="mb-1 block text-[11px] uppercase tracking-wider text-steelgray">
+                          Mã giảm giá có sẵn (tùy chọn)
+                        </label>
+                        <select
+                          value={p.coupon_id ?? ""}
+                          onChange={(e) =>
+                            updatePrize(idx, {
+                              coupon_id: e.target.value ? Number(e.target.value) : null,
+                            })
+                          }
+                          className="input-field h-8 text-xs"
+                        >
+                          <option value="">— Không dùng —</option>
+                          {coupons
+                            .filter((c) => c.active)
+                            .map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.code} ({c.discount_type === "percent" ? `${c.discount_value}%` : `${c.discount_value} VND`})
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      <div className="text-[11px] text-steelgray">HOẶC cấu hình nhanh để backend tự sinh mã mới mỗi lần quay trúng:</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={p.coupon_discount_type ?? "percent"}
+                          onChange={(e) => updatePrize(idx, { coupon_discount_type: e.target.value as any })}
+                          className="input-field h-8 text-xs"
+                        >
+                          <option value="percent">% phần trăm</option>
+                          <option value="fixed">VND cố định</option>
+                        </select>
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="Giá trị (vd: 5)"
+                          value={p.coupon_discount_value ?? ""}
+                          onChange={(e) =>
+                            updatePrize(idx, {
+                              coupon_discount_value: e.target.value === "" ? null : Number(e.target.value),
+                            })
+                          }
+                          className="input-field h-8 text-xs"
+                        />
+                      </div>
+                      {pickedCoupon && (
+                        <p className="rounded bg-charcoal p-2 text-[11px] text-emerald">
+                          Đang dùng mã có sẵn: <span className="font-mono">{pickedCoupon.code}</span>
+                        </p>
+                      )}
+                      {!pickedCoupon && p.coupon_discount_value != null && p.coupon_discount_value > 0 && (
+                        <p className="rounded bg-charcoal p-2 text-[11px] text-emerald">
+                          Mỗi lượt trúng sẽ tự tạo một mã <strong>SPXXXXXX</strong> dùng 1 lần.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {rtype === "jackpot" && (
+                    <p className="mb-2 rounded-lg bg-graphite p-2 text-[11px] text-yellow-300">
+                      🔥 Phần thưởng jackpot hiển thị nổi bật trên vòng quay và modal trúng thưởng.
+                      Bạn có thể chọn "Sản phẩm miễn phí" ở trên để gắn quà jackpot vào một sản phẩm cụ thể.
+                    </p>
+                  )}
+
+                  {/* Footer: weight + jackpot + remove */}
+                  <div className="flex items-center gap-2 text-xs">
+                    <label className="flex-1">
+                      Trọng số (odds)
+                      <input
+                        type="number"
+                        step="0.1"
+                        min={0}
+                        value={p.weight}
+                        onChange={(e) => updatePrize(idx, { weight: Number(e.target.value) })}
+                        className="input-field mt-1 h-8 text-xs"
+                      />
+                    </label>
+                    {rtype !== "free_product" && (
+                      <label className="flex items-center gap-1 pt-4">
+                        <input
+                          type="checkbox"
+                          className="accent-rose"
+                          checked={p.jackpot || false}
+                          onChange={(e) => updatePrize(idx, { jackpot: e.target.checked })}
+                        />
+                        Jackpot
+                      </label>
+                    )}
+                    <button onClick={() => removePrize(idx)} className="rounded-lg p-1.5 text-deeprose hover:bg-deeprose/10">×</button>
+                  </div>
+                  {totalWeight > 0 && (
+                    <p className="mt-2 text-[10px] text-steelgray">
+                      Xác suất: {(Number(p.weight) / totalWeight * 100).toFixed(2)}%
+                    </p>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <label className="flex-1">
-                    Trọng số (odds)
-                    <input
-                      type="number"
-                      step="0.1"
-                      min={0}
-                      value={p.weight}
-                      onChange={(e) => updatePrize(idx, { weight: Number(e.target.value) })}
-                      className="input-field mt-1 h-8 text-xs"
-                    />
-                  </label>
-                  <label className="flex items-center gap-1 pt-4">
-                    <input
-                      type="checkbox"
-                      className="accent-rose"
-                      checked={p.jackpot || false}
-                      onChange={(e) => updatePrize(idx, { jackpot: e.target.checked })}
-                    />
-                    Jackpot
-                  </label>
-                  <button onClick={() => removePrize(idx)} className="rounded-lg p-1.5 text-deeprose hover:bg-deeprose/10">×</button>
-                </div>
-                {totalWeight > 0 && (
-                  <p className="mt-2 text-[10px] text-steelgray">
-                    Xác suất: {(Number(p.weight) / totalWeight * 100).toFixed(2)}%
-                  </p>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
