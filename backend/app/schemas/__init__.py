@@ -50,6 +50,123 @@ class ProductResponse(BaseModel):
     description: str = ""
     specifications: str = ""
     stock: int
+    media: list["ProductMediaItem"] = []
+
+    model_config = {"from_attributes": True}
+
+
+class ProductMediaItem(BaseModel):
+    id: int
+    url: str
+    media_type: str
+    position: int
+    is_cover: bool
+
+    model_config = {"from_attributes": True}
+
+
+class ProductMediaCreate(BaseModel):
+    url: str
+    media_type: str = "image"
+    is_cover: bool = False
+    position: int = 0
+
+
+class ProductMediaUpdate(BaseModel):
+    is_cover: bool | None = None
+    position: int | None = None
+
+
+# ── Coupons ──────────────────────────────────────────────────────────────
+
+class CouponCreate(BaseModel):
+    code: str = Field(min_length=1, max_length=64)
+    description: str = ""
+    discount_type: str = Field(default="percent", pattern="^(percent|fixed)$")
+    discount_value: float = Field(gt=0)
+    min_order_total: float = 0
+    max_discount: float | None = None
+    usage_limit: int | None = None
+    starts_at: str = ""
+    expires_at: str = ""
+
+
+class CouponUpdate(BaseModel):
+    description: str | None = None
+    discount_type: str | None = None
+    discount_value: float | None = None
+    min_order_total: float | None = None
+    max_discount: float | None = None
+    usage_limit: int | None = None
+    starts_at: str | None = None
+    expires_at: str | None = None
+    active: bool | None = None
+
+
+class CouponResponse(BaseModel):
+    id: int
+    code: str
+    description: str
+    discount_type: str
+    discount_value: float
+    min_order_total: float
+    max_discount: float | None
+    usage_limit: int | None
+    usage_count: int
+    starts_at: str
+    expires_at: str
+    active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class CouponValidateRequest(BaseModel):
+    code: str
+    order_total: float = 0
+
+
+class CouponValidateResponse(BaseModel):
+    coupon: CouponResponse
+    discount: float
+    new_total: float
+
+
+# ── Spin / Wheel ────────────────────────────────────────────────────────
+
+class WheelPrize(BaseModel):
+    name: str
+    image: str = ""
+    weight: float = 0
+    jackpot: bool = False
+    coupon_id: int | None = None
+    icon: str = ""
+
+
+class WheelConfigResponse(BaseModel):
+    id: int
+    title: str
+    background_url: str
+    prizes: list[WheelPrize]
+    spend_per_spin_vnd: int
+    user_credits: int
+    lifetime_spend_vnd: int
+
+    model_config = {"from_attributes": True}
+
+
+class WheelConfigUpdate(BaseModel):
+    title: str | None = None
+    background_url: str | None = None
+    prizes: list[WheelPrize] | None = None
+    spend_per_spin_vnd: int | None = None
+
+
+class SpinHistoryItem(BaseModel):
+    id: int
+    prize_label: str
+    prize_kind: str
+    coupon_code: str | None
+    created_at: str
 
     model_config = {"from_attributes": True}
 
@@ -83,6 +200,7 @@ class OrderCreate(BaseModel):
     delivery_phone: str = Field(min_length=5, max_length=50)
     items: list[OrderItemCreate] = Field(min_length=1)
     payment_method: str | None = Field(default="cod", pattern="^(cod|transfer|card)$")
+    coupon_code: str | None = None
 
 
 class ShippingUpdate(BaseModel):
@@ -111,6 +229,8 @@ class OrderResponse(BaseModel):
     store_lng: float
     store_name: str
     items: list[OrderItemResponse]
+    coupon_code: str | None = None
+    discount: float = 0
 
 
 class OrderSummary(BaseModel):

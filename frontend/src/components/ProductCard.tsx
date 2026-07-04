@@ -17,6 +17,10 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
   };
 
   const formattedPrice = new Intl.NumberFormat("vi-VN").format(product.price);
+  // Strip HTML so the description renders as plain text inside cards.
+  const plainDescription = product.description
+    ? product.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+    : "";
 
   // ── Bento: tall hero card (matches Figma "Premium Case" featured span)
   if (variant === "bento") {
@@ -47,9 +51,9 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
             </h3>
             <p className="shrink-0 text-2xl font-extrabold text-crimson">{formattedPrice}₫</p>
           </div>
-          {product.description && (
+          {plainDescription && (
             <p className="text-sm leading-relaxed text-softgray line-clamp-2">
-              {product.description}
+              {plainDescription}
             </p>
           )}
           <button
@@ -92,8 +96,8 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
           <h3 className="text-xl font-bold text-warmwhite group-hover:text-sakura transition-colors line-clamp-2">
             {product.name}
           </h3>
-          {product.description && (
-            <p className="text-sm text-softgray line-clamp-2">{product.description}</p>
+          {plainDescription && (
+            <p className="text-sm text-softgray line-clamp-2">{plainDescription}</p>
           )}
           <div className="mt-auto flex items-center justify-between pt-2">
             <p className="text-xl font-bold text-crimson">{formattedPrice}₫</p>

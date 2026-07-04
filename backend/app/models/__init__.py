@@ -1,7 +1,9 @@
 import enum
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import Enum, Float, ForeignKey, Index, Integer, String, Text
+from typing import Optional
+
+from sqlalchemy import Boolean, Enum, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -31,6 +33,7 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.customer, nullable=False)
 
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
+    spins: Mapped[list["Spin"]] = relationship(back_populates="user")
 
 
 class Driver(Base):
@@ -79,6 +82,8 @@ class Order(Base):
     user: Mapped["User"] = relationship(back_populates="orders")
     driver: Mapped["Driver"] = relationship(back_populates="orders")
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+    coupon_id: Mapped[int | None] = mapped_column(ForeignKey("coupons.id"), nullable=True, index=True)
+    coupon: Mapped[Optional["Coupon"]] = relationship()
 
 
 class OrderItem(Base):
@@ -127,3 +132,92 @@ class BlogPost(Base):
     tags: Mapped[str] = mapped_column(String(500), default="", nullable=False)
 
     author: Mapped["User"] = relationship(back_populates=None)
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# New modules: ProductMedia (gallery), Coupon, Spin / WheelConfig
+# ────────────────────────────────────────────────────────────────────────────
+
+class ProductMedia(Base):
+    """Gallery item (image or video) attached to a Product.
+
+    One row per uploaded asset. Sort order is controlled by `position`.
+    `is_cover=True` means use this as the product thumbnail.
+    """
+
+    __tablename__ = "product_media"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), index=True, nullable=False)
+    url: Mapped[str] = mapped_column(String(500), nullable=False)
+    media_type: Mapped[str] = mapped_column(String(16), default="image", nullable=False)
+    position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_cover: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    product: Mapped["Product"] = relationship()
+
+
+class Coupon(Base):
+    __tablename__ = "coupons"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    code: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    description: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    # discount_type: "percent" (1..100) or "fixed" (VND)
+    discount_type: Mapped[str] = mapped_column(String(16), default="percent", nullable=False)
+    discount_value: Mapped[float] = mapped_column(Float, nullable=False)
+    min_order_total: Mapped[float] = mapped_column(Float, default=0, nullable=False)
+    max_discount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    usage_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    usage_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    starts_at: Mapped[str] = mapped_column(String(30), default="", nullable=False)
+    expires_at: Mapped[str] = mapped_column(String(30), default="", nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class Spin(Base):
+    """Audit row for each wheel spin (one spin consumes one SpinCredits)."""
+
+    __tablename__ = "spins"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    prize_label: Mapped[str] = mapped_column(String(120), nullable=False)
+    prize_kind: Mapped[str] = mapped_column(String(32), default="consolation", nullable=False)
+    coupon_id: Mapped[int | None] = mapped_column(ForeignKey("coupons.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    user: Mapped["User"] = relationship(back_populates="spins")
+
+
+class WheelConfig(Base):
+    """Single-row wheel configuration. id=1 should be the active row.
+
+    The frontend reads `prizes_json` (an array) and applies the weights from it.
+    """
+
+    __tablename__ = "wheel_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(120), default="CellZone · Spin & Win", nullable=False)
+    background_url: Mapped[str] = mapped_column(String(500), default="", nullable=False)
+    prizes_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    spend_per_spin_vnd: Mapped[int] = mapped_column(Integer, default=3_000_000, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))
+
+
+class SpinCredit(Base):
+    """Wallet of unused spins for a user.
+
+    We grant one credit per 3,000,000 VND (configurable) of `delivered` order
+    total. The lifecycle is driven by the admin order-delivery action.
+    """
+
+    __tablename__ = "spin_credits"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    order_id: Mapped[int | None] = mapped_column(ForeignKey("orders.id"), nullable=True)
+    amount: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    reason: Mapped[str] = mapped_column(String(120), default="delivered_order", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))

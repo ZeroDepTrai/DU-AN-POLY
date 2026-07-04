@@ -25,9 +25,15 @@ export default function Home() {
     queryKey: ["home-showcase"],
     queryFn: async () => {
       const { data } = await productsApi.list();
-      return data
-        .filter((p) => p.tags.toLowerCase().includes("featured") && !p.tags.toLowerCase().includes("accessory"))
-        .slice(0, 3);
+      const featured = data
+        .filter((p) => p.tags.toLowerCase().includes("featured"))
+        .filter((p) => !p.tags.toLowerCase().includes("accessory"));
+      // Always try to deliver up to 3 featured products. If fewer than 3 are
+      // tagged "featured", fall back to any non-accessory phones so the section
+      // never appears empty.
+      if (featured.length >= 3) return featured.slice(0, 3);
+      const fallback = data.filter((p) => !p.tags.toLowerCase().includes("accessory"));
+      return [...featured, ...fallback].slice(0, 3);
     },
   });
 

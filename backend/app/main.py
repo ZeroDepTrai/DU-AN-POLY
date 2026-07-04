@@ -11,7 +11,7 @@ from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.deps import hash_password
 from app.models import User, UserRole
-from app.routers import admin, auth, blog, categories, driver, orders, products
+from app.routers import admin, auth, blog, categories, coupons, driver, media, orders, products, spin
 from app.websocket import manager
 
 
@@ -92,6 +92,8 @@ async def lifespan(app: FastAPI):
                        "ALTER TABLE blog_posts ADD COLUMN title VARCHAR(255) NOT NULL DEFAULT ''")
             _force_add(conn, "blog_posts", "content",
                        "ALTER TABLE blog_posts ADD COLUMN content TEXT NOT NULL DEFAULT ''")
+            _force_add(conn, "orders", "coupon_id",
+                       "ALTER TABLE orders ADD COLUMN coupon_id INTEGER REFERENCES coupons(id)")
         except SQLAlchemyError as e:
             logger.warning(f"[MIGRATION] Outer migration error: {e}")
 
@@ -130,6 +132,9 @@ app.include_router(orders.router)
 app.include_router(admin.router)
 app.include_router(blog.router)
 app.include_router(driver.router)
+app.include_router(media.router)
+app.include_router(coupons.router)
+app.include_router(spin.router)
 
 
 @app.get("/api/health")

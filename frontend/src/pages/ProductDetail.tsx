@@ -1,6 +1,8 @@
+import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { productsApi } from "../api/client";
+import type { Product } from "../types";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useCart } from "../context/CartContext";
 
@@ -27,8 +29,6 @@ const SPEC_LABELS: Record<string, string> = {
 };
 
 function parseSpecValue(specs: string, label: string): string {
-  // Match lines that START with the full label (case-insensitive), not just any substring,
-  // so e.g. "RAM" doesn't accidentally match "Bộ nhớ trong: 8GB".
   const lines = specs.split("\n").map((l) => l.trim()).filter(Boolean);
   const labelLower = label.toLowerCase();
   for (const line of lines) {
@@ -76,6 +76,113 @@ function SpecsTable({ specs }: { specs: string }) {
   );
 }
 
+interface GalleryItem {
+  url: string;
+  media_type: "image" | "video";
+  is_cover: boolean;
+  position: number;
+}
+
+function ProductGallery({ product }: { product: Product }) {
+  // Build a stable ordered list: media if present, else [image_url]
+  const items = useMemo<GalleryItem[]>(() => {
+    const list: GalleryItem[] = [];
+    const seen = new Set<string>();
+    if (Array.isArray(product.media) && product.media.length > 0) {
+      const sorted = [...product.media].sort(
+        (a, b) =>
+          (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0) ||
+          a.position - b.position ||
+          a.id - b.id
+      );
+      for (const m of sorted) {
+        if (!seen.has(m.url)) {
+          list.push({
+            url: m.url,
+            media_type: m.media_type,
+            is_cover: m.is_cover,
+            position: m.position,
+          });
+          seen.add(m.url);
+        }
+      }
+    }
+    if (product.image_url && !seen.has(product.image_url)) {
+      list.unshift({ url: product.image_url, media_type: "image", is_cover: true, position: -1 });
+    }
+    return list;
+  }, [product]);
+
+  const [active, setActive] = useState(0);
+  if (items.length === 0) {
+    return (
+      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-gunmetal/60 bg-graphite text-steelgray">
+        Chưa có hình ảnh
+      </div>
+    );
+  }
+  const current = items[Math.max(0, Math.min(active, items.length - 1))];
+
+  return (
+    <div>
+      {/* Main viewer */}
+      <div className="relative overflow-hidden rounded-2xl border border-gunmetal/60 bg-graphite">
+        {current.media_type === "video" ? (
+          <video
+            key={current.url}
+            src={current.url}
+            controls
+            playsInline
+            className="aspect-square w-full bg-charcoal object-contain"
+          />
+        ) : (
+          <div className="aspect-square overflow-hidden">
+            <img
+              key={current.url}
+              src={current.url}
+              alt={product.name}
+              className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+            />
+          </div>
+        )}
+        {current.media_type === "video" && (
+          <div className="absolute left-3 top-3 z-10 rounded-full bg-crimson/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow">
+            Video
+          </div>
+        )}
+      </div>
+
+      {/* Thumbnails */}
+      {items.length > 1 && (
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {items.map((it, i) => (
+            <button
+              key={it.url + i}
+              type="button"
+              onClick={() => setActive(i)}
+              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                i === active
+                  ? "border-crimson ring-2 ring-crimson/30"
+                  : "border-gunmetal/60 hover:border-silvergray/40"
+              }`}
+            >
+              {it.media_type === "video" ? (
+                <div className="flex h-full w-full items-center justify-center bg-charcoal text-[10px] font-semibold text-steelgray">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              ) : (
+                <img src={it.url} alt="" className="h-full w-full object-cover" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProductDetail() {
   const { id } = useParams();
   const { addItem } = useCart();
@@ -119,17 +226,9 @@ export default function ProductDetail() {
         <span className="text-warmwhite">{product.name}</span>
       </div>
 
-      {/* Top section: image + info side by side */}
+      {/* Top section: image gallery + info side by side */}
       <div className="grid gap-10 lg:grid-cols-2 mb-10">
-        <div className="overflow-hidden rounded-2xl border border-gunmetal/60 bg-graphite">
-          <div className="aspect-square overflow-hidden">
-            <img
-              src={product.image_url}
-              alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-            />
-          </div>
-        </div>
+        <ProductGallery product={product} />
 
         <div>
           <div className="mb-3">
@@ -211,18 +310,16 @@ export default function ProductDetail() {
 
       {/* Below-image section: Description + Specifications */}
       <div className="mt-4 space-y-8">
-        {/* Product Description — rich HTML like blog */}
-        {(product.description || product.description !== "") && (
+        {product.description && (
           <div>
             <h2 className="text-xl font-extrabold text-warmwhite mb-4">Mô tả sản phẩm</h2>
             <div
               className="prose-product max-w-none"
-              dangerouslySetInnerHTML={{ __html: product.description || "" }}
+              dangerouslySetInnerHTML={{ __html: product.description }}
             />
           </div>
         )}
 
-        {/* Specifications */}
         <SpecsTable specs={product.specifications || ""} />
       </div>
 
@@ -258,6 +355,12 @@ export default function ProductDetail() {
         }
         .prose-product pre code { background: none; padding: 0; color: #C9C4C6; }
         .prose-product img {
+          max-width: 100%;
+          border-radius: 12px;
+          margin: 1.5em auto;
+          display: block;
+        }
+        .prose-product video {
           max-width: 100%;
           border-radius: 12px;
           margin: 1.5em auto;

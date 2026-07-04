@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ordersApi } from "../api/client";
+import { couponsApi, ordersApi } from "../api/client";
+import type { CouponValidateResult } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 
@@ -45,9 +46,41 @@ export default function Checkout() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponValidateResult | null>(null);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponError, setCouponError] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
   const shipping = 0;
   const tax = Math.round(totalPrice * 0.1);
-  const grand = totalPrice + shipping + tax;
+  const discount = appliedCoupon?.discount ?? 0;
+  const grand = Math.max(0, totalPrice + shipping + tax - discount);
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setApplyingCoupon(true);
+    setCouponError("");
+    setCouponMessage("");
+    try {
+      const { data } = await couponsApi.validate(couponCode.trim(), totalPrice);
+      setAppliedCoupon(data);
+      setCouponMessage(`Áp dụng thành công: giảm ${new Intl.NumberFormat("vi-VN").format(data.discount)} VND`);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Mã không hợp lệ";
+      setAppliedCoupon(null);
+      setCouponError(typeof msg === "string" ? msg : "Mã không hợp lệ");
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponMessage("");
+    setCouponError("");
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -62,6 +95,7 @@ export default function Checkout() {
           product_id: item.product.id,
           quantity: item.quantity,
         })),
+        coupon_code: appliedCoupon?.coupon.code,
       });
       clearCart();
       navigate(`/orders/${data.tracking_code}`);
@@ -232,12 +266,47 @@ export default function Checkout() {
                 <span>Thuế (VAT 10%)</span>
                 <span>{new Intl.NumberFormat("vi-VN").format(tax)} VND</span>
               </div>
+              {appliedCoupon && (
+                <div className="flex justify-between text-sm text-emerald">
+                  <span className="flex items-center gap-1">
+                    Coupon {appliedCoupon.coupon.code}
+                    <button onClick={removeCoupon} className="ml-1 text-[10px] text-rose hover:underline">bỏ</button>
+                  </span>
+                  <span>-{new Intl.NumberFormat("vi-VN").format(discount)} VND</span>
+                </div>
+              )}
               <div className="flex justify-between border-t border-gunmetal/40 pt-3 text-lg font-bold text-warmwhite">
                 <span>Tổng cộng</span>
                 <span className="text-crimson">
                   {new Intl.NumberFormat("vi-VN").format(grand)} VND
                 </span>
               </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-gunmetal/40 bg-charcoal/40 p-3">
+              <p className="mb-1.5 text-xs text-steelgray">Mã giảm giá</p>
+              <div className="flex gap-2">
+                <input
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Nhập mã..."
+                  className="input-field flex-1 text-sm"
+                  disabled={!!appliedCoupon}
+                />
+                {appliedCoupon ? (
+                  <button onClick={removeCoupon} className="btn-secondary text-sm whitespace-nowrap">Bỏ</button>
+                ) : (
+                  <button
+                    onClick={applyCoupon}
+                    disabled={applyingCoupon || !couponCode.trim()}
+                    className="btn-primary text-sm whitespace-nowrap disabled:opacity-60"
+                  >
+                    {applyingCoupon ? "..." : "Áp dụng"}
+                  </button>
+                )}
+              </div>
+              {couponMessage && <p className="mt-2 text-xs text-emerald">{couponMessage}</p>}
+              {couponError && <p className="mt-2 text-xs text-rose">{couponError}</p>}
             </div>
 
             <div className="mt-4 flex items-center gap-2 text-xs text-steelgray">

@@ -23,6 +23,15 @@ export interface Product {
   description: string;
   specifications: string;
   stock: number;
+  media?: ProductMediaItem[];
+}
+
+export interface ProductMediaItem {
+  id: number;
+  url: string;
+  media_type: "image" | "video";
+  position: number;
+  is_cover: boolean;
 }
 
 export interface CartItem {
@@ -51,6 +60,8 @@ export interface Order {
   store_lng: number;
   store_name: string;
   items: OrderItemResponse[];
+  coupon_code?: string | null;
+  discount?: number;
 }
 
 export interface TrackingUpdate {

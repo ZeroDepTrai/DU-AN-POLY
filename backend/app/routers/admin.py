@@ -189,6 +189,7 @@ async def update_order_location(
     order.current_lat = payload.current_lat
     order.current_lng = payload.current_lng
     if payload.status is not None:
+        _maybe_grant_spin_credits(db, order, payload.status)
         order.status = payload.status
 
     db.commit()
@@ -207,6 +208,24 @@ async def update_order_location(
     )
 
     return order_to_response(order)
+
+
+def _maybe_grant_spin_credits(db: Session, order: Order, new_status) -> None:
+    """When an order is marked 'delivered', credit the buyer with one spin per
+    `spend_per_spin_vnd` VND of cumulative delivered spend."""
+    try:
+        from app.models import OrderStatus as OS
+    except Exception:
+        return
+    if new_status != OS.delivered:
+        return
+    try:
+        from app.services.spin import grant_credits_for_delivered_order
+        grant_credits_for_delivered_order(db, order)
+    except Exception:
+        # Spin credits are non-critical; log but don't break the PATCH.
+        import logging
+        logging.getLogger("uvicorn.error").warning("Spin credit grant failed", exc_info=True)
 
 
 @router.patch("/orders/{order_id}", response_model=OrderResponse)
@@ -230,6 +249,7 @@ async def update_order(
     if payload.delivery_phone is not None:
         order.delivery_phone = payload.delivery_phone
     if payload.status is not None:
+        _maybe_grant_spin_credits(db, order, payload.status)
         order.status = payload.status
 
     db.commit()

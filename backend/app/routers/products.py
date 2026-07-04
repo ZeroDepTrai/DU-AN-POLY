@@ -14,7 +14,27 @@ def list_products(tag: str | None = Query(default=None), db: Session = Depends(g
     query = db.query(Product)
     if tag:
         query = query.filter(Product.tags.ilike(f"%{tag}%"))
-    return query.order_by(Product.id.desc()).all()
+    rows = query.order_by(Product.id.desc()).all()
+    return [_hydrate(p, db) for p in rows] if rows else _hydrate_all(rows, db)
+
+
+def _hydrate(p: Product, db: Session):
+    # Pydantic uses from_attributes; we attach `media` as a derived attr.
+    from app.models import ProductMedia
+    media_rows = (
+        db.query(ProductMedia)
+        .filter(ProductMedia.product_id == p.id)
+        .order_by(ProductMedia.position.asc(), ProductMedia.id.asc())
+        .all()
+    )
+    p.media = media_rows  # type: ignore[attr-defined]
+    return p
+
+
+def _hydrate_all(rows, db):
+    for r in rows:
+        _hydrate(r, db)
+    return rows
 
 
 @router.get("/search", response_model=PaginatedProductsResponse)
@@ -46,6 +66,8 @@ def search_products(
         query = query.order_by(Product.id.desc())
 
     products = query.offset((page - 1) * limit).limit(limit).all()
+    for p in products:
+        _hydrate(p, db)
     return PaginatedProductsResponse(
         products=products,
         total=total,
@@ -77,4 +99,4 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     product = db.get(Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
-    return product
+    return _hydrate(product, db)

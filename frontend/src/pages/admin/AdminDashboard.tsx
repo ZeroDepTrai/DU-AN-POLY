@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { adminApi, adminBlogApi } from "../../api/client";
+import {
+  adminApi,
+  adminBlogApi,
+  adminCouponsApi,
+  adminSpinApi,
+} from "../../api/client";
+import type { Coupon, ProductMediaItem, WheelPrize } from "../../api/client";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import AdminMapPicker from "../../components/AdminMapPicker";
 import RichTextEditor from "../../components/RichTextEditor";
 import type { Order, OrderStatus, Product } from "../../types";
 
-type Tab = "dashboard" | "products" | "orders" | "blog" | "settings";
+type Tab = "dashboard" | "products" | "orders" | "blog" | "media" | "coupons" | "spin" | "settings";
 
 const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   {
@@ -29,6 +35,15 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
     ),
   },
   {
+    id: "media",
+    label: "Hình ảnh / Video",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 10l-4 4m0-4l4 4M3 17l5-5 7 7" />
+      </svg>
+    ),
+  },
+  {
     id: "orders",
     label: "Đơn hàng",
     icon: (
@@ -43,6 +58,25 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+      </svg>
+    ),
+  },
+  {
+    id: "coupons",
+    label: "Coupon",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h6m-6 4h10M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+      </svg>
+    ),
+  },
+  {
+    id: "spin",
+    label: "Vòng quay",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <circle cx="12" cy="12" r="9" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v3m0 12v3m9-9h-3M6 12H3m13.5-6.5l-2.1 2.1m-2.8 5.8l-2.1 2.1m0-10.6l2.1 2.1m2.8 5.8l2.1 2.1" />
       </svg>
     ),
   },
@@ -141,6 +175,9 @@ export default function AdminDashboard() {
               {activeTab === "products" && <ProductsTab products={products} />}
               {activeTab === "orders" && <OrdersTab orders={orders} />}
               {activeTab === "blog" && <BlogTab />}
+              {activeTab === "media" && <MediaTab products={products} />}
+              {activeTab === "coupons" && <CouponsTab />}
+              {activeTab === "spin" && <SpinTab />}
               {activeTab === "settings" && <SettingsTab />}
             </>
           )}
@@ -1193,3 +1230,673 @@ function SettingsTab() {
     </div>
   );
 }
+
+// ── Media Tab ──────────────────────────────────────────────
+function MediaTab({ products }: { products: Product[] }) {
+  const [selectedId, setSelectedId] = useState<number | null>(products[0]?.id ?? null);
+  const [filter, setFilter] = useState("");
+
+  const filtered = products.filter((p) =>
+    !filter || p.name.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const target = products.find((p) => p.id === selectedId) ?? null;
+
+  return (
+    <div>
+      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Hình ảnh & Video sản phẩm</h1>
+      <p className="mb-6 text-sm text-steelgray">
+        Chọn một sản phẩm để xem và quản lý gallery (ảnh + video). Ảnh đầu tiên (cover) sẽ được
+        dùng làm thumbnail sản phẩm trên toàn trang.
+      </p>
+      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-4">
+          <input
+            type="search"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Tìm sản phẩm..."
+            className="input-field mb-3"
+          />
+          <div className="max-h-[64vh] overflow-y-auto space-y-1.5">
+            {filtered.length === 0 ? (
+              <p className="py-6 text-center text-xs text-steelgray">Không tìm thấy.</p>
+            ) : (
+              filtered.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedId(p.id)}
+                  className={`flex w-full items-center gap-2 rounded-lg border p-2 text-left transition-colors ${
+                    selectedId === p.id
+                      ? "border-crimson bg-crimson/10"
+                      : "border-gunmetal/40 bg-charcoal hover:border-silvergray/40"
+                  }`}
+                >
+                  <img src={p.image_url} alt="" className="h-9 w-9 rounded-md object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-warmwhite">{p.name}</p>
+                    <p className="text-[10px] text-steelgray">#{p.id}</p>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div>
+          {target ? (
+            <ProductGalleryEditor product={target} />
+          ) : (
+            <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-10 text-center text-steelgray">
+              Chọn một sản phẩm bên trái để bắt đầu.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductGalleryEditor({ product }: { product: Product }) {
+  const queryClient = useQueryClient();
+  const [uploading, setUploading] = useState(false);
+  const [nextIsCover, setNextIsCover] = useState(false);
+
+  const { data: media = [], isLoading } = useQuery({
+    queryKey: ["product-media", product.id],
+    queryFn: async () => {
+      const { data } = await adminApi.listProductMedia(product.id);
+      return data;
+    },
+    enabled: Boolean(product?.id),
+  });
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["product-media", product.id] });
+    queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+    queryClient.invalidateQueries({ queryKey: ["product", String(product.id)] });
+  };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const f of Array.from(files)) {
+        await adminApi.uploadProductMedia(product.id, f, nextIsCover && media.length === 0);
+      }
+      invalidate();
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const setCover = (m: ProductMediaItem) =>
+    adminApi.updateMedia(m.id, { is_cover: true }).then(invalidate);
+
+  const deleteMedia = (m: ProductMediaItem) => {
+    if (!confirm("Xóa hình ảnh/video này?")) return;
+    adminApi.deleteMedia(m.id).then(invalidate);
+  };
+
+  return (
+    <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-warmwhite">{product.name}</h2>
+          <p className="text-xs text-steelgray">Mã sản phẩm: #{product.id}</p>
+        </div>
+        <div className="text-xs text-steelgray">
+          {media.length} mục media
+        </div>
+      </div>
+
+      <label className="mb-4 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gunmetal/60 bg-charcoal/40 py-6 text-center hover:border-crimson cursor-pointer transition-colors">
+        <svg className="h-6 w-6 text-rose" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        <span className="text-sm font-medium text-warmwhite">
+          {uploading ? "Đang tải lên..." : "Kéo thả hoặc nhấn để chọn ảnh/video"}
+        </span>
+        <span className="text-[10px] text-steelgray">JPG, PNG, WEBP, MP4, WEBM — tối đa 100MB mỗi file</span>
+        <label className="mt-2 inline-flex items-center gap-2 text-xs text-softgray">
+          <input
+            type="checkbox"
+            className="accent-rose"
+            checked={nextIsCover}
+            onChange={(e) => setNextIsCover(e.target.checked)}
+          />
+          Đặt file tải lên đầu tiên làm ảnh cover
+        </label>
+        <input
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          className="hidden"
+          disabled={uploading}
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+      </label>
+
+      {isLoading ? (
+        <LoadingSpinner label="Đang tải gallery..." />
+      ) : media.length === 0 ? (
+        <div className="rounded-xl border border-gunmetal/60 bg-charcoal p-8 text-center text-sm text-steelgray">
+          Sản phẩm này chưa có ảnh/video trong gallery. Hiện đang dùng ảnh thumbnail mặc định.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {media.map((m) => (
+            <div key={m.id} className="relative overflow-hidden rounded-xl border border-gunmetal/60 bg-charcoal">
+              <div className="aspect-square">
+                {m.media_type === "video" ? (
+                  <video src={m.url} className="h-full w-full object-cover" muted />
+                ) : (
+                  <img src={m.url} alt="" className="h-full w-full object-cover" />
+                )}
+              </div>
+              {m.is_cover && (
+                <span className="absolute left-2 top-2 rounded-full bg-crimson px-2 py-0.5 text-[10px] font-semibold text-white shadow">
+                  Cover
+                </span>
+              )}
+              {m.media_type === "video" && (
+                <span className="absolute right-2 top-2 rounded-full bg-charcoal/80 px-2 py-0.5 text-[10px] font-semibold text-white">
+                  Video
+                </span>
+              )}
+              <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 bg-gradient-to-t from-charcoal/95 to-transparent p-2 opacity-100">
+                {!m.is_cover && (
+                  <button
+                    onClick={() => setCover(m)}
+                    className="rounded-lg bg-crimson px-2 py-1 text-[10px] font-semibold text-white hover:bg-raspberry"
+                  >
+                    Đặt làm cover
+                  </button>
+                )}
+                <button
+                  onClick={() => deleteMedia(m)}
+                  className="ml-auto rounded-lg bg-deeprose px-2 py-1 text-[10px] font-semibold text-white hover:bg-rose"
+                >
+                  Xóa
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Coupons Tab ──────────────────────────────────────────────
+function CouponsTab() {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState<Coupon | null>(null);
+  const [form, setForm] = useState({
+    code: "",
+    description: "",
+    discount_type: "percent" as "percent" | "fixed",
+    discount_value: 10,
+    min_order_total: 0,
+    max_discount: null as number | null,
+    usage_limit: null as number | null,
+    starts_at: "",
+    expires_at: "",
+  });
+  const [error, setError] = useState("");
+
+  const { data: coupons = [], isLoading } = useQuery({
+    queryKey: ["admin-coupons"],
+    queryFn: async () => {
+      const { data } = await adminCouponsApi.list();
+      return data;
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: () => adminCouponsApi.create({
+      code: form.code,
+      description: form.description,
+      discount_type: form.discount_type,
+      discount_value: Number(form.discount_value),
+      min_order_total: Number(form.min_order_total || 0),
+      max_discount: form.max_discount,
+      usage_limit: form.usage_limit,
+      starts_at: form.starts_at,
+      expires_at: form.expires_at,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-coupons"] });
+      setForm({ ...form, code: "", description: "", discount_value: 10 });
+      setError("");
+    },
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Lỗi tạo coupon";
+      setError(typeof msg === "string" ? msg : "Lỗi tạo coupon");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () => editing ? adminCouponsApi.update(editing.id, {
+      description: form.description,
+      discount_type: form.discount_type,
+      discount_value: Number(form.discount_value),
+      min_order_total: Number(form.min_order_total || 0),
+      max_discount: form.max_discount,
+      usage_limit: form.usage_limit,
+      starts_at: form.starts_at,
+      expires_at: form.expires_at,
+    }) : Promise.reject("no editing"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-coupons"] });
+      setEditing(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => adminCouponsApi.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-coupons"] }),
+  });
+
+  const startEdit = (c: Coupon) => {
+    setEditing(c);
+    setForm({
+      code: c.code,
+      description: c.description,
+      discount_type: c.discount_type,
+      discount_value: c.discount_value,
+      min_order_total: c.min_order_total,
+      max_discount: c.max_discount,
+      usage_limit: c.usage_limit,
+      starts_at: c.starts_at,
+      expires_at: c.expires_at,
+    });
+  };
+
+  return (
+    <div>
+      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Quản lý mã giảm giá (Coupon)</h1>
+      <p className="mb-6 text-sm text-steelgray">Tạo và quản lý các mã giảm giá áp dụng ở bước thanh toán.</p>
+
+      <div className="mb-6 rounded-2xl border border-gunmetal/60 bg-graphite p-5 space-y-3">
+        <h2 className="text-base font-bold text-warmwhite">{editing ? `Sửa: ${editing.code}` : "Tạo coupon mới"}</h2>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs text-steelgray">Mã (CODE)</label>
+            <input
+              disabled={!!editing}
+              value={form.code}
+              onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+              placeholder="VD: SALE10"
+              className="input-field font-mono uppercase"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-steelgray">Mô tả</label>
+            <input
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="VD: Giảm 10% cho đơn ≥3 triệu"
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-steelgray">Loại giảm giá</label>
+            <select
+              value={form.discount_type}
+              onChange={(e) => setForm({ ...form, discount_type: e.target.value as "percent" | "fixed" })}
+              className="input-field"
+            >
+              <option value="percent">Phần trăm (%)</option>
+              <option value="fixed">Số tiền cố định (VND)</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-steelgray">
+              Giá trị {form.discount_type === "percent" ? "(1–100)" : "(VND)"}
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={form.discount_type === "percent" ? 1 : 1000}
+              value={form.discount_value}
+              onChange={(e) => setForm({ ...form, discount_value: Number(e.target.value) })}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-steelgray">Đơn hàng tối thiểu (VND)</label>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={form.min_order_total}
+              onChange={(e) => setForm({ ...form, min_order_total: Number(e.target.value) })}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-steelgray">Giảm tối đa (VND, không bắt buộc)</label>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={form.max_discount ?? ""}
+              onChange={(e) => setForm({ ...form, max_discount: e.target.value === "" ? null : Number(e.target.value) })}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-steelgray">Số lượt tối đa (0 = không giới hạn)</label>
+            <input
+              type="number"
+              min={0}
+              value={form.usage_limit ?? ""}
+              onChange={(e) => setForm({ ...form, usage_limit: e.target.value === "" ? null : Number(e.target.value) })}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-steelgray">Bắt đầu (tùy chọn)</label>
+            <input
+              type="text"
+              value={form.starts_at}
+              onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
+              placeholder="2025-01-01"
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-steelgray">Hết hạn (tùy chọn)</label>
+            <input
+              type="text"
+              value={form.expires_at}
+              onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
+              placeholder="2026-01-01"
+              className="input-field"
+            />
+          </div>
+        </div>
+        {error && <p className="text-sm text-rose">{error}</p>}
+        <div className="flex gap-2">
+          {editing ? (
+            <>
+              <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="btn-primary">
+                {updateMutation.isPending ? "Đang lưu..." : "Cập nhật"}
+              </button>
+              <button onClick={() => { setEditing(null); }} className="btn-secondary">Hủy</button>
+            </>
+          ) : (
+            <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.code} className="btn-primary">
+              {createMutation.isPending ? "Đang tạo..." : "Tạo coupon"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {isLoading ? (
+        <LoadingSpinner label="Đang tải coupon..." />
+      ) : coupons.length === 0 ? (
+        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-8 text-center text-sm text-steelgray">
+          Chưa có coupon nào.
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="border-b border-gunmetal/40 bg-charcoal/50">
+              <tr className="text-left text-steelgray">
+                <th className="px-4 py-3">Mã</th>
+                <th className="px-4 py-3">Mô tả</th>
+                <th className="px-4 py-3">Giảm</th>
+                <th className="px-4 py-3">Tối thiểu</th>
+                <th className="px-4 py-3">Đã dùng / Giới hạn</th>
+                <th className="px-4 py-3">Trạng thái</th>
+                <th className="px-4 py-3">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {coupons.map((c) => (
+                <tr key={c.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30">
+                  <td className="px-4 py-3 font-mono font-bold text-warmwhite">{c.code}</td>
+                  <td className="px-4 py-3 text-softgray max-w-[220px] truncate">{c.description || "—"}</td>
+                  <td className="px-4 py-3 text-crimson font-semibold">
+                    {c.discount_type === "percent" ? `${c.discount_value}%` : `${new Intl.NumberFormat("vi-VN").format(c.discount_value)}₫`}
+                  </td>
+                  <td className="px-4 py-3 text-steelgray">
+                    {c.min_order_total ? `${new Intl.NumberFormat("vi-VN").format(c.min_order_total)}₫` : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-steelgray">
+                    {c.usage_count}/{c.usage_limit ?? "∞"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.active ? "bg-emerald/15 text-emerald" : "bg-deeprose/15 text-rose"}`}>
+                      {c.active ? "Hoạt động" : "Tắt"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button onClick={() => startEdit(c)} className="text-sm text-crimson hover:text-sakura">Sửa</button>
+                      <button onClick={() => { if (confirm(`Xóa mã ${c.code}?`)) deleteMutation.mutate(c.id); }} className="text-sm text-deeprose hover:text-rose">Xóa</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Spin Tab ───────────────────────────────────────────────
+function SpinTab() {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<{
+    title: string;
+    background_url: string;
+    spend_per_spin_vnd: number;
+    prizes: WheelPrize[];
+  }>({
+    title: "",
+    background_url: "",
+    spend_per_spin_vnd: 3_000_000,
+    prizes: [],
+  });
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState("");
+  const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
+
+  const { data: cfg, isLoading } = useQuery({
+    queryKey: ["admin-wheel"],
+    queryFn: async () => {
+      const { data } = await adminSpinApi.get();
+      return data;
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      let backgroundUrl = form.background_url;
+      if (backgroundFile) {
+        const r = await adminApi.uploadMedia(backgroundFile);
+        backgroundUrl = r.data.url;
+      }
+      return adminSpinApi.update({
+        title: form.title,
+        background_url: backgroundUrl,
+        spend_per_spin_vnd: form.spend_per_spin_vnd,
+        prizes: form.prizes,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-wheel"] });
+      queryClient.invalidateQueries({ queryKey: ["spin-config"] });
+      setEditing(false);
+      setBackgroundFile(null);
+    },
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Lỗi lưu vòng quay";
+      setError(typeof msg === "string" ? msg : "Lỗi lưu vòng quay");
+    },
+  });
+
+  useState(() => false);
+
+  // initialize form from cfg (lazily)
+  if (cfg && !editing && form.title === "" && form.prizes.length === 0) {
+    setForm({
+      title: cfg.title,
+      background_url: cfg.background_url,
+      spend_per_spin_vnd: cfg.spend_per_spin_vnd,
+      prizes: cfg.prizes,
+    });
+  }
+
+  const updatePrize = (idx: number, patch: Partial<WheelPrize>) => {
+    setForm((prev) => {
+      const next = [...prev.prizes];
+      next[idx] = { ...next[idx], ...patch };
+      return { ...prev, prizes: next };
+    });
+  };
+
+  const addPrize = () => {
+    setForm((prev) => ({
+      ...prev,
+      prizes: [...prev.prizes, { name: "Quà mới", image: "", weight: 1, jackpot: false, coupon_id: null, icon: "" }],
+    }));
+  };
+
+  const removePrize = (idx: number) => {
+    setForm((prev) => ({ ...prev, prizes: prev.prizes.filter((_, i) => i !== idx) }));
+  };
+
+  const onPickImage = (idx: number) => async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const r = await adminApi.uploadMedia(f);
+    updatePrize(idx, { image: r.data.url });
+    e.target.value = "";
+  };
+
+  const totalWeight = form.prizes.reduce((sum, p) => sum + Number(p.weight || 0), 0);
+
+  if (isLoading) return <LoadingSpinner label="Đang tải..." />;
+  if (!cfg) return <div className="text-steelgray">Không tải được cấu hình.</div>;
+
+  return (
+    <div>
+      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Cấu hình vòng quay may mắn</h1>
+      <p className="mb-6 text-sm text-steelgray">
+        Thay đổi tiêu đề, ảnh nền, ngưỡng chi tiêu và các phần thưởng.
+        User sẽ nhận 1 lượt quay cho mỗi {new Intl.NumberFormat("vi-VN").format(form.spend_per_spin_vnd)} VND đã mua (đơn hàng đã giao).
+      </p>
+
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+          <label className="mb-1.5 block text-xs text-steelgray">Tiêu đề</label>
+          <input
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            className="input-field mb-3"
+          />
+          <label className="mb-1.5 block text-xs text-steelgray">Ngưỡng chi tiêu / lượt quay (VND)</label>
+          <input
+            type="number"
+            min={0}
+            step={100000}
+            value={form.spend_per_spin_vnd}
+            onChange={(e) => setForm({ ...form, spend_per_spin_vnd: Number(e.target.value) })}
+            className="input-field mb-3"
+          />
+          <label className="mb-1.5 block text-xs text-steelgray">Ảnh nền (URL hiện tại)</label>
+          <input
+            value={form.background_url}
+            onChange={(e) => setForm({ ...form, background_url: e.target.value })}
+            placeholder="/uploads/spin-bg.jpg"
+            className="input-field mb-3 font-mono text-xs"
+          />
+          <label className="mb-1.5 block text-xs text-steelgray">Tải ảnh nền mới (tùy chọn)</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setBackgroundFile(e.target.files?.[0] ?? null)}
+            className="text-sm text-steelgray"
+          />
+          {form.background_url && (
+            <img src={form.background_url} alt="bg" className="mt-3 h-24 w-full rounded-lg object-cover" />
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-bold text-warmwhite">Phần thưởng ({form.prizes.length})</h2>
+            <button onClick={addPrize} className="btn-secondary text-xs py-1.5 px-3">+ Thêm phần thưởng</button>
+          </div>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+            {form.prizes.map((p, idx) => (
+              <div key={idx} className="rounded-xl border border-gunmetal/40 bg-charcoal p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-graphite">
+                    {p.image ? <img src={p.image} alt="" className="h-full w-full object-cover" /> : null}
+                  </div>
+                  <input
+                    value={p.name}
+                    onChange={(e) => updatePrize(idx, { name: e.target.value })}
+                    placeholder="Tên phần thưởng"
+                    className="input-field flex-1"
+                  />
+                  <label className="cursor-pointer rounded-lg bg-gunmetal px-2 py-1.5 text-xs text-warmwhite hover:bg-gunmetal/80">
+                    📷
+                    <input type="file" accept="image/*" className="hidden" onChange={onPickImage(idx)} />
+                  </label>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <label className="flex-1">
+                    Trọng số (odds)
+                    <input
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      value={p.weight}
+                      onChange={(e) => updatePrize(idx, { weight: Number(e.target.value) })}
+                      className="input-field mt-1 h-8 text-xs"
+                    />
+                  </label>
+                  <label className="flex items-center gap-1 pt-4">
+                    <input
+                      type="checkbox"
+                      className="accent-rose"
+                      checked={p.jackpot || false}
+                      onChange={(e) => updatePrize(idx, { jackpot: e.target.checked })}
+                    />
+                    Jackpot
+                  </label>
+                  <button onClick={() => removePrize(idx)} className="rounded-lg p-1.5 text-deeprose hover:bg-deeprose/10">×</button>
+                </div>
+                {totalWeight > 0 && (
+                  <p className="mt-2 text-[10px] text-steelgray">
+                    Xác suất: {(Number(p.weight) / totalWeight * 100).toFixed(2)}%
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {error && <p className="mb-3 text-sm text-rose">{error}</p>}
+      <div className="flex gap-3">
+        <button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="btn-primary">
+          {saveMutation.isPending ? "Đang lưu..." : "Lưu cấu hình vòng quay"}
+        </button>
+        {saveMutation.isSuccess && (
+          <span className="self-center text-sm text-emerald">✓ Đã lưu thành công</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
