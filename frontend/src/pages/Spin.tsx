@@ -11,6 +11,9 @@ interface PrizeDef {
   icon?: string;
   coupon_id?: number | null;
   product_id?: number | null;
+  coupon_discount_type?: string | null;
+  coupon_discount_value?: number | null;
+  reward_type?: "coupon" | "free_product" | "jackpot" | "consolation" | null;
 }
 
 const FALLBACK_PRIZES: PrizeDef[] = [
@@ -44,7 +47,49 @@ function wrapText2(ctx: CanvasRenderingContext2D, text: string, x: number, y: nu
   lines.forEach((l, i) => ctx.fillText(l, x, startY + i * lineHeight));
 }
 
-function drawWheel(canvas: HTMLCanvasElement, prizes: PrizeDef[]) {
+function preloadImages(urls: string[]): Promise<Record<string, HTMLImageElement>> {
+  return Promise.all(
+    urls.map(
+      (url) =>
+        new Promise<{ url: string; img: HTMLImageElement }>((resolve) => {
+          if (!url) {
+            resolve({ url, img: null as unknown as HTMLImageElement });
+            return;
+          }
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve({ url, img });
+          img.onerror = () => resolve({ url, img });
+          img.src = url;
+        }),
+    ),
+  ).then((entries) => {
+    const out: Record<string, HTMLImageElement> = {};
+    for (const e of entries) if (e.img) out[e.url] = e.img;
+    return out;
+  });
+}
+
+const classifyPrize = (p: PrizeDef): "coupon" | "free_product" | "jackpot" | "consolation" => {
+  if (p.reward_type) return p.reward_type;
+  if (p.product_id) return "free_product";
+  if (p.coupon_id || p.coupon_discount_type || p.coupon_discount_value) return "coupon";
+  if (p.jackpot) return "jackpot";
+  return "consolation";
+};
+
+const REWARD_TYPE_LABEL: Record<"coupon" | "free_product" | "jackpot" | "consolation", string> = {
+  coupon: "Mã giảm giá",
+  free_product: "Sản phẩm miễn phí",
+  jackpot: "Jackpot",
+  consolation: "An ủi",
+};
+
+function drawWheel(
+  canvas: HTMLCanvasElement,
+  prizes: PrizeDef[],
+  images: Record<string, HTMLImageElement>,
+) {
   const LOGICAL_SIZE = 640;
   const dpr = window.devicePixelRatio || 1;
   canvas.width = LOGICAL_SIZE * dpr;
@@ -103,12 +148,26 @@ function drawWheel(canvas: HTMLCanvasElement, prizes: PrizeDef[]) {
     ctx.rotate(mid + Math.PI / 2);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const iconY = -r * 0.66;
-    ctx.font = "44px -apple-system, Segoe UI Emoji, sans-serif";
-    ctx.fillText(p.icon || "🎁", 0, iconY);
-    ctx.font = "600 19px Inter, Segoe UI, sans-serif";
+
+    // Render the prize's real product image (sourced from the wheel
+    // config served by /api/spin/config) when we have it; fall back to
+    // the configured icon / gift emoji otherwise. This is what makes
+    // the wheel actually use the backend data instead of a static
+    // emoji-only list.
+    const img = p.image ? images[p.image] : null;
+    const imgSize = 64;
+    const imgY = -r * 0.62;
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, -imgSize / 2, imgY - imgSize / 2, imgSize, imgSize);
+    } else {
+      ctx.font = "44px -apple-system, Segoe UI Emoji, sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(p.icon || "🎁", 0, imgY);
+    }
+
+    ctx.font = "600 17px Inter, Segoe UI, sans-serif";
     ctx.fillStyle = "#eef2ff";
-    wrapText2(ctx, p.name, 0, -r * 0.4, 96);
+    wrapText2(ctx, p.name, 0, -r * 0.32, 96);
     ctx.restore();
   });
 
@@ -292,6 +351,7 @@ export default function Spin() {
   const [modalPrize, setModalPrize] = useState<ModalPrize | null>(null);
   const [detailRow, setDetailRow] = useState<SpinHistoryItem | null>(null);
   const [playError, setPlayError] = useState<string | null>(null);
+  const [prizeImages, setPrizeImages] = useState<Record<string, HTMLImageElement>>({});
   const [hasToken, setHasToken] = useState<boolean>(() => !!localStorage.getItem("token"));
 
   useEffect(() => {
@@ -364,12 +424,33 @@ export default function Spin() {
       jackpot: !!p.jackpot,
       coupon_id: (p as { coupon_id?: number | null }).coupon_id ?? null,
       product_id: (p as { product_id?: number | null }).product_id ?? null,
+      coupon_discount_type: (p as { coupon_discount_type?: string | null }).coupon_discount_type ?? null,
+      coupon_discount_value: (p as { coupon_discount_value?: number | null }).coupon_discount_value ?? null,
+      reward_type: (p as { reward_type?: "coupon" | "free_product" | "jackpot" | "consolation" | null }).reward_type ?? null,
       icon: p.icon || FALLBACK_PRIZES[i % FALLBACK_PRIZES.length]?.icon || "🎁",
     }));
   }, [cfg]);
 
   useEffect(() => {
-    if (canvasRef.current) drawWheel(canvasRef.current, prizes);
+    if (!canvasRef.current) return;
+    drawWheel(canvasRef.current, prizes, prizeImages);
+  }, [prizes, prizeImages]);
+
+  // After we know the prize list, kick off image preloads so the wheel
+  // can draw each segment's product photo instead of an emoji.
+  useEffect(() => {
+    const urls = prizes
+      .map((p) => p.image)
+      .filter((u): u is string => typeof u === "string" && u.length > 0);
+    const unique = Array.from(new Set(urls));
+    if (unique.length === 0) return;
+    let cancelled = false;
+    preloadImages(unique).then((loaded) => {
+      if (!cancelled) setPrizeImages(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [prizes]);
 
   async function refreshConfig() {
@@ -582,26 +663,44 @@ export default function Spin() {
           <div className="rounded-bento border border-rose/20 bg-cardtint/60 p-5">
             <h2 className="mb-3 text-base font-bold text-warmwhite">Phần thưởng</h2>
             <div className="grid grid-cols-2 gap-2">
-              {prizes.map((p, i) => (
-                <div
-                  key={`${p.name}-${i}`}
-                  className="flex items-center gap-2 rounded-lg border border-gunmetal/40 bg-charcoal p-2"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-graphite text-lg">
-                    {p.image ? (
-                      <img src={p.image} alt="" className="h-full w-full object-contain" />
-                    ) : (
-                      <span>{p.icon || "🎁"}</span>
-                    )}
+              {prizes.map((p, i) => {
+                const r = classifyPrize(p);
+                const rewardLabel = REWARD_TYPE_LABEL[r];
+                return (
+                  <div
+                    key={`${p.name}-${i}`}
+                    className="flex items-center gap-2 rounded-lg border border-gunmetal/40 bg-charcoal p-2"
+                  >
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-graphite">
+                      {p.image ? (
+                        <img src={p.image} alt="" className="h-full w-full object-contain" />
+                      ) : (
+                        <span className="text-lg">{p.icon || "🎁"}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-warmwhite">{p.name}</p>
+                      <p className="truncate text-[10px] text-steelgray">
+                        <span
+                          className={
+                            r === "jackpot"
+                              ? "text-yellow-300"
+                              : r === "free_product"
+                              ? "text-emerald-300"
+                              : r === "coupon"
+                              ? "text-pink-300"
+                              : "text-softgray"
+                          }
+                        >
+                          {rewardLabel}
+                        </span>
+                        {" · "}
+                        {((Number(p.weight) / totalWeight) * 100).toFixed(2)}%
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium text-warmwhite">{p.name}</p>
-                    <p className="text-[10px] text-steelgray">
-                      xác suất {((Number(p.weight) / totalWeight) * 100).toFixed(2)}%
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
