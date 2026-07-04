@@ -1,0 +1,41 @@
+feat(spin): configurable free-product + automatic coupon prizes; admin tag presets
+
+Spin page
+- Featured section now strictly shows only products tagged "featured"
+  (no fallback to non-featured items) — max 3.
+- Lucky wheel "QUAY" button now uses solid colours (Tailwind gradient class
+  names `cz-gold-*` were never registered → button was rendering black/
+  transparent).
+- Each "Lịch sử quay" row is now clickable and opens a "Xem chi tiết phần
+  thưởng" modal showing the coupon code or the free-product reward.
+- Spin response/histories now surface `reward_type`, `product_id`,
+  `product_name`, `product_image_url`, `discount_value` so the modal can
+  render the prize properly.
+
+Admin — Products tab
+- Tag chips split into three sections:
+  1) phone/general tags (iPhone / Android / Samsung / Xiaomi / OPPO /
+     Flagship / Budget / 5G / Gaming / Featured)
+  2) accessory — automatic `accessory` umbrella chip + six category
+     buckets (Ốp lưng, Tai nghe, Sạc dự phòng, Cáp sạc, Miếng dán,
+     Gậy selfie) with all the keyword variants the Accessories page
+     actually filters on
+  3) accessory — compatibility chips (iPhone, Samsung, Xiaomi, OPPO,
+     Universal)
+- Selecting any category/compatibility chip auto-toggles the umbrella
+  "accessory" chip; removing all accessory chips drops the umbrella tag
+  again so products can be demoted out of the Accessories page.
+
+Backend
+- `WheelPrize` schema gains `product_id`, `reward_type`,
+  `coupon_discount_type`, `coupon_discount_value`, `product_name`.
+- `Spin` model adds `product_id`, `coupon_code` columns + indices.
+- `services/spin.py` rewrites `perform_spin`:
+    * product reward  -> create a `delivered` Order with unit_price=0
+    * coupon reward   -> mint a unique 8-char code, usage_limit=1,
+                         persist it on the Spin row
+- `/api/spin/history` and `/api/spin/play` surface `reward_type`,
+  `product_id`, `product_name`, `product_image_url`, `discount_value`.
+- Default prize JSON now exercises both code paths.
+
+Co-Authored-By: Cursor <noreply@cursor.sh>

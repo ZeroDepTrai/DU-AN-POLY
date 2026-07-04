@@ -36,7 +36,12 @@ export interface WheelPrize {
   weight: number;
   jackpot?: boolean;
   coupon_id?: number | null;
+  product_id?: number | null;
   icon?: string;
+  reward_type?: string | null;
+  coupon_discount_type?: string | null;
+  coupon_discount_value?: number | null;
+  product_name?: string | null;
 }
 
 export interface WheelConfig {
@@ -54,6 +59,11 @@ export interface SpinHistoryItem {
   prize_label: string;
   prize_kind: string;
   coupon_code: string | null;
+  product_id?: number | null;
+  product_name?: string | null;
+  product_image_url?: string | null;
+  reward_type?: string | null;
+  discount_value?: number | null;
   created_at: string;
 }
 

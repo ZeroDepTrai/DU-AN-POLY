@@ -279,10 +279,57 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
 }
 
 // ── Products Tab ──────────────────────────────────────────
-const TAG_PRESETS = [
+
+// Phone / general-purpose tag presets
+// Shared chip button used everywhere in the products tab.
+// Lives at module scope so it's accessible from any JSX block below.
+function ChipButton({
+  tag,
+  label,
+  selected,
+  onToggle,
+}: {
+  tag: string;
+  label?: string;
+  selected: boolean;
+  onToggle: (tag: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(tag)}
+      className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+        selected
+          ? "bg-crimson text-white"
+          : "border border-gunmetal/60 bg-graphite text-steelgray hover:border-silvergray hover:text-warmwhite"
+      }`}
+    >
+      {label ?? tag}
+    </button>
+  );
+}
+
+const PHONE_TAG_PRESETS = [
   "iPhone", "Android", "Samsung", "Xiaomi", "OPPO",
-  "Flagship", "Budget", "5G", "Gaming", "Featured", "Accessory",
+  "Flagship", "Budget", "5G", "Gaming", "Featured",
 ];
+
+// Accessory category keywords — each maps onto the same keywords that the
+// Accessories page filters by. Picking any chip also auto-toggles the
+// umbrella "accessory" tag.
+const ACCESSORY_CATEGORY_TAGS: { label: string; chips: string[] }[] = [
+  { label: "Ốp lưng",        chips: ["ốp lưng", "ốp", "case"] },
+  { label: "Tai nghe",       chips: ["tai nghe", "earphone", "earbud", "airpod"] },
+  { label: "Sạc dự phòng",   chips: ["sạc dự phòng", "power bank", "powerbank"] },
+  { label: "Cáp sạc",        chips: ["cáp sạc", "cáp", "cable", "dây sạc"] },
+  { label: "Miếng dán",      chips: ["miếng dán", "cường lực", "kính"] },
+  { label: "Gậy selfie",     chips: ["gậy selfie", "gậy", "selfie"] },
+];
+
+// Accessory compatibility tokens the Accessories page filters by.
+const ACCESSORY_COMPAT_TAGS = ["iPhone", "Samsung", "Xiaomi", "OPPO", "Universal"];
+
+const ACCESSORY_UMBRELLA = "accessory";
 
 const SPEC_LABELS = [
   "Hệ điều hành",
@@ -472,8 +519,35 @@ function ProductsTab({ products }: { products: Product[] }) {
     if (!fullTagChips.includes(t)) setFullTagChips((p) => [...p, t]);
   };
 
-  const removeQuickTag = (t: string) => setQuickTagChips((p) => p.filter((x) => x !== t));
-  const removeFullTag = (t: string) => setFullTagChips((p) => p.filter((x) => x !== t));
+  // Returns the union of accessory-category chips + compatibility chips that
+  // are currently selected, used to drive auto-toggling of the umbrella tag.
+  const accessoryChipsSelected = (chips: string[]): string[] => {
+    const all = new Set<string>();
+    for (const grp of ACCESSORY_CATEGORY_TAGS) {
+      grp.chips.forEach((c) => all.add(c));
+    }
+    ACCESSORY_COMPAT_TAGS.forEach((c) => all.add(c.toLowerCase()));
+    return chips.filter((c) => all.has(c));
+  };
+
+  const removeQuickTag = (t: string) => {
+    setQuickTagChips((p) => {
+      const next = p.filter((x) => x !== t);
+      const accChips = accessoryChipsSelected(next);
+      if (accChips.length > 0 && !next.includes(ACCESSORY_UMBRELLA)) return [...next, ACCESSORY_UMBRELLA];
+      if (accChips.length === 0 && next.includes(ACCESSORY_UMBRELLA)) return next.filter((x) => x !== ACCESSORY_UMBRELLA);
+      return next;
+    });
+  };
+  const removeFullTag = (t: string) => {
+    setFullTagChips((p) => {
+      const next = p.filter((x) => x !== t);
+      const accChips = accessoryChipsSelected(next);
+      if (accChips.length > 0 && !next.includes(ACCESSORY_UMBRELLA)) return [...next, ACCESSORY_UMBRELLA];
+      if (accChips.length === 0 && next.includes(ACCESSORY_UMBRELLA)) return next.filter((x) => x !== ACCESSORY_UMBRELLA);
+      return next;
+    });
+  };
 
   const filtered = products.filter(
     (p) => !search || p.name.toLowerCase().includes(search.toLowerCase()),
@@ -493,23 +567,124 @@ function ProductsTab({ products }: { products: Product[] }) {
         />
       </div>
 
-      {/* Tag presets */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        <span className="self-center text-xs text-steelgray mr-1">Chọn nhãn:</span>
-        {TAG_PRESETS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => toggleTag(t)}
-            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${
-              quickTagChips.includes(t.toLowerCase()) || fullTagChips.includes(t.toLowerCase())
-                ? "bg-crimson text-white"
-                : "border border-gunmetal/60 bg-graphite text-steelgray hover:border-silvergray hover:text-warmwhite"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
+      {/* Tag presets — phones + categories + compatibility */}
+      <div className="mb-4 space-y-3">
+        {/* Phone / general chips */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="self-center text-xs font-semibold uppercase tracking-wider text-steelgray">
+            Sản phẩm
+          </span>
+          {PHONE_TAG_PRESETS.map((t) => (
+            <ChipButton
+              key={t}
+              tag={t}
+              selected={
+                quickTagChips.includes(t.toLowerCase()) ||
+                fullTagChips.includes(t.toLowerCase())
+              }
+              onToggle={toggleTag}
+            />
+          ))}
+        </div>
+
+        {/* Accessory umbrella chip (toggleable manually too) */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="self-center text-xs font-semibold uppercase tracking-wider text-rose">
+            Phụ kiện
+          </span>
+          <ChipButton
+            tag={ACCESSORY_UMBRELLA}
+            label="accessory"
+            selected={
+              quickTagChips.includes(ACCESSORY_UMBRELLA) ||
+              fullTagChips.includes(ACCESSORY_UMBRELLA)
+            }
+            onToggle={(t) => {
+              const lc = t.toLowerCase();
+              setQuickTagChips((p) =>
+                p.includes(lc) ? p.filter((x) => x !== lc) : [...p, lc]
+              );
+              setFullTagChips((p) =>
+                p.includes(lc) ? p.filter((x) => x !== lc) : [...p, lc]
+              );
+            }}
+          />
+          <span className="text-[11px] text-steelgray">
+            (tự động bật khi chọn danh mục / tương thích bên dưới)
+          </span>
+        </div>
+
+        {/* Accessory categories */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="self-center text-xs font-semibold uppercase tracking-wider text-steelgray">
+            · Danh mục
+          </span>
+          {ACCESSORY_CATEGORY_TAGS.flatMap((cat) =>
+            cat.chips.map((c) => (
+              <ChipButton
+                key={c}
+                tag={c}
+                selected={
+                  quickTagChips.includes(c) || fullTagChips.includes(c)
+                }
+                onToggle={(tag) => {
+                  const lc = tag.toLowerCase();
+                  setQuickTagChips((p) => {
+                    if (p.includes(lc)) return p.filter((x) => x !== lc);
+                    const next = [...p, lc];
+                    if (!next.includes(ACCESSORY_UMBRELLA))
+                      next.push(ACCESSORY_UMBRELLA);
+                    return next;
+                  });
+                  setFullTagChips((p) => {
+                    if (p.includes(lc)) return p.filter((x) => x !== lc);
+                    const next = [...p, lc];
+                    if (!next.includes(ACCESSORY_UMBRELLA))
+                      next.push(ACCESSORY_UMBRELLA);
+                    return next;
+                  });
+                }}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Compatibility */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="self-center text-xs font-semibold uppercase tracking-wider text-steelgray">
+            · Tương thích
+          </span>
+          {ACCESSORY_COMPAT_TAGS.map((t) => {
+            const lc = t.toLowerCase();
+            return (
+              <ChipButton
+                key={t}
+                tag={t}
+                label={t}
+                selected={
+                  quickTagChips.includes(lc) || fullTagChips.includes(lc)
+                }
+                onToggle={(tag) => {
+                  const lower = tag.toLowerCase();
+                  setQuickTagChips((p) => {
+                    if (p.includes(lower)) return p.filter((x) => x !== lower);
+                    const next = [...p, lower];
+                    if (!next.includes(ACCESSORY_UMBRELLA))
+                      next.push(ACCESSORY_UMBRELLA);
+                    return next;
+                  });
+                  setFullTagChips((p) => {
+                    if (p.includes(lower)) return p.filter((x) => x !== lower);
+                    const next = [...p, lower];
+                    if (!next.includes(ACCESSORY_UMBRELLA))
+                      next.push(ACCESSORY_UMBRELLA);
+                    return next;
+                  });
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* Form tabs */}

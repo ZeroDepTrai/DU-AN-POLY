@@ -134,12 +134,28 @@ class CouponValidateResponse(BaseModel):
 # ── Spin / Wheel ────────────────────────────────────────────────────────
 
 class WheelPrize(BaseModel):
+    """One slot on the wheel.
+
+    reward_type is inferred when omitted:
+      - "free_product" if product_id is set
+      - "coupon"       if coupon_id is set  (admin pick a coupon template)
+      - "consolation"  otherwise
+
+    For coin-flip-style prizes, set ``coupon_discount_type`` + ``coupon_discount_value``
+    so the backend can mint a *unique* coupon code on every spin (the user keeps
+    that single code forever, even if it never matches an existing coupon row).
+    """
     name: str
     image: str = ""
     weight: float = 0
     jackpot: bool = False
     coupon_id: int | None = None
+    product_id: int | None = None
     icon: str = ""
+    reward_type: str | None = None
+    coupon_discount_type: str | None = None      # "percent" | "fixed"
+    coupon_discount_value: float | None = None
+    product_name: str | None = None              # optional cache for display
 
 
 class WheelConfigResponse(BaseModel):
@@ -165,7 +181,12 @@ class SpinHistoryItem(BaseModel):
     id: int
     prize_label: str
     prize_kind: str
-    coupon_code: str | None
+    coupon_code: str | None = None
+    product_id: int | None = None
+    product_name: str | None = None
+    product_image_url: str | None = None
+    reward_type: str | None = None
+    discount_value: float | None = None
     created_at: str
 
     model_config = {"from_attributes": True}

@@ -176,7 +176,14 @@ class Coupon(Base):
 
 
 class Spin(Base):
-    """Audit row for each wheel spin (one spin consumes one SpinCredits)."""
+    """Audit row for each wheel spin (one spin consumes one SpinCredits).
+
+    After a successful spin the row also records the resolved prize:
+      * if it was a coupon, ``coupon_code`` holds the *unique* code the user
+        keeps (we mint a fresh Coupon row per spin).
+      * if it was a free product, ``product_id`` points at the prize product
+        (an Order + OrderItem were created with unit_price=0 and status=delivered).
+    """
 
     __tablename__ = "spins"
 
@@ -184,7 +191,9 @@ class Spin(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
     prize_label: Mapped[str] = mapped_column(String(120), nullable=False)
     prize_kind: Mapped[str] = mapped_column(String(32), default="consolation", nullable=False)
-    coupon_id: Mapped[int | None] = mapped_column(ForeignKey("coupons.id"), nullable=True)
+    coupon_id: Mapped[int | None] = mapped_column(ForeignKey("coupons.id"), nullable=True, index=True)
+    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"), nullable=True, index=True)
+    coupon_code: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))
 
     user: Mapped["User"] = relationship(back_populates="spins")

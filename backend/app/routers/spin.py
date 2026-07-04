@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_current_user, require_admin
-from app.models import Coupon, Spin, User, WheelConfig
+from app.models import Coupon, Product, Spin, User, WheelConfig
 from app.schemas import (
     SpinHistoryItem,
     WheelConfigResponse,
@@ -25,6 +25,20 @@ from app.services.spin import (
 router = APIRouter(prefix="/api", tags=["spin"])
 
 
+def _decorate_prizes(prizes: list[dict], db: Session) -> list[WheelPrize]:
+    """Inject product_name + product_image_url into the prize response."""
+    out: list[WheelPrize] = []
+    for p in prizes:
+        pid = p.get("product_id")
+        if pid and not p.get("product_name"):
+            prod = db.get(Product, pid)
+            if prod is not None:
+                p["product_name"] = prod.name
+                p["product_image_url"] = prod.image_url
+        out.append(WheelPrize(**p))
+    return out
+
+
 @router.get("/spin/config", response_model=WheelConfigResponse)
 def get_wheel_config(
     db: Session = Depends(get_db),
@@ -36,7 +50,7 @@ def get_wheel_config(
         id=cfg.id,
         title=cfg.title,
         background_url=cfg.background_url,
-        prizes=[WheelPrize(**p) for p in prizes],
+        prizes=_decorate_prizes(prizes, db),
         spend_per_spin_vnd=cfg.spend_per_spin_vnd,
         user_credits=user_credit_balance(db, current_user.id),
         lifetime_spend_vnd=user_lifetime_spend_vnd(db, current_user.id),
@@ -57,19 +71,28 @@ def play_spin(
 
     prize, spin = perform_spin(db, current_user.id)
 
-    coupon_code = None
-    if prize.get("coupon_id"):
-        from app.models import Coupon as CouponModel
+    # Lookup product/coupon for the response payload.
+    product = None
+    if spin.product_id:
+        product = db.get(Product, spin.product_id)
+        if product:
+            prize["product_name"] = product.name
+            prize["product_image_url"] = product.image_url
 
-        coupon = db.get(CouponModel, prize["coupon_id"])
+    coupon_code = spin.coupon_code
+    discount_value: float | None = None
+    if coupon_code is None and spin.coupon_id is not None:
+        coupon = db.get(Coupon, spin.coupon_id)
         if coupon is not None:
             coupon_code = coupon.code
+            discount_value = float(coupon.discount_value)
 
     return {
         "prize": prize,
         "spin_id": spin.id,
         "remaining_credits": user_credit_balance(db, current_user.id),
         "coupon_code": coupon_code,
+        "discount_value": discount_value,
     }
 
 
@@ -84,19 +107,35 @@ def spin_history(
         .order_by(Spin.id.desc())
         .all()
     )
-    result = []
+    result: list[SpinHistoryItem] = []
     for s in rows:
-        code = None
-        if s.coupon_id is not None:
+        code = s.coupon_code
+        discount_value: float | None = None
+        if code is None and s.coupon_id is not None:
             coupon = db.get(Coupon, s.coupon_id)
             if coupon is not None:
                 code = coupon.code
+                discount_value = float(coupon.discount_value)
+
+        product_name: str | None = None
+        product_image_url: str | None = None
+        if s.product_id is not None:
+            product = db.get(Product, s.product_id)
+            if product is not None:
+                product_name = product.name
+                product_image_url = product.image_url
+
         result.append(
             SpinHistoryItem(
                 id=s.id,
                 prize_label=s.prize_label,
                 prize_kind=s.prize_kind,
                 coupon_code=code,
+                product_id=s.product_id,
+                product_name=product_name,
+                product_image_url=product_image_url,
+                reward_type=s.prize_kind,
+                discount_value=discount_value,
                 created_at=s.created_at.isoformat() if s.created_at else "",
             )
         )
@@ -104,6 +143,7 @@ def spin_history(
 
 
 # ── Admin ──────────────────────────────────────────────────────────────
+
 
 @router.get("/admin/wheel", response_model=WheelConfigResponse)
 def admin_get_wheel(
@@ -116,7 +156,7 @@ def admin_get_wheel(
         id=cfg.id,
         title=cfg.title,
         background_url=cfg.background_url,
-        prizes=[WheelPrize(**p) for p in prizes],
+        prizes=_decorate_prizes(prizes, db),
         spend_per_spin_vnd=cfg.spend_per_spin_vnd,
         user_credits=0,
         lifetime_spend_vnd=0,
@@ -142,7 +182,9 @@ def admin_update_wheel(
             raise HTTPException(status_code=400, detail="spend_per_spin_vnd phải ≥ 0")
         cfg.spend_per_spin_vnd = payload.spend_per_spin_vnd
     if payload.prizes is not None:
-        cfg.prizes_json = json.dumps([p.model_dump() for p in payload.prizes], ensure_ascii=False)
+        cfg.prizes_json = json.dumps(
+            [p.model_dump(exclude_none=True) for p in payload.prizes], ensure_ascii=False
+        )
     cfg.updated_at = datetime.utcnow()
 
     db.commit()
@@ -152,18 +194,24 @@ def admin_update_wheel(
         id=cfg.id,
         title=cfg.title,
         background_url=cfg.background_url,
-        prizes=[WheelPrize(**p) for p in prizes],
+        prizes=_decorate_prizes(prizes, db),
         spend_per_spin_vnd=cfg.spend_per_spin_vnd,
         user_credits=0,
         lifetime_spend_vnd=0,
     )
 
 
-def parse_prizes(raw: str) -> list[dict]:
+def parse_prizes(raw) -> list[dict]:
+    """Module-level helper (kept for back-compat with old imports)."""
     import json
 
-    try:
-        data = json.loads(raw or "[]")
-    except Exception:
-        return []
+    if isinstance(raw, str):
+        try:
+            data = json.loads(raw or "[]")
+        except Exception:
+            data = []
+    elif isinstance(raw, list):
+        data = raw
+    else:
+        data = []
     return data if isinstance(data, list) else []
