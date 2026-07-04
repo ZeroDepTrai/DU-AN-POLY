@@ -1,31 +1,29 @@
 """Spin / wheel / user lottery helpers.
 
 Behavior rules (from spec):
-* Every `spend_per_spin_vnd` VND of *delivered* order history = 1 spin credit.
-  Granted cumulatively (1 spin per N VND, accumulating across all delivered
-  orders). Multiple credits may be granted at once when an order is delivered.
-* Spinning consumes exactly one credit. The server picks a weighted prize from
-  the active `WheelConfig` and writes an audit row to `spins`.
+* Every `spend_per_spin_vnd` VND of *delivered* order history = 1 spin credit,
+  accumulating across all delivered orders. Multiple credits may be granted
+  at once when an order is delivered.
+* Spinning consumes exactly one credit. The server picks a weighted prize
+  from the active `WheelConfig` and writes an audit row to `spins`.
 
 Prize resolution rules:
 * If the prize picks ``product_id`` -> free product reward:
   - Create an Order + OrderItem for the winning user, unit_price=0,
     status=delivered, payment_method="spin_reward".
   - Set the Spin row's product_id and order_id.
-* If the prize has ``coupon_discount_type``/``coupon_discount_value`` ->
+* If the prize has ``coupon_discount_type`` + ``coupon_discount_value`` ->
   one-off coupon reward:
-  - Mint a *new* Coupon row with a unique 8-char code, usage_limit=1,
-    and apply it to the user. Persist the code on the Spin row so the user
-    keeps it forever.
-* If the prize picks an existing ``coupon_id`` -> just attach the coupon
-  to the Spin (legacy behaviour).
+  - Mint a *new* Coupon row with a unique code (prefix "SP"), usage_limit=1,
+    and persist the code on the Spin row so the user keeps it forever.
 * Otherwise the spin is "consolation" (no extra artefact).
 """
 
 from __future__ import annotations
 
+import json
+import secrets
 from datetime import datetime, timezone
-from typing import Iterable
 
 from sqlalchemy.orm import Session
 
@@ -43,14 +41,14 @@ from app.models import (
 
 DEFAULT_PRIZES_JSON = (
     "["
-    '{"name":"Mã giảm giá 2%","image":"/uploads/case.png","weight":35,"jackpot":false,"coupon_id":null,"coupon_discount_type":"percent","coupon_discount_value":2,"product_id":null,"icon":"🎟️"},'
-    '{"name":"Cường Lực miễn phí","image":"/uploads/screen.png","weight":25,"jackpot":false,"coupon_id":null,"coupon_discount_type":"percent","coupon_discount_value":10,"product_id":null,"icon":"🛡️"},'
-    '{"name":"Ốp Iphone miễn phí","image":"/uploads/cable.png","weight":20,"jackpot":false,"coupon_id":null,"coupon_discount_type":"percent","coupon_discount_value":5,"product_id":null,"icon":"📱"},'
-    '{"name":"Dây sạc miễn phí","image":"/uploads/charger.png","weight":14,"jackpot":false,"coupon_id":null,"coupon_discount_type":"percent","coupon_discount_value":5,"product_id":null,"icon":"🔌"},'
-    '{"name":"Mã giảm giá 5%","image":"/uploads/airpod.png","weight":5,"jackpot":false,"coupon_id":null,"coupon_discount_type":"percent","coupon_discount_value":5,"product_id":null,"icon":"🎁"},'
-    '{"name":"Chúc bạn may mắn lần sau","image":"/uploads/smartwatch.png","weight":1,"jackpot":false,"coupon_id":null,"coupon_discount_type":null,"coupon_discount_value":null,"product_id":null,"icon":"🍀"},'
-    '{"name":"Apple Watch","image":"/uploads/watch.png","weight":0.4,"jackpot":true,"coupon_id":null,"coupon_discount_type":null,"coupon_discount_value":null,"product_id":null,"icon":"⌚"},'
-    '{"name":"IPhone 17 Pro Max","image":"/uploads/iphone.png","weight":0.1,"jackpot":true,"coupon_id":null,"coupon_discount_type":null,"coupon_discount_value":null,"product_id":null,"icon":"📱"}'
+    '{"name":"Mã giảm giá 2%","image":"/uploads/case.png","weight":35,"jackpot":false,"icon":"🎟️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":2},'
+    '{"name":"Cường Lực miễn phí","image":"/uploads/screen.png","weight":25,"jackpot":false,"icon":"🛡️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":10},'
+    '{"name":"Ốp Iphone miễn phí","image":"/uploads/cable.png","weight":20,"jackpot":false,"icon":"📱","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
+    '{"name":"Dây sạc miễn phí","image":"/uploads/charger.png","weight":14,"jackpot":false,"icon":"🔌","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
+    '{"name":"Mã giảm giá 5%","image":"/uploads/airpod.png","weight":5,"jackpot":false,"icon":"🎁","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
+    '{"name":"Chúc bạn may mắn lần sau","image":"/uploads/smartwatch.png","weight":0.5,"jackpot":false,"icon":"🍀","coupon_id":null,"product_id":null},'
+    '{"name":"Apple Watch","image":"/uploads/watch.png","weight":0.4,"jackpot":true,"icon":"⌚","coupon_id":null,"product_id":null},'
+    '{"name":"IPhone 17 Pro Max","image":"/uploads/iphone.png","weight":0.1,"jackpot":true,"icon":"📱","coupon_id":null,"product_id":null}'
     "]"
 )
 
@@ -75,8 +73,6 @@ def get_or_create_wheel(db: Session) -> WheelConfig:
 
 
 def parse_prizes(cfg: WheelConfig | None) -> list[dict]:
-    import json
-
     raw = getattr(cfg, "prizes_json", None) if cfg is not None else None
     try:
         data = json.loads(raw or "[]")
@@ -87,14 +83,15 @@ def parse_prizes(cfg: WheelConfig | None) -> list[dict]:
 
 def _classify_prize(prize: dict) -> str:
     """Return one of: free_product | coupon | jackpot | consolation."""
-    if prize.get("jackpot") and (prize.get("product_id") or prize.get("name")):
-        # Admin may mark a product prize as jackpot (jackpot + product_id wins free product)
-        if prize.get("product_id"):
-            return "free_product"
-        return "jackpot"
+    if prize.get("reward_type"):
+        return str(prize["reward_type"])
     if prize.get("product_id"):
         return "free_product"
-    if prize.get("coupon_id") or prize.get("coupon_discount_value") or prize.get("coupon_discount_type"):
+    if (
+        prize.get("coupon_id")
+        or prize.get("coupon_discount_type")
+        or prize.get("coupon_discount_value") is not None
+    ):
         return "coupon"
     if prize.get("jackpot"):
         return "jackpot"
@@ -102,6 +99,10 @@ def _classify_prize(prize: dict) -> str:
 
 
 # ── credit / spend math ────────────────────────────────────────────────────
+
+
+def _order_subtotal(order: Order) -> float:
+    return sum((i.unit_price or 0) * (i.quantity or 0) for i in (order.items or []))
 
 
 def user_credit_balance(db: Session, user_id: int) -> int:
@@ -117,34 +118,36 @@ def user_lifetime_spend_vnd(db: Session, user_id: int) -> int:
         .filter(Order.user_id == user_id, Order.status == OrderStatus.delivered)
         .all()
     )
-    total = 0.0
-    for o in delivered:
-        total += sum(i.unit_price * i.quantity for i in o.items)
-    return int(total)
+    return int(sum(_order_subtotal(o) for o in delivered))
 
 
 def grant_credits_for_delivered_order(db: Session, order: Order) -> int:
+    """When an order transitions to 'delivered', give the buyer 1 spin per
+    ``spend_per_spin_vnd`` VND of *delivered* order history (so credits
+    accumulate across orders). Returns the number of newly-granted credits.
+    """
     cfg = get_or_create_wheel(db)
     threshold = cfg.spend_per_spin_vnd or 3_000_000
+    if threshold <= 0:
+        return 0
 
     delivered = (
         db.query(Order)
         .filter(Order.user_id == order.user_id, Order.status == OrderStatus.delivered)
         .all()
     )
-    ids = {o.id for o in delivered}
-    if order.id not in ids:
+    if order.id is not None and order not in delivered:
         delivered.append(order)
 
-    lifetime_spend = 0.0
-    for o in delivered:
-        lifetime_spend += sum(i.unit_price * i.quantity for i in o.items)
-
+    lifetime_spend = sum(_order_subtotal(o) for o in delivered)
     new_total_credits = int(lifetime_spend // threshold)
 
     granted_rows = (
         db.query(SpinCredit)
-        .filter(SpinCredit.user_id == order.user_id, SpinCredit.reason == "delivered_order")
+        .filter(
+            SpinCredit.user_id == order.user_id,
+            SpinCredit.reason == "delivered_order",
+        )
         .all()
     )
     already_granted = sum(c.amount for c in granted_rows)
@@ -166,17 +169,15 @@ def grant_credits_for_delivered_order(db: Session, order: Order) -> int:
 
 
 def pick_prize_index(prizes: list[dict]) -> int:
-    import random
-
     if not prizes:
         return -1
-    total = sum(float(p.get("weight", 0)) for p in prizes)
+    total = sum(max(0.0, float(p.get("weight", 0))) for p in prizes)
     if total <= 0:
         return 0
-    r = random.uniform(0, total)
+    r = secrets.randbelow(10_000) / 10_000 * total
     acc = 0.0
     for i, p in enumerate(prizes):
-        acc += float(p.get("weight", 0))
+        acc += max(0.0, float(p.get("weight", 0)))
         if r <= acc:
             return i
     return len(prizes) - 1
@@ -187,14 +188,11 @@ def pick_prize_index(prizes: list[dict]) -> int:
 
 def _gen_unique_code(db: Session, prefix: str = "SP") -> str:
     """Generate a unique 8-char coupon code prefixed with `prefix`."""
-    import secrets
-
     for _ in range(20):
         candidate = f"{prefix}{secrets.token_hex(3).upper()}"
         exists = db.query(Coupon).filter(Coupon.code == candidate).first()
         if not exists:
             return candidate
-    # last resort
     return f"{prefix}{secrets.token_hex(4).upper()}"
 
 
@@ -228,41 +226,39 @@ def _fulfil_product_reward(db: Session, user_id: int, product: Product) -> Order
 
 
 def _fulfil_coupon_reward(
-    db: Session, user_id: int, prize: dict, fallback_id: int | None
+    db: Session, prize: dict
 ) -> tuple[Coupon | None, str | None]:
-    """Create a one-off Coupon row for this user.
-
-    If the prize specifies ``coupon_discount_type``/``coupon_discount_value`` we
-    mint a brand new coupon with a unique code (preferred for spin rewards).
-    Otherwise we just attach the existing ``coupon_id`` (legacy).
-
-    Returns (coupon_row, code_str).
+    """Create a one-off Coupon row, unless the prize references an existing
+    ``coupon_id`` (legacy mode). Returns (coupon_row, code_str).
     """
-    dt = prize.get("coupon_discount_type")
-    dv = prize.get("coupon_discount_value")
-    if dt and dv is not None:
-        code = _gen_unique_code(db)
-        coupon = Coupon(
-            code=code,
-            description=f"Trúng từ vòng quay: {prize.get('name','')}",
-            discount_type=str(dt),
-            discount_value=float(dv),
-            min_order_total=0.0,
-            max_discount=None,
-            usage_limit=1,
-            usage_count=0,
-            starts_at=datetime.now(timezone.utc).isoformat(),
-            expires_at="",
-            active=True,
-        )
-        db.add(coupon)
-        db.flush()
-        return coupon, code
-    if fallback_id:
-        coupon = db.get(Coupon, fallback_id)
+    existing_id = prize.get("coupon_id")
+    if existing_id and not (prize.get("coupon_discount_value") is not None):
+        coupon = db.get(Coupon, existing_id)
         if coupon is not None:
             return coupon, coupon.code
-    return None, None
+
+    dt = prize.get("coupon_discount_type")
+    dv = prize.get("coupon_discount_value")
+    if not dt or dv is None:
+        return None, None
+
+    code = _gen_unique_code(db)
+    coupon = Coupon(
+        code=code,
+        description=f"Trúng từ vòng quay: {prize.get('name','')}",
+        discount_type=str(dt),
+        discount_value=float(dv),
+        min_order_total=0.0,
+        max_discount=None,
+        usage_limit=1,
+        usage_count=0,
+        starts_at=datetime.now(timezone.utc).isoformat(),
+        expires_at="",
+        active=True,
+    )
+    db.add(coupon)
+    db.flush()
+    return coupon, code
 
 
 # ── main entry point ───────────────────────────────────────────────────────
@@ -272,21 +268,20 @@ def perform_spin(db: Session, user_id: int) -> tuple[dict, Spin]:
     """Consume one credit and pick a prize.
 
     Returns ``(prize_dict, spin_row)``. The prize_dict is augmented with
-    ``reward_type`` and ``product_name``/``product_image_url`` when applicable,
-    and the Spin row stores the chosen product_id + coupon_code.
+    ``reward_type``, ``coupon_code`` (when applicable), and
+    ``product_name``/``product_image_url`` for free products.
     """
     cfg = get_or_create_wheel(db)
     prizes = parse_prizes(cfg)
-    prizes_view = prizes if prizes else parse_prizes_raw(DEFAULT_PRIZES_JSON)
+    if not prizes:
+        prizes = parse_prizes_raw(DEFAULT_PRIZES_JSON)
 
-    idx = pick_prize_index(prizes_view)
-    prize = prizes_view[idx] if idx >= 0 else {
+    idx = pick_prize_index(prizes)
+    prize = prizes[idx] if idx >= 0 else {
         "name": "Quà bí mật",
         "image": "",
         "weight": 1,
         "jackpot": False,
-        "coupon_id": None,
-        "product_id": None,
         "icon": "🎁",
     }
 
@@ -295,20 +290,19 @@ def perform_spin(db: Session, user_id: int) -> tuple[dict, Spin]:
     chosen_product: Product | None = None
     chosen_coupon: Coupon | None = None
     coupon_code: str | None = None
+    free_order_id: int | None = None
 
     if reward_type == "free_product":
         chosen_product = db.get(Product, prize["product_id"])
         if chosen_product is None:
-            # fall back to consolation if product was deleted
             reward_type = "consolation"
         else:
-            _fulfil_product_reward(db, user_id, chosen_product)
+            item = _fulfil_product_reward(db, user_id, chosen_product)
+            free_order_id = item.order_id
             prize["product_name"] = chosen_product.name
             prize["product_image_url"] = chosen_product.image_url
     elif reward_type == "coupon":
-        chosen_coupon, coupon_code = _fulfil_coupon_reward(
-            db, user_id, prize, fallback_id=prize.get("coupon_id")
-        )
+        chosen_coupon, coupon_code = _fulfil_coupon_reward(db, prize)
         if chosen_coupon is None:
             reward_type = "consolation"
 
@@ -324,13 +318,16 @@ def perform_spin(db: Session, user_id: int) -> tuple[dict, Spin]:
     db.add(spin)
     db.commit()
     db.refresh(spin)
+
     prize["reward_type"] = reward_type
+    if coupon_code:
+        prize["coupon_code"] = coupon_code
+    if free_order_id:
+        prize["free_order_id"] = free_order_id
     return prize, spin
 
 
 def parse_prizes_raw(raw: str) -> list[dict]:
-    import json
-
     try:
         data = json.loads(raw or "[]")
     except Exception:

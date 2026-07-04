@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { spinApi } from "../api/client";
 
 export default function Header() {
@@ -10,19 +10,20 @@ export default function Header() {
   const { totalItems } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const { data: spinBalance } = useQuery({
-    queryKey: ["spin-config"],
+  const { data: spinCfg } = useQuery({
+    queryKey: ["spin-config-header"],
     queryFn: async () => (await spinApi.config()).data,
     enabled: !!user,
-    refetchInterval: 30000,
+    refetchInterval: 60_000,
   });
+  const spinBalance = spinCfg?.user_credits ?? 0;
 
   const navLinks = [
     { to: "/", label: "Trang chủ" },
     { to: "/products", label: "Sản phẩm" },
     { to: "/accessories", label: "Phụ kiện" },
     { to: "/blog", label: "Blog" },
-    { to: "/spin", label: "🎁 Quay thưởng" },
+    { to: "/spin", label: "Vòng quay" },
   ];
 
   return (
@@ -77,13 +78,10 @@ export default function Header() {
               </Link>
             )}
 
-            {user && (spinBalance?.user_credits ?? 0) > 0 && (
-              <Link
-                to="/spin"
-                className="hidden items-center gap-1.5 rounded-lg border border-crimson/40 bg-crimson/10 px-3 py-2 text-sm font-bold text-crimson transition-colors hover:bg-crimson/20 md:flex"
-                title="Bạn có lượt quay may mắn"
-              >
-                🎁 {spinBalance?.user_credits}
+            {user && spinBalance > 0 && (
+              <Link to="/spin" className="hidden items-center gap-1.5 rounded-full border border-yellow-400/40 bg-yellow-500/10 px-3 py-1.5 text-xs font-bold text-yellow-200 transition-colors hover:bg-yellow-500/20 md:flex">
+                <span className="text-base leading-none">🎰</span>
+                {spinBalance} lượt quay
               </Link>
             )}
 

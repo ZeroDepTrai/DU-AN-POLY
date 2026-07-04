@@ -202,8 +202,7 @@ async def mark_delivered(
     order.driver_id = None
 
     # Grant spin credits when an order is delivered (driver flow). This is
-    # the path that real orders take in production — without it, the user
-    # never earns spin credits even after the order is fully delivered.
+    # the path that real orders take in production.
     try:
         from app.services.spin import grant_credits_for_delivered_order
         grant_credits_for_delivered_order(db, order)

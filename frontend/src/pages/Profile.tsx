@@ -6,14 +6,16 @@ import type { Order } from "../types";
 
 export default function Profile() {
   const { user, logout } = useAuth();
-  const { data: spinCfg, isLoading: spinLoading } = useQuery({
-    queryKey: ["spin-config"],
-    queryFn: async () => (await spinApi.config()).data,
-  });
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["my-orders"],
     queryFn: async () => (await ordersApi.list()).data,
   });
+  const { data: spinCfg } = useQuery({
+    queryKey: ["spin-config"],
+    queryFn: async () => (await spinApi.config()).data,
+  });
+  const spendPerSpin = spinCfg?.spend_per_spin_vnd ?? 3_000_000;
+  const userCredits = spinCfg?.user_credits ?? 0;
 
   if (!user) {
     return (
@@ -47,15 +49,6 @@ export default function Profile() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-bento border border-rose/20 bg-gradient-to-br from-crimson/15 via-cardtint to-cardtint p-5">
-            <p className="text-xs uppercase tracking-wide text-rose">Lượt quay may mắn</p>
-            <p className="mt-2 text-4xl font-bold text-warmwhite">
-              {spinLoading ? "..." : spinCfg?.user_credits ?? 0}
-            </p>
-            <Link to="/spin" className="mt-3 inline-block text-xs font-semibold text-crimson hover:text-sakura">
-              Quay ngay →
-            </Link>
-          </div>
           <div className="rounded-bento border border-gunmetal/40 bg-cardtint p-5">
             <p className="text-xs uppercase tracking-wide text-steelgray">Tổng chi đã giao</p>
             <p className="mt-2 text-3xl font-bold text-warmwhite">
@@ -70,29 +63,33 @@ export default function Profile() {
               Xem đơn →
             </Link>
           </div>
+          <div className="rounded-bento border border-yellow-400/30 bg-yellow-500/5 p-5">
+            <p className="text-xs uppercase tracking-wide text-yellow-300">Lượt quay may mắn</p>
+            <p className="mt-2 text-4xl font-bold text-warmwhite">
+              🎰 {userCredits}
+            </p>
+            <Link to="/spin" className="mt-3 inline-block text-xs font-semibold text-rose hover:text-sakura">
+              Quay ngay →
+            </Link>
+          </div>
         </div>
-
-        <section className="mt-8 rounded-bento border border-gunmetal/40 bg-cardtint/60 p-5">
-          <h2 className="mb-2 text-base font-bold text-warmwhite">Quy tắc nhận lượt quay</h2>
-          <p className="text-sm text-softgray">
-            Mỗi{" "}
-            <strong className="text-crimson">
-              {new Intl.NumberFormat("vi-VN").format(spinCfg?.spend_per_spin_vnd || 3000000)} VND
-            </strong>{" "}
-            mua hàng đã giao sẽ tặng bạn <strong className="text-warmwhite">1 lượt quay</strong>. Lượt quay cộng dồn qua các đơn giao thành công.
-          </p>
-        </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-2">
           <Link to="/orders" className="rounded-bento border border-gunmetal/40 bg-cardtint p-5 transition-colors hover:border-rose/40">
             <p className="text-xs uppercase tracking-wide text-steelgray">📦 Lịch sử đơn hàng</p>
             <p className="mt-2 text-sm text-softgray">Theo dõi vận chuyển, xem lại các đơn đã đặt.</p>
           </Link>
-          <Link to="/spin" className="rounded-bento border border-gunmetal/40 bg-cardtint p-5 transition-colors hover:border-rose/40">
-            <p className="text-xs uppercase tracking-wide text-steelgray">🎁 Vòng quay may mắn</p>
-            <p className="mt-2 text-sm text-softgray">Dùng lượt quay để trúng thưởng quà giá trị.</p>
+          <Link to="/spin/history" className="rounded-bento border border-gunmetal/40 bg-cardtint p-5 transition-colors hover:border-rose/40">
+            <p className="text-xs uppercase tracking-wide text-steelgray">🎁 Lịch sử quay thưởng</p>
+            <p className="mt-2 text-sm text-softgray">Xem tất cả giải thưởng bạn từng trúng và mã giảm giá nhận được.</p>
           </Link>
         </section>
+
+        <p className="mt-6 rounded-bento border border-gunmetal/40 bg-cardtint p-4 text-xs text-steelgray">
+          Quy tắc nhận lượt quay: cứ mỗi{" "}
+          <strong className="text-warmwhite">{new Intl.NumberFormat("vi-VN").format(spendPerSpin)} VND</strong>{" "}
+          đã mua (đơn hàng đã giao) bạn được cộng 1 lượt quay. Lượt quay cộng dồn qua các đơn.
+        </p>
       </div>
     </div>
   );

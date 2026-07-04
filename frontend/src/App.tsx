@@ -17,8 +17,9 @@ import Products from "./pages/Products";
 import Accessories from "./pages/Accessories";
 import Register from "./pages/Register";
 import TrackOrder from "./pages/TrackOrder";
-import Spin from "./pages/Spin";
 import Profile from "./pages/Profile";
+import Spin from "./pages/Spin";
+import SpinHistory from "./pages/SpinHistory";
 
 export default function App() {
   return (
@@ -46,6 +47,14 @@ export default function App() {
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogDetail />} />
               <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/spin"
                 element={
                   <ProtectedRoute>
@@ -54,10 +63,10 @@ export default function App() {
                 }
               />
               <Route
-                path="/profile"
+                path="/spin/history"
                 element={
                   <ProtectedRoute>
-                    <Profile />
+                    <SpinHistory />
                   </ProtectedRoute>
                 }
               />

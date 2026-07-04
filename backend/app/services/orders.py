@@ -13,9 +13,7 @@ from app.models import (
     OrderItem,
     OrderStatus,
     Product,
-    SpinCredit,
     User,
-    WheelConfig,
 )
 from app.schemas import OrderCreate, OrderResponse, OrderItemResponse
 
@@ -65,52 +63,6 @@ def _apply_coupon(db: Session, order: Order, code: str | None) -> tuple[Coupon |
     coupon.usage_count += 1
     order.coupon_id = coupon.id
     return coupon, discount
-
-
-def _grant_spin_credits(db: Session, order: Order) -> int:
-    """When an order transitions to 'delivered', give the buyer 1 spin per
-    `spend_per_spin_vnd` VND of *delivered* order history (so each delivery adds
-    a credit; the total then accumulates across orders).
-    """
-    # Only reward on FIRST time an order becomes 'delivered'.
-    delivered_total = (
-        db.query(Order)
-        .filter(Order.user_id == order.user_id, Order.status == OrderStatus.delivered)
-        .with_entities(Order)
-        .all()
-    )
-    lifetime_spend = 0.0
-    for o in delivered_total:
-        lifetime_spend += _order_subtotal(o)
-    # Lifetime spend including the one we just transitioned — even though the
-    # status might not have flushed yet. Use the freshly delivered order once.
-    if order not in delivered_total:
-        lifetime_spend += _order_subtotal(order)
-
-    cfg = db.get(WheelConfig, 1) or db.query(WheelConfig).first()
-    threshold = cfg.spend_per_spin_vnd if cfg else 3_000_000
-    if threshold <= 0:
-        threshold = 3_000_000
-
-    existing_credits = (
-        db.query(SpinCredit)
-        .filter(SpinCredit.user_id == order.user_id)
-        .all()
-    )
-    already_granted_total = sum(c.amount for c in existing_credits if c.reason == "delivered_order")
-
-    new_total_credits = int(lifetime_spend // threshold)
-    diff = new_total_credits - already_granted_total
-    if diff > 0:
-        db.add(
-            SpinCredit(
-                user_id=order.user_id,
-                order_id=order.id,
-                amount=diff,
-                reason="delivered_order",
-            )
-        )
-    return diff
 
 
 # ── Order creation ───────────────────────────────────────────────────────

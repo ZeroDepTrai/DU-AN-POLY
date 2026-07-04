@@ -77,7 +77,8 @@ class ProductMediaUpdate(BaseModel):
     position: int | None = None
 
 
-# ── Coupons ──────────────────────────────────────────────────────────────
+# Coupons
+
 
 class CouponCreate(BaseModel):
     code: str = Field(min_length=1, max_length=64)
@@ -131,20 +132,18 @@ class CouponValidateResponse(BaseModel):
     new_total: float
 
 
-# ── Spin / Wheel ────────────────────────────────────────────────────────
-
 class WheelPrize(BaseModel):
     """One slot on the wheel.
 
-    reward_type is inferred when omitted:
-      - "free_product" if product_id is set
-      - "coupon"       if coupon_id is set  (admin pick a coupon template)
-      - "consolation"  otherwise
+    ``reward_type`` is inferred when omitted:
+      - "free_product" if ``product_id`` is set
+      - "coupon"      if ``coupon_discount_type`` or ``coupon_id`` is set
+      - "consolation" otherwise
 
-    For coin-flip-style prizes, set ``coupon_discount_type`` + ``coupon_discount_value``
-    so the backend can mint a *unique* coupon code on every spin (the user keeps
-    that single code forever, even if it never matches an existing coupon row).
+    For one-off coupons, set ``coupon_discount_type`` + ``coupon_discount_value``
+    so the backend can mint a *unique* code on every spin.
     """
+
     name: str
     image: str = ""
     weight: float = 0
@@ -153,9 +152,10 @@ class WheelPrize(BaseModel):
     product_id: int | None = None
     icon: str = ""
     reward_type: str | None = None
-    coupon_discount_type: str | None = None      # "percent" | "fixed"
+    coupon_discount_type: str | None = None  # "percent" | "fixed"
     coupon_discount_value: float | None = None
-    product_name: str | None = None              # optional cache for display
+    product_name: str | None = None
+    product_image_url: str | None = None
 
 
 class WheelConfigResponse(BaseModel):
@@ -182,14 +182,20 @@ class SpinHistoryItem(BaseModel):
     prize_label: str
     prize_kind: str
     coupon_code: str | None = None
+    coupon_discount_type: str | None = None
+    coupon_discount_value: float | None = None
     product_id: int | None = None
     product_name: str | None = None
     product_image_url: str | None = None
+    image: str | None = None
     reward_type: str | None = None
     discount_value: float | None = None
     created_at: str
 
     model_config = {"from_attributes": True}
+
+
+# Categories / Brands / Products
 
 
 class PaginatedProductsResponse(BaseModel):
@@ -321,7 +327,8 @@ class AdminEmailCreate(BaseModel):
     email: EmailStr
 
 
-# --- Driver schemas ---
+# Driver schemas
+
 
 class DriverLogin(BaseModel):
     email: EmailStr

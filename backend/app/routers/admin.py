@@ -213,10 +213,7 @@ async def update_order_location(
 def _maybe_grant_spin_credits(db: Session, order: Order, new_status) -> None:
     """When an order is marked 'delivered', credit the buyer with one spin per
     `spend_per_spin_vnd` VND of cumulative delivered spend."""
-    try:
-        from app.models import OrderStatus as OS
-    except Exception:
-        return
+    from app.models import OrderStatus as OS
     if new_status != OS.delivered:
         return
     try:

@@ -176,13 +176,13 @@ class Coupon(Base):
 
 
 class Spin(Base):
-    """Audit row for each wheel spin (one spin consumes one SpinCredits).
+    """Audit row for each wheel spin.
 
     After a successful spin the row also records the resolved prize:
       * if it was a coupon, ``coupon_code`` holds the *unique* code the user
         keeps (we mint a fresh Coupon row per spin).
       * if it was a free product, ``product_id`` points at the prize product
-        (an Order + OrderItem were created with unit_price=0 and status=delivered).
+        (an Order + OrderItem are created with unit_price=0 and status=delivered).
     """
 
     __tablename__ = "spins"
@@ -200,9 +200,11 @@ class Spin(Base):
 
 
 class WheelConfig(Base):
-    """Single-row wheel configuration. id=1 should be the active row.
+    """Single-row wheel configuration. id=1 is the active row.
 
-    The frontend reads `prizes_json` (an array) and applies the weights from it.
+    The frontend reads ``prizes_json`` (a JSON array) and applies the weights
+    from it. ``spend_per_spin_vnd`` controls how many VND of delivered orders
+    grant 1 credit (default 3,000,000).
     """
 
     __tablename__ = "wheel_config"
@@ -216,10 +218,11 @@ class WheelConfig(Base):
 
 
 class SpinCredit(Base):
-    """Wallet of unused spins for a user.
+    """Per-user ledger of unused spins.
 
-    We grant one credit per 3,000,000 VND (configurable) of `delivered` order
-    total. The lifecycle is driven by the admin order-delivery action.
+    We grant one credit per ``spend_per_spin_vnd`` VND of cumulative delivered
+    order history (default 3,000,000 VND). Lifecycle is driven by the
+    admin/driver order-delivery action; each spin consumes one credit.
     """
 
     __tablename__ = "spin_credits"

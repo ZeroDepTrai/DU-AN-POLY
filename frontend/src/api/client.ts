@@ -42,6 +42,7 @@ export interface WheelPrize {
   coupon_discount_type?: string | null;
   coupon_discount_value?: number | null;
   product_name?: string | null;
+  product_image_url?: string | null;
 }
 
 export interface WheelConfig {
@@ -59,12 +60,23 @@ export interface SpinHistoryItem {
   prize_label: string;
   prize_kind: string;
   coupon_code: string | null;
+  coupon_discount_type?: string | null;
+  coupon_discount_value?: number | null;
   product_id?: number | null;
   product_name?: string | null;
   product_image_url?: string | null;
+  image?: string | null;
   reward_type?: string | null;
   discount_value?: number | null;
   created_at: string;
+}
+
+export interface PlaySpinResult {
+  prize: WheelPrize & { coupon_code?: string | null; free_order_id?: number };
+  spin_id: number;
+  remaining_credits: number;
+  coupon_code: string | null;
+  discount_value: number | null;
 }
 
 const api = axios.create({
@@ -186,7 +198,7 @@ export const adminApi = {
   deleteAdminEmail: (id: number) => api.delete(`/api/admin/admin-emails/${id}`),
 };
 
-// ── Coupons ──────────────────────────────────────────────────────────────────
+// Coupons
 
 export const couponsApi = {
   validate: (code: string, order_total: number) =>
@@ -220,14 +232,11 @@ export const adminCouponsApi = {
   delete: (id: number) => api.delete(`/api/admin/coupons/${id}`),
 };
 
-// ── Spin / Wheel ────────────────────────────────────────────────────────────
+// Spin / Wheel
 
 export const spinApi = {
   config: () => api.get<WheelConfig>("/api/spin/config"),
-  play: () =>
-    api.post<{ prize: WheelPrize; spin_id: number; remaining_credits: number; coupon_code: string | null }>(
-      "/api/spin/play"
-    ),
+  play: () => api.post<PlaySpinResult>("/api/spin/play"),
   history: () => api.get<SpinHistoryItem[]>("/api/spin/history"),
 };
 

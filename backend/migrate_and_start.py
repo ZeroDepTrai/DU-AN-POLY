@@ -22,11 +22,9 @@ def _col_exists(conn, table: str, column: str) -> bool:
 
 
 def apply_schema_changes():
-    from sqlalchemy import inspect
     from sqlalchemy.engine import Connection
 
     db = create_engine(settings.database_url_final, isolation_level="AUTOCOMMIT")
-    insp = inspect(db)
     # Use a long-lived AUTOCOMMIT connection: every SQL run in its own txn.
     conn: Connection = db.connect()
 
@@ -36,12 +34,6 @@ def apply_schema_changes():
             print(f"[MIGRATION] {label}: applied")
         except Exception as e:
             print(f"[MIGRATION] {label}: SKIPPED ({type(e).__name__}: {e})")
-
-    def table_exists(name: str) -> bool:
-        try:
-            return insp.has_table(name)
-        except Exception:
-            return False
 
     # --- userrole enum: add 'driver' if missing ---
     safe_alter("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'driver'", "userrole.driver enum")
@@ -153,6 +145,7 @@ def apply_schema_changes():
         "ix_product_media_id",
     )
 
+    # --- wheel_config (single row id=1) ---
     safe_alter(
         """
         CREATE TABLE IF NOT EXISTS wheel_config (
@@ -167,34 +160,34 @@ def apply_schema_changes():
         "wheel_config table",
     )
 
-    # Seed a default wheel row the first time the schema is set up.
-    if table_exists("wheel_config"):
-        try:
-            res = conn.execute(text("SELECT COUNT(*) FROM wheel_config")).scalar()
-            if not res:
-                default_prizes = (
-                    '['
-                    '{"name":"Mã giảm giá 2%","image":"/uploads/case.png","weight":35,"jackpot":false,"coupon_id":null,"icon":""},'
-                    '{"name":"Cường Lực","image":"/uploads/screen.png","weight":25,"jackpot":false,"coupon_id":null,"icon":""},'
-                    '{"name":"Ốp Iphone","image":"/uploads/cable.png","weight":20,"jackpot":false,"coupon_id":null,"icon":""},'
-                    '{"name":"Dây sạc","image":"/uploads/charger.png","weight":14,"jackpot":false,"coupon_id":null,"icon":""},'
-                    '{"name":"Mã giảm giá 5%","image":"/uploads/airpod.png","weight":5,"jackpot":false,"coupon_id":null,"icon":""},'
-                    '{"name":"Chúc bạn may mắn lần sau","image":"/uploads/smartwatch.png","weight":0.5,"jackpot":false,"coupon_id":null,"icon":""},'
-                    '{"name":"Apple Watch","image":"/uploads/watch.png","weight":0.4,"jackpot":true,"coupon_id":null,"icon":""},'
-                    '{"name":"IPhone 17 Pro Max","image":"/uploads/iphone.png","weight":0.1,"jackpot":true,"coupon_id":null,"icon":""}'
-                    ']'
-                )
-                conn.execute(
-                    text(
-                        "INSERT INTO wheel_config (id, title, background_url, prizes_json, spend_per_spin_vnd) "
-                        "VALUES (1, :t, '', :p, 3000000)"
-                    ),
-                    {"t": "CellZone · Spin & Win", "p": default_prizes},
-                )
-                print("[MIGRATION] wheel_config seeded with default prizes")
-        except Exception as e:
-            print(f"[MIGRATION] wheel_config seed: skipped ({type(e).__name__}: {e})")
+    # Seed default prizes the first time wheel_config is created.
+    safe_alter(
+        """
+        INSERT INTO wheel_config (id, title, background_url, prizes_json, spend_per_spin_vnd)
+        VALUES (1, 'CellZone · Spin & Win', '', '[]', 3000000)
+        ON CONFLICT (id) DO NOTHING
+        """,
+        "wheel_config seed (id=1)",
+    )
+    safe_alter(
+        """
+        UPDATE wheel_config
+        SET prizes_json = '[' ||
+            '{"name":"Mã giảm giá 2%","image":"/uploads/case.png","weight":35,"jackpot":false,"icon":"🎟️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":2},' ||
+            '{"name":"Cường Lực miễn phí","image":"/uploads/screen.png","weight":25,"jackpot":false,"icon":"🛡️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":10},' ||
+            '{"name":"Ốp Iphone miễn phí","image":"/uploads/cable.png","weight":20,"jackpot":false,"icon":"📱","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},' ||
+            '{"name":"Dây sạc miễn phí","image":"/uploads/charger.png","weight":14,"jackpot":false,"icon":"🔌","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},' ||
+            '{"name":"Mã giảm giá 5%","image":"/uploads/airpod.png","weight":5,"jackpot":false,"icon":"🎁","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},' ||
+            '{"name":"Chúc bạn may mắn lần sau","image":"/uploads/smartwatch.png","weight":0.5,"jackpot":false,"icon":"🍀","coupon_id":null,"product_id":null},' ||
+            '{"name":"Apple Watch","image":"/uploads/watch.png","weight":0.4,"jackpot":true,"icon":"⌚","coupon_id":null,"product_id":null},' ||
+            '{"name":"IPhone 17 Pro Max","image":"/uploads/iphone.png","weight":0.1,"jackpot":true,"icon":"📱","coupon_id":null,"product_id":null}' ||
+            ']'
+        WHERE id = 1
+        """,
+        "wheel_config default prizes",
+    )
 
+    # --- spins (audit) ---
     safe_alter(
         """
         CREATE TABLE IF NOT EXISTS spins (
@@ -203,6 +196,8 @@ def apply_schema_changes():
             prize_label VARCHAR(120) NOT NULL,
             prize_kind VARCHAR(32) NOT NULL DEFAULT 'consolation',
             coupon_id INTEGER REFERENCES coupons(id),
+            product_id INTEGER REFERENCES products(id),
+            coupon_code VARCHAR(32),
             created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
         )
         """,
@@ -212,7 +207,16 @@ def apply_schema_changes():
         "CREATE INDEX IF NOT EXISTS ix_spins_user_id ON spins (user_id)",
         "ix_spins_user_id",
     )
+    safe_alter(
+        "CREATE INDEX IF NOT EXISTS ix_spins_coupon_code ON spins (coupon_code)",
+        "ix_spins_coupon_code",
+    )
+    safe_alter(
+        "CREATE INDEX IF NOT EXISTS ix_spins_product_id ON spins (product_id)",
+        "ix_spins_product_id",
+    )
 
+    # --- spin_credits (wallet) ---
     safe_alter(
         """
         CREATE TABLE IF NOT EXISTS spin_credits (

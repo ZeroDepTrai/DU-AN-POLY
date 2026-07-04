@@ -46,7 +46,6 @@ def get_wheel_config(
 ):
     cfg = get_or_create_wheel(db)
     prizes = parse_prizes(cfg) or parse_prizes(DEFAULT_PRIZES_JSON)
-    # Guests see the wheel but with 0 credits / 0 lifetime spend.
     user_credits = user_credit_balance(db, current_user.id) if current_user else 0
     lifetime_spend = (
         user_lifetime_spend_vnd(db, current_user.id) if current_user else 0
@@ -71,12 +70,11 @@ def play_spin(
     if balance <= 0:
         raise HTTPException(
             status_code=400,
-            detail="Bạn chưa có lượt quay. Hãy mua thêm đơn hàng ≥3.000.000 VND để nhận lượt.",
+            detail="Bạn chưa có lượt quay. Hãy mua thêm đơn hàng để nhận lượt.",
         )
 
     prize, spin = perform_spin(db, current_user.id)
 
-    # Lookup product/coupon for the response payload.
     product = None
     if spin.product_id:
         product = db.get(Product, spin.product_id)
@@ -116,19 +114,28 @@ def spin_history(
     for s in rows:
         code = s.coupon_code
         discount_value: float | None = None
+        discount_type: str | None = None
         if code is None and s.coupon_id is not None:
             coupon = db.get(Coupon, s.coupon_id)
             if coupon is not None:
                 code = coupon.code
                 discount_value = float(coupon.discount_value)
+                discount_type = coupon.discount_type
+        elif code is not None and s.coupon_id is not None:
+            coupon = db.get(Coupon, s.coupon_id)
+            if coupon is not None:
+                discount_value = float(coupon.discount_value)
+                discount_type = coupon.discount_type
 
         product_name: str | None = None
         product_image_url: str | None = None
+        image: str | None = None
         if s.product_id is not None:
             product = db.get(Product, s.product_id)
             if product is not None:
                 product_name = product.name
                 product_image_url = product.image_url
+                image = product.image_url
 
         result.append(
             SpinHistoryItem(
@@ -136,9 +143,12 @@ def spin_history(
                 prize_label=s.prize_label,
                 prize_kind=s.prize_kind,
                 coupon_code=code,
+                coupon_discount_type=discount_type,
+                coupon_discount_value=discount_value,
                 product_id=s.product_id,
                 product_name=product_name,
                 product_image_url=product_image_url,
+                image=image,
                 reward_type=s.prize_kind,
                 discount_value=discount_value,
                 created_at=s.created_at.isoformat() if s.created_at else "",
