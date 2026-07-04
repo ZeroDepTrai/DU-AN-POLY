@@ -32,101 +32,76 @@ def seed_admin(db: Session) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    import logging
+    logger = logging.getLogger("uvicorn.error")
+    from sqlalchemy.exc import SQLAlchemyError
+
+    def _has_column(conn, table: str, column: str) -> bool:
+        try:
+            row = conn.execute(
+                text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE table_schema='public' AND table_name=:t AND column_name=:c"
+                ),
+                {"t": table, "c": column},
+            ).first()
+            return row is not None
+        except SQLAlchemyError as e:
+            logger.warning(f"[MIGRATION] inspection error on {table}.{column}: {e}")
+            return False
+
+    def _force_add(conn, table: str, column: str, ddl: str) -> None:
+        """Add a column via AUTOCOMMIT so the change is visible immediately."""
+        if _has_column(conn, table, column):
+            logger.warning(f"[MIGRATION] {table}.{column} already exists, skipping")
+            return
+        try:
+            conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(ddl))
+            logger.warning(f"[MIGRATION] Added {table}.{column}")
+        except SQLAlchemyError as e:
+            logger.warning(f"[MIGRATION] Could not add {table}.{column}: {e}")
+
+    # Use a connection from the SAME engine SQLAlchemy uses for queries,
+    # so the column is visible to every subsequent ORM operation.
+    with engine.connect() as conn:
+        try:
+            # Rename products.tag -> products.tags if old single-column schema exists
+            if _has_column(conn, "products", "tag") and not _has_column(conn, "products", "tags"):
+                try:
+                    conn.execution_options(isolation_level="AUTOCOMMIT").execute(
+                        text("ALTER TABLE products RENAME COLUMN tag TO tags")
+                    )
+                    logger.warning("[MIGRATION] Renamed products.tag -> products.tags")
+                except SQLAlchemyError as e:
+                    logger.warning(f"[MIGRATION] Rename failed: {e}")
+
+            # Ensure all expected columns exist
+            _force_add(conn, "products", "specifications",
+                       "ALTER TABLE products ADD COLUMN specifications TEXT NOT NULL DEFAULT ''")
+            _force_add(conn, "products", "description",
+                       "ALTER TABLE products ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+            _force_add(conn, "blog_posts", "tags",
+                       "ALTER TABLE blog_posts ADD COLUMN tags VARCHAR(500) NOT NULL DEFAULT ''")
+            _force_add(conn, "blog_posts", "image_url",
+                       "ALTER TABLE blog_posts ADD COLUMN image_url VARCHAR(500) NOT NULL DEFAULT ''")
+            _force_add(conn, "blog_posts", "author_id",
+                       "ALTER TABLE blog_posts ADD COLUMN author_id INTEGER NOT NULL DEFAULT 1")
+            _force_add(conn, "blog_posts", "slug",
+                       "ALTER TABLE blog_posts ADD COLUMN slug VARCHAR(300) NOT NULL DEFAULT ''")
+            _force_add(conn, "blog_posts", "title",
+                       "ALTER TABLE blog_posts ADD COLUMN title VARCHAR(255) NOT NULL DEFAULT ''")
+            _force_add(conn, "blog_posts", "content",
+                       "ALTER TABLE blog_posts ADD COLUMN content TEXT NOT NULL DEFAULT ''")
+        except SQLAlchemyError as e:
+            logger.warning(f"[MIGRATION] Outer migration error: {e}")
+
+    # Seed admin user
     db = SessionLocal()
     try:
-        import logging
-        logger = logging.getLogger("uvicorn.error")
-        try:
-            # Rename products.tag -> products.tags if it exists
-            result = db.execute(
-                text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_schema='public' AND table_name='products' AND column_name='tag'"
-                )
-            ).fetchone()
-            if result:
-                db.execute(text("ALTER TABLE products RENAME COLUMN tag TO tags"))
-                db.commit()
-                logger.warning("[MIGRATION] Renamed products.tag -> products.tags")
-            else:
-                result2 = db.execute(
-                    text(
-                        "SELECT column_name FROM information_schema.columns "
-                        "WHERE table_schema='public' AND table_name='products' AND column_name='tags'"
-                    )
-                ).fetchone()
-                if result2:
-                    logger.warning("[MIGRATION] products.tags already exists, skipping")
-                else:
-                    logger.warning("[MIGRATION] Neither products.tag nor products.tags found in products table")
-
-            # Ensure blog_posts has tags column
-            blog_tags_exists = db.execute(
-                text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='tags'"
-                )
-            ).fetchone()
-            if not blog_tags_exists:
-                # Check if old category column exists to copy data from
-                old_cat = db.execute(
-                    text(
-                        "SELECT column_name FROM information_schema.columns "
-                        "WHERE table_schema='public' AND table_name='blog_posts' AND column_name='category'"
-                    )
-                ).fetchone()
-                if old_cat:
-                    db.execute(text("ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS tags TEXT DEFAULT ''"))
-                    db.execute(text("UPDATE blog_posts SET tags = category WHERE tags = '' OR tags IS NULL"))
-                    db.commit()
-                    logger.warning("[MIGRATION] Added tags column to blog_posts and migrated from category")
-                else:
-                    # No tags, no category — just add empty tags column
-                    db.execute(text("ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS tags TEXT DEFAULT ''"))
-                    db.commit()
-                    logger.warning("[MIGRATION] Added empty tags column to blog_posts")
-            else:
-                logger.warning("[MIGRATION] blog_posts.tags already exists, skipping")
-        except Exception as e:
-            logger.warning(f"[MIGRATION] Error during column rename: {e}")
-
-        # Ensure products.specifications exists
-        try:
-            specs = db.execute(
-                text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_schema='public' AND table_name='products' AND column_name='specifications'"
-                )
-            ).fetchone()
-            if not specs:
-                db.execute(text("ALTER TABLE products ADD COLUMN specifications TEXT NOT NULL DEFAULT ''"))
-                db.commit()
-                logger.warning("[MIGRATION] Added specifications column to products")
-            else:
-                logger.warning("[MIGRATION] products.specifications already exists, skipping")
-        except Exception as e:
-            logger.warning(f"[MIGRATION] Error adding specifications: {e}")
-
-        # Ensure products.description exists
-        try:
-            desc = db.execute(
-                text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_schema='public' AND table_name='products' AND column_name='description'"
-                )
-            ).fetchone()
-            if not desc:
-                db.execute(text("ALTER TABLE products ADD COLUMN description TEXT NOT NULL DEFAULT ''"))
-                db.commit()
-                logger.warning("[MIGRATION] Added description column to products")
-            else:
-                logger.warning("[MIGRATION] products.description already exists, skipping")
-        except Exception as e:
-            logger.warning(f"[MIGRATION] Error adding description: {e}")
-
         seed_admin(db)
     finally:
         db.close()
+
     yield
 
 
