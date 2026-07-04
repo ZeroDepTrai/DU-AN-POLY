@@ -102,6 +102,10 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # Dispose the engine pool so any cached schema metadata is dropped —
+    # this guarantees ORM queries after this point see the latest columns.
+    engine.dispose()
+
     yield
 
 
