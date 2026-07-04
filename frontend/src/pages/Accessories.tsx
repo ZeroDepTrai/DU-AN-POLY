@@ -40,43 +40,53 @@ export default function Accessories() {
   };
 
   const Sidebar = () => (
-    <aside className="space-y-6">
+    <div className="space-y-6">
       <div>
-        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-warmwhite">Danh mục</h3>
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+          Danh mục
+        </h3>
         <div className="space-y-2">
           {CATEGORIES.map((cat) => (
-            <label key={cat} className="flex items-center gap-2 cursor-pointer group">
+            <label key={cat} className="flex cursor-pointer items-center gap-3 group">
               <input
                 type="checkbox"
                 checked={selectedCategory === cat}
                 onChange={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-                className="accent-rose"
+                className="h-4 w-4 accent-rose"
               />
-              <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">{cat}</span>
+              <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
+                {cat}
+              </span>
             </label>
           ))}
         </div>
       </div>
 
       <div>
-        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-warmwhite">Tương thích</h3>
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+          Tương thích
+        </h3>
         <div className="space-y-2">
           {COMPATIBILITY.map((c) => (
-            <label key={c} className="flex items-center gap-2 cursor-pointer group">
+            <label key={c} className="flex cursor-pointer items-center gap-3 group">
               <input
                 type="checkbox"
                 checked={selectedCompatibility.includes(c)}
                 onChange={() => toggleCompat(c)}
-                className="accent-rose"
+                className="h-4 w-4 accent-rose"
               />
-              <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">{c}</span>
+              <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
+                {c}
+              </span>
             </label>
           ))}
         </div>
       </div>
 
       <div>
-        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-warmwhite">Khoảng giá</h3>
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+          Khoảng giá
+        </h3>
         <div className="space-y-2">
           {PRICE_RANGE.map((p) => (
             <button
@@ -84,7 +94,7 @@ export default function Accessories() {
               onClick={() => setSelectedPrice(p)}
               className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-colors ${
                 selectedPrice.label === p.label
-                  ? "bg-crimson/10 text-crimson"
+                  ? "bg-rose/15 text-rose"
                   : "text-softgray hover:bg-gunmetal hover:text-warmwhite"
               }`}
             >
@@ -93,25 +103,33 @@ export default function Accessories() {
           ))}
         </div>
       </div>
-    </aside>
+    </div>
   );
 
+  // Split: first product bento, rest standard
+  const [bentoProduct, ...gridProducts] = filtered;
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-px w-8 bg-crimson" />
-          <span className="text-xs font-medium uppercase tracking-widest text-crimson">Phụ kiện</span>
+    <div className="container-padding py-10">
+      {/* ── Header ──────────────────────────────────────────────────── */}
+      <div className="mb-10 flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-px w-10 bg-crimson" />
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-rose">
+              Phụ kiện
+            </span>
+          </div>
+          <h1 className="mb-2 text-4xl font-extrabold text-warmwhite">Phụ kiện điện thoại</h1>
+          <p className="text-sm text-softgray">
+            Nâng tầm trải nghiệm di động với phụ kiện chính hãng.
+          </p>
         </div>
-        <div className="flex items-end justify-between">
-          <h1 className="text-3xl font-extrabold text-warmwhite">Phụ kiện điện thoại</h1>
-          <p className="text-sm text-steelgray">{filtered.length} sản phẩm</p>
-        </div>
+        <p className="text-sm text-softgray">{filtered.length} sản phẩm</p>
       </div>
 
       {/* Mobile filter button */}
-      <div className="mb-4 md:hidden">
+      <div className="mb-4 lg:hidden">
         <button
           onClick={() => setFilterOpen(true)}
           className="btn-secondary w-full justify-center"
@@ -125,31 +143,33 @@ export default function Accessories() {
 
       <div className="flex gap-8">
         {/* Desktop Sidebar */}
-        <div className="hidden w-64 shrink-0 md:block">
-          <div className="sticky top-24 rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+        <aside className="hidden w-72 shrink-0 lg:block">
+          <div className="sticky top-24 rounded-bento border border-rose/20 bg-cardtint/60 p-6 backdrop-blur-sm">
             <Sidebar />
           </div>
-        </div>
+        </aside>
 
-        {/* Products Grid */}
-        <div className="flex-1">
+        {/* Products */}
+        <div className="flex-1 min-w-0">
           {isLoading ? (
             <LoadingSpinner label="Đang tải phụ kiện..." />
           ) : filtered.length === 0 ? (
-            <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-16 text-center">
-              <h3 className="text-xl font-bold text-warmwhite mb-2">Không có phụ kiện</h3>
-              <p className="text-sm text-steelgray">Thử thay đổi bộ lọc.</p>
+            <div className="rounded-showcase border border-rose/20 bg-cardtint/60 p-16 text-center backdrop-blur-sm">
+              <h3 className="mb-2 text-xl font-bold text-warmwhite">Không có phụ kiện</h3>
+              <p className="text-sm text-softgray">Thử thay đổi bộ lọc.</p>
             </div>
           ) : (
             <>
-              {/* Featured first */}
-              {filtered[0] && (
-                <div className="mb-5">
-                  <ProductCard product={filtered[0]} variant="featured" />
+              {/* Bento featured */}
+              {bentoProduct && (
+                <div className="mb-5 h-[560px]">
+                  <ProductCard product={bentoProduct} variant="bento" />
                 </div>
               )}
+
+              {/* Standard 3-col grid */}
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {filtered.slice(1).map((product) => (
+                {gridProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
@@ -160,9 +180,12 @@ export default function Accessories() {
 
       {/* Mobile Filter Sheet */}
       {filterOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setFilterOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-80 bg-charcoal border-l border-gunmetal/40 p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          <div
+            className="absolute inset-0 bg-charcoal/70 backdrop-blur-sm"
+            onClick={() => setFilterOpen(false)}
+          />
+          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto border-l border-rose/20 bg-cardtint p-6">
             <div className="mb-6 flex items-center justify-between">
               <h3 className="font-bold text-warmwhite">Bộ lọc</h3>
               <button onClick={() => setFilterOpen(false)} className="btn-ghost p-2">

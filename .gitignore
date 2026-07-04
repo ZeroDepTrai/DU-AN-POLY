@@ -38,3 +38,20 @@ backend/alembic/versions/*.pyc
 
 # Logs
 *.log
+.vercel
+.env*
+
+# Local-only artefacts (Figma reference captures, deploy logs, scratch files)
+figma_*.png
+figma_*.jpg
+figma_*.webp
+deploy_logs.txt
+deployments.txt
+products.json
+frontend/-w
+
+# Cursor local state
+.cursor/
+
+# Driver app (separate mobile codebase, deployed independently)
+driver-app/

@@ -21,6 +21,7 @@ const BRAND_FILTERS = [
 ];
 
 const PRICE_FILTERS = [
+  { label: "Tất cả", min: 0, max: Infinity },
   { label: "Dưới 5 triệu", min: 0, max: 5000000 },
   { label: "5 - 10 triệu", min: 5000000, max: 10000000 },
   { label: "10 - 20 triệu", min: 10000000, max: 20000000 },
@@ -71,145 +72,168 @@ export default function Products() {
     setSearchParams(next);
   };
 
+  // Split: first product gets the bento (featured span), rest get the standard grid
+  const [bentoProduct, ...gridProducts] = products;
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      {/* Page Header */}
-      <div className="mb-8">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-px w-8 bg-crimson" />
-          <span className="text-xs font-medium uppercase tracking-widest text-crimson">
-            Sản phẩm
-          </span>
-        </div>
-        <div className="flex items-end justify-between">
-          <h1 className="text-3xl font-extrabold text-warmwhite">Điện thoại thông minh</h1>
-          <p className="text-sm text-steelgray">{total} sản phẩm</p>
-        </div>
-      </div>
-
-      {/* Top bar: sort */}
-      <div className="mb-6 flex items-center justify-end">
-        <select
-          value={sort}
-          onChange={(e) => setParam("sort", e.target.value)}
-          className="input-field w-full sm:w-52"
-        >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Filters */}
-      <div className="mb-8 space-y-4">
-        {/* Brand filters */}
+    <div className="container-padding py-10">
+      {/* ── Page header (Figma "Page Header" 19:410) ──────────────────── */}
+      <div className="mb-10 flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-steelgray">
-            Hãng
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-px w-10 bg-crimson" />
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-rose">
+              Sản phẩm
+            </span>
+          </div>
+          <h1 className="mb-2 text-4xl font-extrabold text-warmwhite">Điện thoại thông minh</h1>
+          <p className="text-sm text-softgray">
+            Khám phá bộ sưu tập smartphone cao cấp mới nhất.
           </p>
-          <div className="flex flex-wrap gap-2">
-            {BRAND_FILTERS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setParam("brand", brand === f.value ? "" : f.value)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                  brand === f.value
-                    ? "bg-crimson text-white shadow-md shadow-crimson/30"
-                    : "border border-gunmetal/60 bg-graphite text-softgray hover:border-silvergray hover:text-warmwhite"
-                }`}
-              >
-                {f.label}
-              </button>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-softgray">{total} sản phẩm</span>
+          <select
+            value={sort}
+            onChange={(e) => setParam("sort", e.target.value)}
+            className="input-field w-44"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
-          </div>
-        </div>
-
-        {/* Price range filters */}
-        <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-steelgray">
-            Khoảng giá
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {PRICE_FILTERS.map((f) => {
-              const isActive =
-                priceMin === f.min && priceMax === f.max;
-              return (
-                <button
-                  key={f.label}
-                  onClick={() => {
-                    const next = new URLSearchParams(searchParams);
-                    next.delete("page");
-                    if (isActive) {
-                      next.delete("priceMin");
-                      next.delete("priceMax");
-                    } else {
-                      next.set("priceMin", String(f.min));
-                      next.set("priceMax", String(f.max));
-                    }
-                    setSearchParams(next);
-                  }}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-crimson text-white shadow-md shadow-crimson/30"
-                      : "border border-gunmetal/60 bg-graphite text-softgray hover:border-silvergray hover:text-warmwhite"
-                  }`}
-                >
-                  {f.label}
-                </button>
-              );
-            })}
-          </div>
+          </select>
         </div>
       </div>
 
-      {/* Grid */}
-      {isLoading ? (
-        <LoadingSpinner label="Đang tải sản phẩm..." />
-      ) : products.length === 0 ? (
-        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-16 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gunmetal/40">
-              <svg
-                className="h-10 w-10 text-steelgray"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-                />
-              </svg>
+      <div className="flex gap-8">
+        {/* ── Sidebar filters (Figma 19:4 / 19:7) ──────────────────────── */}
+        <aside className="hidden w-72 shrink-0 lg:block">
+          <div className="sticky top-24 rounded-bento border border-rose/20 bg-cardtint/60 p-6 backdrop-blur-sm">
+            <h3 className="mb-6 text-lg font-bold uppercase tracking-wider text-warmwhite">
+              Bộ lọc
+            </h3>
+
+            {/* Brand */}
+            <div className="mb-6">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+                Hãng
+              </p>
+              <div className="space-y-2">
+                {BRAND_FILTERS.map((f) => (
+                  <label key={f.value} className="flex cursor-pointer items-center gap-3 group">
+                    <input
+                      type="checkbox"
+                      checked={brand === f.value}
+                      onChange={() => setParam("brand", brand === f.value ? "" : f.value)}
+                      className="h-4 w-4 accent-rose"
+                    />
+                    <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
+                      {f.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Price */}
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+                Khoảng giá
+              </p>
+              <div className="space-y-2">
+                {PRICE_FILTERS.map((f) => {
+                  const isActive = priceMin === f.min && priceMax === f.max;
+                  return (
+                    <button
+                      key={f.label}
+                      onClick={() => {
+                        const next = new URLSearchParams(searchParams);
+                        next.delete("page");
+                        if (isActive) {
+                          next.delete("priceMin");
+                          next.delete("priceMax");
+                        } else {
+                          next.set("priceMin", String(f.min));
+                          next.set("priceMax", String(f.max));
+                        }
+                        setSearchParams(next);
+                      }}
+                      className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-colors ${
+                        isActive
+                          ? "bg-rose/15 text-rose"
+                          : "text-softgray hover:bg-gunmetal hover:text-warmwhite"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-          <h3 className="mb-2 text-xl font-bold text-warmwhite">Không có sản phẩm</h3>
-          <p className="text-sm text-steelgray">
-            Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      )}
+        </aside>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-10">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(p) => setParam("page", String(p))}
-            baseUrl="/products"
-          />
+        {/* ── Grid (Figma "Product Grid" 19:485) ───────────────────────── */}
+        <div className="flex-1 min-w-0">
+          {isLoading ? (
+            <LoadingSpinner label="Đang tải sản phẩm..." />
+          ) : products.length === 0 ? (
+            <div className="rounded-showcase border border-rose/20 bg-cardtint/60 p-16 text-center backdrop-blur-sm">
+              <div className="mb-4 flex justify-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gunmetal/40">
+                  <svg
+                    className="h-10 w-10 text-steelgray"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="mb-2 text-xl font-bold text-warmwhite">Không có sản phẩm</h3>
+              <p className="text-sm text-softgray">
+                Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Bento: featured span (Figma card 19:487) */}
+              {bentoProduct && (
+                <div className="mb-5 h-[560px]">
+                  <ProductCard product={bentoProduct} variant="bento" />
+                </div>
+              )}
+
+              {/* Standard 3-col grid */}
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {gridProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-10">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(p) => setParam("page", String(p))}
+                baseUrl="/products"
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

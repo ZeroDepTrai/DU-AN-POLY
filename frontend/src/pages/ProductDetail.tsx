@@ -228,8 +228,8 @@ export default function ProductDetail() {
 
       {/* Blog content styles */}
       <style>{`
-        .prose-product h2 { font-size: 1.5rem; font-weight: 700; color: #EEE7E8; margin: 1.5em 0 0.75em; }
-        .prose-product h3 { font-size: 1.2rem; font-weight: 600; color: #EEE7E8; margin: 1.25em 0 0.5em; }
+        .prose-product h2 { font-size: 1.5rem; font-weight: 700; color: #F4EFEC; margin: 1.5em 0 0.75em; }
+        .prose-product h3 { font-size: 1.2rem; font-weight: 600; color: #F4EFEC; margin: 1.25em 0 0.5em; }
         .prose-product p { color: #C9C4C6; margin: 1em 0; line-height: 1.75; }
         .prose-product ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; color: #C9C4C6; }
         .prose-product ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; color: #C9C4C6; }
@@ -242,7 +242,7 @@ export default function ProductDetail() {
           font-style: italic;
         }
         .prose-product code {
-          background: #353039;
+          background: #3A2F33;
           padding: 0.15em 0.4em;
           border-radius: 4px;
           font-size: 0.875em;
@@ -250,7 +250,7 @@ export default function ProductDetail() {
           color: #F28CA6;
         }
         .prose-product pre {
-          background: #353039;
+          background: #3A2F33;
           padding: 1.25em;
           border-radius: 8px;
           overflow-x: auto;

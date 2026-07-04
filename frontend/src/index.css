@@ -9,8 +9,8 @@
     margin: 0;
     min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: #181417;
-    color: #EEE7E8;
+    background-color: #1E1E1E;
+    color: #F4EFEC;
   }
 
   * {
@@ -21,7 +21,7 @@
     width: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #262127;
+    background: #2A2024;
   }
   ::-webkit-scrollbar-thumb {
     background: #8A858A;
@@ -43,10 +43,10 @@
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-softgray transition-colors hover:bg-gunmetal hover:text-warmwhite;
   }
   .card {
-    @apply rounded-xl border border-gunmetal/60 bg-graphite;
+    @apply rounded-xl border border-rose/20 bg-cardtint;
   }
   .input-field {
-    @apply w-full rounded-lg border border-gunmetal/60 bg-charcoal px-3.5 py-2.5 text-sm text-warmwhite placeholder-steelgray transition-colors focus:border-rose focus:outline-none focus:ring-1 focus:ring-rose;
+    @apply w-full rounded-lg border border-gunmetal bg-charcoal px-3.5 py-2.5 text-sm text-warmwhite placeholder-steelgray transition-colors focus:border-rose focus:outline-none focus:ring-1 focus:ring-rose;
   }
   .section-title {
     @apply text-xl font-bold text-warmwhite;
@@ -58,7 +58,7 @@
     @apply inline-block rounded-full bg-crimson/10 px-3 py-1 text-xs font-medium text-crimson;
   }
   .glass-card {
-    @apply rounded-2xl border border-gunmetal/40 bg-graphite/60 backdrop-blur-sm;
+    @apply rounded-2xl border border-rose/20 bg-cardtint/60 backdrop-blur-sm;
   }
   .section-padding {
     @apply py-12 md:py-16 lg:py-20;
@@ -75,12 +75,12 @@
 }
 
 .leaflet-popup-content-wrapper {
-  background: #262127 !important;
-  color: #EEE7E8 !important;
+  background: #2A2024 !important;
+  color: #F4EFEC !important;
   border-radius: 8px !important;
-  border: 1px solid #353039 !important;
+  border: 1px solid #3A2F33 !important;
 }
 
 .leaflet-popup-tip {
-  background: #262127 !important;
+  background: #2A2024 !important;
 }
