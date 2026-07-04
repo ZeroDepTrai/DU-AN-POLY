@@ -47,7 +47,8 @@ class ProductResponse(BaseModel):
     price: float
     tags: str
     image_url: str
-    description: str
+    description: str = ""
+    specifications: str = ""
     stock: int
 
     model_config = {"from_attributes": True}
