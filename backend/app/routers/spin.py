@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_user, require_admin
+from app.deps import get_current_user, get_optional_user, require_admin
 from app.models import Coupon, Product, Spin, User, WheelConfig
 from app.schemas import (
     SpinHistoryItem,
@@ -42,18 +42,23 @@ def _decorate_prizes(prizes: list[dict], db: Session) -> list[WheelPrize]:
 @router.get("/spin/config", response_model=WheelConfigResponse)
 def get_wheel_config(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_optional_user),
 ):
     cfg = get_or_create_wheel(db)
     prizes = parse_prizes(cfg) or parse_prizes(DEFAULT_PRIZES_JSON)
+    # Guests see the wheel but with 0 credits / 0 lifetime spend.
+    user_credits = user_credit_balance(db, current_user.id) if current_user else 0
+    lifetime_spend = (
+        user_lifetime_spend_vnd(db, current_user.id) if current_user else 0
+    )
     return WheelConfigResponse(
         id=cfg.id,
         title=cfg.title,
         background_url=cfg.background_url,
         prizes=_decorate_prizes(prizes, db),
         spend_per_spin_vnd=cfg.spend_per_spin_vnd,
-        user_credits=user_credit_balance(db, current_user.id),
-        lifetime_spend_vnd=user_lifetime_spend_vnd(db, current_user.id),
+        user_credits=user_credits,
+        lifetime_spend_vnd=lifetime_spend,
     )
 
 

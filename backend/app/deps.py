@@ -58,3 +58,27 @@ def require_driver(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != UserRole.driver:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Driver access required")
     return current_user
+
+
+def get_optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Return the current user if a valid token is supplied, else None.
+
+    Used for endpoints whose data is publicly viewable but personalised when
+    the requester is logged in (e.g. the spin wheel config: guests see the
+    wheel, signed-in users also see their credit balance).
+    """
+    if credentials is None:
+        return None
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        user_id = int(payload.get("sub", 0))
+    except (JWTError, ValueError):
+        return None
+    if not user_id:
+        return None
+    user = db.get(User, user_id)
+    return user

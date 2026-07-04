@@ -310,9 +310,19 @@ export default function Spin() {
   const { data: history = [] } = useQuery({
     queryKey: ["spin-history"],
     queryFn: async () => {
-      const { data } = await spinApi.history();
-      return data;
+      // Guests can't fetch history (the endpoint requires auth) — treat as
+      // empty rather than throwing, so the rest of the wheel still renders.
+      const token = localStorage.getItem("token");
+      if (!token) return [];
+      try {
+        const { data } = await spinApi.history();
+        return data;
+      } catch (err: any) {
+        if (err?.response?.status === 401) return [];
+        throw err;
+      }
     },
+    retry: false,
   });
 
   // Draw the wheel whenever the prizes list changes.
@@ -335,7 +345,13 @@ export default function Spin() {
   }, [prizes]);
 
   const playMutation = useMutation({
-    mutationFn: () => spinApi.play(),
+    mutationFn: async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Vui lòng đăng nhập để quay thưởng.");
+      }
+      return spinApi.play();
+    },
     onSuccess: (resp) => {
       const prize = resp.data.prize;
       const idx = prizes.findIndex((p) => p.name === prize.name);
@@ -406,6 +422,16 @@ export default function Spin() {
           giao) = bạn nhận <strong className="text-warmwhite">1 lượt quay</strong>. Hãy quay để trúng ngay
           phần quà hấp dẫn!
         </p>
+        {!localStorage.getItem("token") && (
+          <div className="mx-auto mt-4 max-w-md rounded-xl border border-rose/40 bg-rose/10 px-4 py-2 text-xs text-rose">
+            Bạn cần <Link to="/login" className="font-semibold underline">đăng nhập</Link> để tham gia quay thưởng.
+          </div>
+        )}
+        {playMutation.isError && (
+          <div className="mx-auto mt-4 max-w-md rounded-xl border border-rose/40 bg-rose/10 px-4 py-2 text-xs text-rose">
+            {(playMutation.error as Error)?.message || "Bạn chưa có lượt quay."}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
