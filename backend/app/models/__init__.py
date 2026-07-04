@@ -55,6 +55,7 @@ class Product(Base):
     tags: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
     image_url: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    specifications: Mapped[str] = mapped_column(Text, default="", nullable=False)
     stock: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     order_items: Mapped[list["OrderItem"]] = relationship(back_populates="product")
