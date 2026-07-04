@@ -14,13 +14,13 @@ interface PrizeDef {
 }
 
 const FALLBACK_PRIZES: PrizeDef[] = [
-  { name: "Ma giam gia 2%", weight: 35, icon: "\uD83C\uDF9F\uFE0F" },
-  { name: "Cuong Luc", weight: 25, icon: "\uD83D\uDEE1\uFE0F" },
-  { name: "Op Iphone", weight: 20, icon: "\uD83D\uDCF1" },
-  { name: "Day sac", weight: 14, icon: "\uD83D\uDD0C" },
-  { name: "Ma giam gia 5%", weight: 5, icon: "\uD83C\uDF81" },
-  { name: "Apple Watch", weight: 0.4, jackpot: true, icon: "\u231A" },
-  { name: "IPhone 17 Pro Max", weight: 0.1, jackpot: true, icon: "\uD83D\uDCF1" },
+  { name: "Mã giảm giá 2%", weight: 35, icon: "🎟️" },
+  { name: "Cường Lực", weight: 25, icon: "🛡️" },
+  { name: "Ốp Iphone", weight: 20, icon: "📱" },
+  { name: "Dây sạc", weight: 14, icon: "🔌" },
+  { name: "Mã giảm giá 5%", weight: 5, icon: "🎁" },
+  { name: "Apple Watch", weight: 0.4, jackpot: true, icon: "⌚" },
+  { name: "IPhone 17 Pro Max", weight: 0.1, jackpot: true, icon: "📱" },
 ];
 
 const COLORS = ["#101a4d", "#16225e", "#101a4d", "#16225e", "#101a4d", "#16225e", "#101a4d"];
@@ -105,7 +105,7 @@ function drawWheel(canvas: HTMLCanvasElement, prizes: PrizeDef[]) {
     ctx.textBaseline = "middle";
     const iconY = -r * 0.66;
     ctx.font = "44px -apple-system, Segoe UI Emoji, sans-serif";
-    ctx.fillText(p.icon || "\uD83C\uDF81", 0, iconY);
+    ctx.fillText(p.icon || "🎁", 0, iconY);
     ctx.font = "600 19px Inter, Segoe UI, sans-serif";
     ctx.fillStyle = "#eef2ff";
     wrapText2(ctx, p.name, 0, -r * 0.4, 96);
@@ -149,16 +149,16 @@ function PrizeModal({ prize, onClose }: { prize: ModalPrize | null; onClose: () 
         style={isJackpot ? { boxShadow: "0 0 60px rgba(244,197,66,0.45)" } : undefined}
       >
         <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-crimson">
-          {isJackpot ? "Jackpot" : "Vong Quay May Man"}
+          {isJackpot ? "Jackpot" : "Vòng Quay May Mắn"}
         </p>
         <p className="mb-6 text-xs font-medium tracking-wide text-white/70">
           {isJackpot
-            ? "Phan qua cuc gia tri"
+            ? "Phần quà cực giá trị"
             : isProduct
-            ? "San pham tang mien phi"
+            ? "Sản phẩm tặng miễn phí"
             : isCoupon
-            ? "Ban nhan duoc mot ma giam gia"
-            : "Ban da tham gia vong quay"}
+            ? "Bạn nhận được một mã giảm giá"
+            : "Bạn đã tham gia vòng quay"}
         </p>
         <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-white/10 to-transparent ring-2 ring-white/20">
           {isProduct && prize.product_image_url ? (
@@ -170,7 +170,7 @@ function PrizeModal({ prize, onClose }: { prize: ModalPrize | null; onClose: () 
           ) : prize.image ? (
             <img src={prize.image} alt="" className="h-[70%] w-[70%] object-contain" />
           ) : (
-            <span className="text-5xl">{prize.icon || "\uD83C\uDF81"}</span>
+            <span className="text-5xl">{prize.icon || "🎁"}</span>
           )}
         </div>
         <h2
@@ -189,18 +189,18 @@ function PrizeModal({ prize, onClose }: { prize: ModalPrize | null; onClose: () 
 
         {isProduct && (
           <div className="mb-5 rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-            Qua tang mien phi — don hang da ghi nhan, ban khong can thanh toan.
+            Quà tặng miễn phí — đơn hàng đã ghi nhận, bạn không cần thanh toán.
           </div>
         )}
 
         {isCoupon && prize.coupon_code && (
           <div className="mb-5">
-            <p className="mb-1 text-[11px] uppercase tracking-wider text-white/60">Ma giam gia cua ban</p>
+            <p className="mb-1 text-[11px] uppercase tracking-wider text-white/60">Mã giảm giá của bạn</p>
             <div className="rounded-xl border border-dashed border-pink-400/60 bg-pink-500/10 px-4 py-3 font-mono text-2xl font-bold tracking-[0.25em] text-pink-200">
               {prize.coupon_code}
             </div>
             <p className="mt-2 text-[11px] text-white/50">
-              Nhap ma khi thanh toan de duoc giam gia.
+              Nhập mã khi thanh toán để được giảm giá.
             </p>
           </div>
         )}
@@ -209,7 +209,7 @@ function PrizeModal({ prize, onClose }: { prize: ModalPrize | null; onClose: () 
           onClick={onClose}
           className="w-full rounded-2xl bg-gradient-to-r from-crimson to-rose py-3 font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]"
         >
-          DONG
+          ĐÓNG
         </button>
       </div>
     </div>
@@ -229,26 +229,26 @@ function HistoryDetailModal({ row, onClose }: { row: SpinHistoryItem | null; onC
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-crimson">
-          {isJackpot ? "Jackpot" : isProduct ? "San pham mien phi" : isCoupon ? "Ma giam gia" : "Qua trung thuong"}
+          {isJackpot ? "Jackpot" : isProduct ? "Sản phẩm miễn phí" : isCoupon ? "Mã giảm giá" : "Quà trúng thưởng"}
         </p>
         <h2 className="mb-2 text-xl font-extrabold text-white">{row.prize_label}</h2>
         <p className="mb-6 text-xs text-white/60">{new Date(row.created_at).toLocaleString("vi-VN")}</p>
 
         {isProduct && row.product_id && (
           <div className="mb-5 rounded-xl bg-emerald-500/10 p-4 text-sm text-emerald-200">
-            <p className="mb-1">Ban duoc tang san pham sau:</p>
-            <p className="font-bold">{row.product_name || `San pham #${row.product_id}`}</p>
-            <p className="mt-1 text-[11px] text-white/60">Don hang da ghi nhan, ban khong can thanh toan.</p>
+            <p className="mb-1">Bạn được tặng sản phẩm sau:</p>
+            <p className="font-bold">{row.product_name || `Sản phẩm #${row.product_id}`}</p>
+            <p className="mt-1 text-[11px] text-white/60">Đơn hàng đã ghi nhận, bạn không cần thanh toán.</p>
           </div>
         )}
 
         {isCoupon && row.coupon_code && (
           <div className="mb-5">
-            <p className="mb-1 text-[11px] uppercase tracking-wider text-white/60">Ma giam gia cua ban</p>
+            <p className="mb-1 text-[11px] uppercase tracking-wider text-white/60">Mã giảm giá của bạn</p>
             <div className="rounded-xl border border-dashed border-pink-400/60 bg-pink-500/10 px-4 py-3 font-mono text-2xl font-bold tracking-[0.25em] text-pink-200">
               {row.coupon_code}
             </div>
-            <p className="mt-2 text-[11px] text-white/50">Ap dung khi thanh toan de giam gia.</p>
+            <p className="mt-2 text-[11px] text-white/50">Áp dụng khi thanh toán để giảm giá.</p>
           </div>
         )}
 
@@ -256,7 +256,7 @@ function HistoryDetailModal({ row, onClose }: { row: SpinHistoryItem | null; onC
           onClick={onClose}
           className="w-full rounded-2xl bg-gradient-to-r from-crimson to-rose py-3 font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]"
         >
-          DONG
+          ĐÓNG
         </button>
       </div>
     </div>
@@ -265,7 +265,7 @@ function HistoryDetailModal({ row, onClose }: { row: SpinHistoryItem | null; onC
 
 const DEFAULT_CFG: WheelConfig = {
   id: 0,
-  title: "CellZone - Spin & Win",
+  title: "CellZone · Spin & Win",
   background_url: "",
   prizes: FALLBACK_PRIZES.map((p) => ({
     name: p.name,
@@ -278,6 +278,7 @@ const DEFAULT_CFG: WheelConfig = {
   lifetime_spend_vnd: 0,
 };
 
+// If the network is silent for this long, show a banner + use fallback.
 const SPIN_TIMEOUT_MS = 8000;
 
 export default function Spin() {
@@ -285,24 +286,26 @@ export default function Spin() {
   const [cfg, setCfg] = useState<WheelConfig | null>(null);
   const [history, setHistory] = useState<SpinHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [modalPrize, setModalPrize] = useState<ModalPrize | null>(null);
   const [detailRow, setDetailRow] = useState<SpinHistoryItem | null>(null);
   const [playError, setPlayError] = useState<string | null>(null);
-  const [hasToken, setHasToken] = useState<boolean>(typeof window !== "undefined" && !!localStorage.getItem("token"));
+  const [hasToken, setHasToken] = useState<boolean>(() => !!localStorage.getItem("token"));
 
   useEffect(() => {
     let cancelled = false;
+    let timedOut = false;
+
     const timer = window.setTimeout(() => {
       if (cancelled) return;
+      timedOut = true;
       setCfg((cur) => cur || DEFAULT_CFG);
-      setLoading((cur) => {
-        if (!cur) return cur;
-        setLoadError("API qua cham, hien thi vong quay mac dinh.");
-        return false;
-      });
+      setLoading(false);
+      setWarning(
+        "API phản hồi chậm — đang hiển thị vòng quay mặc định. Bạn có thể thử tải lại trang sau ít phút.",
+      );
     }, SPIN_TIMEOUT_MS);
 
     (async () => {
@@ -311,15 +314,21 @@ export default function Spin() {
         if (cancelled) return;
         if (data && Array.isArray(data.prizes) && data.prizes.length > 0) {
           setCfg(data as WheelConfig);
+          setWarning(null);
         } else {
           setCfg(DEFAULT_CFG);
+          setWarning("Vòng quay chưa có phần thưởng — đang hiển thị danh sách mặc định.");
         }
-        setLoadError(null);
       } catch (err: any) {
         if (cancelled) return;
+        // Only set the user-facing banner if the timeout hasn't fired yet
+        // (otherwise we'd be setting it at the same moment we already
+        // switched to the fallback).
         console.warn("[spin] config fetch failed:", err?.message || err);
-        setCfg(DEFAULT_CFG);
-        setLoadError("Khong the tai cau hinh vong quay, dang su dung mac dinh.");
+        if (!timedOut) {
+          setCfg(DEFAULT_CFG);
+          setWarning("Không thể tải cấu hình vòng quay, đang dùng cấu hình mặc định tạm thời.");
+        }
       } finally {
         if (!cancelled) {
           window.clearTimeout(timer);
@@ -349,13 +358,13 @@ export default function Spin() {
     const list = cfg?.prizes ?? [];
     if (list.length === 0) return FALLBACK_PRIZES;
     return list.map((p, i) => ({
-      name: p.name || `Phan qua ${i + 1}`,
+      name: p.name || `Phần quà ${i + 1}`,
       image: p.image || undefined,
       weight: typeof p.weight === "number" ? p.weight : 1,
       jackpot: !!p.jackpot,
       coupon_id: (p as { coupon_id?: number | null }).coupon_id ?? null,
       product_id: (p as { product_id?: number | null }).product_id ?? null,
-      icon: p.icon || FALLBACK_PRIZES[i % FALLBACK_PRIZES.length]?.icon || "\uD83C\uDF81",
+      icon: p.icon || FALLBACK_PRIZES[i % FALLBACK_PRIZES.length]?.icon || "🎁",
     }));
   }, [cfg]);
 
@@ -363,15 +372,12 @@ export default function Spin() {
     if (canvasRef.current) drawWheel(canvasRef.current, prizes);
   }, [prizes]);
 
-  const openLogin = () => {
-    setHasToken(!!localStorage.getItem("token"));
-  };
-
   async function refreshConfig() {
     try {
       const { data } = await spinApi.config();
       if (data && Array.isArray(data.prizes) && data.prizes.length > 0) {
         setCfg(data as WheelConfig);
+        setWarning(null);
       }
     } catch {
       // ignore — keep current config
@@ -392,11 +398,11 @@ export default function Spin() {
     if (spinning) return;
     setPlayError(null);
     if (!hasToken) {
-      setPlayError("Vui long dang nhap de quay thuong.");
+      setPlayError("Vui lòng đăng nhập để quay thưởng.");
       return;
     }
     if (!cfg || cfg.user_credits <= 0) {
-      setPlayError("Ban chua co luot quay nao.");
+      setPlayError("Bạn chưa có lượt quay nào.");
       return;
     }
     setSpinning(true);
@@ -418,33 +424,9 @@ export default function Spin() {
       };
       const prize = data.prize || {};
       const idx = prizes.findIndex((p) => p.name === prize.name);
-      if (idx >= 0 && prizes.length > 0) {
-        const segDeg = 360 / prizes.length;
-        const target = (360 - idx * segDeg - segDeg / 2 + 360 * 6) % 360;
-        const current = rotation % 360;
-        const delta = ((target - current) + 360) % 360;
-        const final = rotation + delta + 360;
-        setRotation(final);
-        window.setTimeout(() => {
-          setModalPrize({
-            name: prize.name || "Qua bi mat",
-            image: prize.image,
-            jackpot: prize.jackpot,
-            icon: prize.icon,
-            coupon_id: (prize as { coupon_id?: number | null }).coupon_id ?? null,
-            product_id: prize.product_id ?? null,
-            product_name: prize.product_name ?? null,
-            product_image_url: prize.product_image_url ?? null,
-            reward_type: prize.reward_type ?? null,
-            coupon_code: data.coupon_code ?? null,
-          });
-          setSpinning(false);
-          refreshConfig();
-          refreshHistory();
-        }, 5600);
-      } else {
+      const showModal = () => {
         setModalPrize({
-          name: prize.name || "Qua bi mat",
+          name: prize.name || "Quà bí mật",
           image: prize.image,
           jackpot: prize.jackpot,
           icon: prize.icon,
@@ -458,22 +440,33 @@ export default function Spin() {
         setSpinning(false);
         refreshConfig();
         refreshHistory();
+      };
+      if (idx >= 0 && prizes.length > 0) {
+        const segDeg = 360 / prizes.length;
+        const target = (360 - idx * segDeg - segDeg / 2 + 360 * 6) % 360;
+        const current = rotation % 360;
+        const delta = ((target - current) + 360) % 360;
+        const final = rotation + delta + 360;
+        setRotation(final);
+        window.setTimeout(showModal, 5600);
+      } else {
+        showModal();
       }
     } catch (err: any) {
       setSpinning(false);
       const status = err?.response?.status;
       const msg =
         status === 401
-          ? "Phien dang nhap het han, vui long dang nhap lai."
+          ? "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."
           : status === 400
-          ? err?.response?.data?.detail || "Ban chua co luot quay."
-          : "Da co loi xay ra, vui long thu lai.";
-      setPlayError(typeof msg === "string" ? msg : "Da co loi xay ra, vui long thu lai.");
+          ? err?.response?.data?.detail || "Bạn chưa có lượt quay."
+          : "Đã có lỗi xảy ra, vui lòng thử lại.";
+      setPlayError(typeof msg === "string" ? msg : "Đã có lỗi xảy ra, vui lòng thử lại.");
     }
   };
 
   if (loading && !cfg) {
-    return <LoadingSpinner label="Dang tai vong quay..." />;
+    return <LoadingSpinner label="Đang tải vòng quay..." />;
   }
 
   const safeCfg = cfg || DEFAULT_CFG;
@@ -485,31 +478,37 @@ export default function Spin() {
       <div className="mb-8 text-center">
         <div className="mb-2 flex items-center justify-center gap-2">
           <div className="h-px w-10 bg-crimson" />
-          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-rose">Vong Quay May Man</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-rose">
+            Vòng Quay May Mắn
+          </span>
           <div className="h-px w-10 bg-crimson" />
         </div>
         <h1 className="mb-2 text-3xl font-extrabold text-warmwhite sm:text-4xl">
-          {safeCfg.title || "CellZone - Spin & Win"}
+          {safeCfg.title || "CellZone · Spin & Win"}
         </h1>
         <p className="mx-auto max-w-2xl text-sm text-softgray">
-          Moi {new Intl.NumberFormat("vi-VN").format(safeCfg.spend_per_spin_vnd)} VND da mua (don hang da
-          giao) = ban nhan <strong className="text-warmwhite">1 luot quay</strong>. Hay quay de trung
-          ngay phan qua hap dan!
+          Mỗi {new Intl.NumberFormat("vi-VN").format(safeCfg.spend_per_spin_vnd)} VND đã mua (đơn hàng đã
+          giao) = bạn nhận <strong className="text-warmwhite">1 lượt quay</strong>. Hãy quay để trúng ngay
+          phần quà hấp dẫn!
         </p>
 
-        {loadError && (
+        {warning && (
           <div className="mx-auto mt-4 max-w-md rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-xs text-amber-200">
-            {loadError}
+            {warning}
           </div>
         )}
 
         {!hasToken && (
           <div className="mx-auto mt-4 max-w-md rounded-xl border border-rose/40 bg-rose/10 px-4 py-2 text-xs text-rose">
-            Ban can{" "}
-            <Link to="/login" onClick={openLogin} className="font-semibold underline">
-              dang nhap
+            Bạn cần{" "}
+            <Link
+              to="/login"
+              onClick={() => setHasToken(!!localStorage.getItem("token"))}
+              className="font-semibold underline"
+            >
+              đăng nhập
             </Link>{" "}
-            de tham gia quay thuong.
+            để tham gia quay thưởng.
           </div>
         )}
 
@@ -533,7 +532,7 @@ export default function Spin() {
             <div className="relative mx-auto aspect-square w-full max-w-[440px]">
               <div className="pointer-events-none absolute -inset-3 rounded-full border border-crimson/30" />
               <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 text-3xl text-yellow-300 drop-shadow-md">
-                &#9660;
+                ▼
               </div>
               <div className="absolute inset-0 overflow-hidden rounded-full">
                 <canvas
@@ -563,14 +562,14 @@ export default function Spin() {
                     : { background: "#b91c1c", color: "#fff", boxShadow: "0 6px 20px rgba(185,28,28,0.35)" }
                 }
               >
-                {spinning ? "..." : !hasToken ? "LOGIN" : safeCfg.user_credits > 0 ? "QUAY" : "HET LUOT"}
+                {spinning ? "..." : !hasToken ? "LOGIN" : safeCfg.user_credits > 0 ? "QUAY" : "HẾT LƯỢT"}
               </button>
             </div>
 
             <div className="mt-6 text-center">
               <p className="text-xs text-[#93a0c9]">
-                Con <strong style={{ color: "#ffedb0" }}>{safeCfg.user_credits}</strong> luot quay. Tong chi
-                tieu da giao:{" "}
+                Còn <strong style={{ color: "#ffedb0" }}>{safeCfg.user_credits}</strong> lượt quay. Tổng
+                chi tiêu đã giao:{" "}
                 <strong className="text-white">
                   {new Intl.NumberFormat("vi-VN").format(safeCfg.lifetime_spend_vnd)} VND
                 </strong>
@@ -581,7 +580,7 @@ export default function Spin() {
 
         <div className="space-y-6">
           <div className="rounded-bento border border-rose/20 bg-cardtint/60 p-5">
-            <h2 className="mb-3 text-base font-bold text-warmwhite">Phan thuong</h2>
+            <h2 className="mb-3 text-base font-bold text-warmwhite">Phần thưởng</h2>
             <div className="grid grid-cols-2 gap-2">
               {prizes.map((p, i) => (
                 <div
@@ -592,13 +591,13 @@ export default function Spin() {
                     {p.image ? (
                       <img src={p.image} alt="" className="h-full w-full object-contain" />
                     ) : (
-                      <span>{p.icon || "\uD83C\uDF81"}</span>
+                      <span>{p.icon || "🎁"}</span>
                     )}
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-xs font-medium text-warmwhite">{p.name}</p>
                     <p className="text-[10px] text-steelgray">
-                      xac suat {((Number(p.weight) / totalWeight) * 100).toFixed(2)}%
+                      xác suất {((Number(p.weight) / totalWeight) * 100).toFixed(2)}%
                     </p>
                   </div>
                 </div>
@@ -607,10 +606,21 @@ export default function Spin() {
           </div>
 
           <div className="rounded-bento border border-rose/20 bg-cardtint/60 p-5">
-            <h2 className="mb-3 text-base font-bold text-warmwhite">Lich su quay</h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-bold text-warmwhite">Lịch sử quay</h2>
+              {history.length > 10 && (
+                <span className="text-[11px] text-steelgray">
+                  Hiển thị 10 lượt gần nhất / {history.length} lượt
+                </span>
+              )}
+            </div>
+            <p className="mb-3 text-[11px] text-steelgray">
+              Mỗi lượt quay thành công sẽ được lưu ở đây — bấm vào từng phần quà để xem mã giảm giá hoặc
+              sản phẩm bạn từng trúng.
+            </p>
             {history.length === 0 ? (
               <p className="text-xs text-steelgray">
-                {hasToken ? "Ban chua quay lan nao." : "Dang nhap de xem lich su quay."}
+                {hasToken ? "Bạn chưa quay lần nào." : "Đăng nhập để xem lịch sử quay thưởng của bạn."}
               </p>
             ) : (
               <ul className="space-y-2">
@@ -622,14 +632,17 @@ export default function Spin() {
                       className="flex w-full items-center justify-between rounded-lg bg-charcoal/60 p-2 text-left text-xs transition-colors hover:bg-charcoal"
                     >
                       <span className="truncate text-warmwhite">{h.prize_label}</span>
-                      <span className="text-rose hover:text-sakura">Xem chi tiet &rarr;</span>
+                      <span className="text-rose hover:text-sakura">Xem chi tiết →</span>
                     </button>
                   </li>
                 ))}
               </ul>
             )}
-            <Link to="/orders" className="mt-3 block text-center text-xs text-rose hover:text-sakura">
-              Xem don hang cua toi &rarr;
+            <Link
+              to="/orders"
+              className="mt-3 block text-center text-xs text-rose hover:text-sakura"
+            >
+              Xem tất cả lịch sử quay →
             </Link>
           </div>
         </div>
