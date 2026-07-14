@@ -50,6 +50,7 @@ class ProductResponse(BaseModel):
     description: str = ""
     specifications: str = ""
     stock: int
+    is_active: bool = True
     media: list["ProductMediaItem"] = []
 
     model_config = {"from_attributes": True}

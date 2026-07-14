@@ -151,7 +151,12 @@ export const adminApi = {
     api.put<Product>(`/api/admin/products/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  deleteProduct: (id: number) => api.delete(`/api/admin/products/${id}`),
+  deleteProduct: (id: number) =>
+    api.delete<{ ok: boolean; soft_deleted: boolean; order_items: number; message?: string }>(
+      `/api/admin/products/${id}`,
+    ),
+  restoreProduct: (id: number) =>
+    api.post<Product>(`/api/admin/products/${id}/restore`),
   importDocx: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);

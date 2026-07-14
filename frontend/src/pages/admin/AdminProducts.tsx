@@ -52,6 +52,7 @@ export default function AdminProducts() {
   const [quickImage, setQuickImage] = useState<File | null>(null);
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [quickTagChips, setQuickTagChips] = useState<string[]>([]);
   const [fullTagChips, setFullTagChips] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
@@ -144,11 +145,56 @@ export default function AdminProducts() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => adminApi.deleteProduct(id),
-    onSuccess: () => {
+    onSuccess: (resp) => {
+      const data: { soft_deleted?: boolean; message?: string; order_items?: number } =
+        (resp as { data?: { soft_deleted?: boolean; message?: string; order_items?: number } }).data ?? {};
+      if (data?.soft_deleted) {
+        const orderItems = data.order_items ?? 0;
+        const msg =
+          data.message ||
+          `Sản phẩm đã được ẩn khỏi cửa hàng (còn ${orderItems} đơn hàng tham chiếu — không thể xóa hoàn toàn để giữ lịch sử).`;
+        setInfo(msg);
+        setError("");
+      } else {
+        setInfo("Đã xóa sản phẩm.");
+        setError("");
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
+    onError: (err: Error) => {
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.detail
+          ? err.response.data.detail
+          : err.message || "Xóa thất bại";
+      setError(typeof message === "string" ? message : "Xóa thất bại");
+    },
   });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: number) => adminApi.restoreProduct(id),
+    onSuccess: () => {
+      setInfo("Đã khôi phục sản phẩm.");
+      setError("");
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (err: Error) => setError(err.message || "Khôi phục thất bại"),
+  });
+
+  const handleDelete = (p: Product) => {
+    const ok = window.confirm(
+      `Xóa sản phẩm "${p.name}"?\n\n` +
+        `• Nếu không còn đơn hàng nào tham chiếu → xóa hoàn toàn.\n` +
+        `• Nếu còn đơn hàng tham chiếu → sản phẩm sẽ bị ẨN khỏi cửa hàng (vẫn giữ để xem lịch sử đơn).`,
+    );
+    if (!ok) return;
+    deleteMutation.mutate(p.id);
+  };
+
+  const handleRestore = (p: Product) => {
+    restoreMutation.mutate(p.id);
+  };
 
   const startEdit = (p: Product) => {
     setEditing(p); setTab("full");
@@ -404,9 +450,12 @@ export default function AdminProducts() {
               className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite" />
           </div>
 
-          {error && (
-            <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">{error}</div>
-          )}
+{error && (
+          <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">{error}</div>
+        )}
+        {info && (
+          <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-3 text-sm text-emerald-300">{info}</div>
+        )}
 
           <div className="flex gap-3">
             <button type="submit" disabled={saveMutation.isPending} className="btn-primary">
@@ -445,7 +494,16 @@ export default function AdminProducts() {
                 return (
                   <tr key={p.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors">
                     <td className="px-4 py-3"><img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover" /></td>
-                    <td className="px-4 py-3 font-medium text-warmwhite">{p.name}</td>
+                    <td className="px-4 py-3 font-medium text-warmwhite">
+                  <div className="flex items-center gap-2">
+                    <span>{p.name}</span>
+                    {p.is_active === false && (
+                      <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-200">
+                        Đã ẩn
+                      </span>
+                    )}
+                  </div>
+                </td>
                     <td className="px-4 py-3 text-crimson font-semibold">
                       {new Intl.NumberFormat("vi-VN").format(p.price)} VND
                     </td>
@@ -461,8 +519,23 @@ export default function AdminProducts() {
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button onClick={() => startEdit(p)} className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
-                        <button onClick={() => { if (confirm(`Xóa "${p.name}"?`)) deleteMutation.mutate(p.id); }}
-                          className="text-sm text-deeprose hover:text-rose transition-colors">Xóa</button>
+                        {p.is_active === false ? (
+                          <button
+                            onClick={() => handleRestore(p)}
+                            disabled={restoreMutation.isPending}
+                            className="text-sm text-emerald-400 hover:text-emerald-200 transition-colors disabled:opacity-50"
+                          >
+                            Khôi phục
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDelete(p)}
+                            disabled={deleteMutation.isPending}
+                            className="text-sm text-deeprose hover:text-rose transition-colors disabled:opacity-50"
+                          >
+                            Xóa
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

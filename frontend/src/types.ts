@@ -23,6 +23,7 @@ export interface Product {
   description: string;
   specifications: string;
   stock: number;
+  is_active?: boolean;
   media?: ProductMediaItem[];
 }
 

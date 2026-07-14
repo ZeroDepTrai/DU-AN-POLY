@@ -151,12 +151,87 @@ def update_product(
 
 @router.delete("/products/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """Delete a product.
+
+    The product may be referenced by historical OrderItem rows (delivered
+    orders, spin-reward orders, etc.) so a hard delete would violate the
+    FK constraint. We try hard-delete first; if any OrderItem still points
+    at this product we fall back to a *soft delete* (is_active=False). The
+    public shop endpoints already filter out inactive products, so the
+    shop/admin sees the product disappear immediately while past orders
+    retain their reference for accounting/history.
+    """
+    from sqlalchemy.exc import IntegrityError
+
+    from app.models import OrderItem, ProductMedia, Spin
+
     product = db.get(Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
-    db.delete(product)
+
+    # Always safe to do first: free spin references (nullable FK).
+    db.query(Spin).filter(Spin.product_id == product_id).update(
+        {Spin.product_id: None}, synchronize_session=False
+    )
+
+    order_item_count = (
+        db.query(OrderItem)
+        .filter(OrderItem.product_id == product_id)
+        .count()
+    )
+
+    if order_item_count == 0:
+        # No historical references → safe to hard delete (CASCADE clears
+        # product_media automatically).
+        try:
+            db.query(ProductMedia).filter(
+                ProductMedia.product_id == product_id
+            ).delete(synchronize_session=False)
+            db.delete(product)
+            db.commit()
+            return {"ok": True, "soft_deleted": False, "order_items": 0}
+        except IntegrityError as e:
+            db.rollback()
+            # Race condition: an OrderItem was created between count and delete.
+            # Fall through to soft-delete path below.
+            print(f"[admin.delete_product] hard delete failed, falling back: {e}")
+            product = db.get(Product, product_id)
+            if product is None:
+                return {"ok": True, "soft_deleted": False, "order_items": 0}
+
+    # Fallback: soft delete so the product is hidden from the shop.
+    product.is_active = False
     db.commit()
-    return {"ok": True}
+    return {
+        "ok": True,
+        "soft_deleted": True,
+        "order_items": order_item_count,
+        "message": (
+            f"Sản phẩm đã được ẩn khỏi cửa hàng (còn {order_item_count} đơn hàng "
+            "tham chiếu — không thể xóa hoàn toàn để giữ lịch sử)."
+        ),
+    }
+
+
+@router.post("/products/{product_id}/restore", response_model=ProductResponse)
+def restore_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """Re-activate a previously soft-deleted product."""
+    product = db.get(Product, product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    product.is_active = True
+    db.commit()
+    db.refresh(product)
+
+    from app.models import ProductMedia
+    media_rows = (
+        db.query(ProductMedia)
+        .filter(ProductMedia.product_id == product.id)
+        .order_by(ProductMedia.position.asc(), ProductMedia.id.asc())
+        .all()
+    )
+    product.media = media_rows  # type: ignore[attr-defined]
+    return product
 
 
 @router.get("/orders", response_model=list[OrderResponse])

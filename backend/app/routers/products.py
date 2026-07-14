@@ -10,8 +10,8 @@ router = APIRouter(prefix="/api/products", tags=["products"])
 
 @router.get("", response_model=list[ProductResponse])
 def list_products(tag: str | None = Query(default=None), db: Session = Depends(get_db)):
-    """Returns all products, optionally filtered by tag. Backward-compatible."""
-    query = db.query(Product)
+    """Returns all ACTIVE products, optionally filtered by tag. Backward-compatible."""
+    query = db.query(Product).filter(Product.is_active.is_(True))
     if tag:
         query = query.filter(Product.tags.ilike(f"%{tag}%"))
     rows = query.order_by(Product.id.desc()).all()
@@ -48,7 +48,7 @@ def search_products(
     db: Session = Depends(get_db),
 ):
     """New paginated/filtered search endpoint for Products and Accessories pages."""
-    query = db.query(Product)
+    query = db.query(Product).filter(Product.is_active.is_(True))
     if tag:
         query = query.filter(Product.tags.ilike(f"%{tag}%"))
     if brand:
@@ -86,7 +86,11 @@ def get_related_products(product_id: int, limit: int = Query(default=4, ge=1, le
         raise HTTPException(status_code=404, detail="Product not found")
     related = (
         db.query(Product)
-        .filter(Product.id != product_id, Product.tags.ilike(f"%{product.tags.split(',')[0].strip()}%"))
+        .filter(
+            Product.id != product_id,
+            Product.is_active.is_(True),
+            Product.tags.ilike(f"%{product.tags.split(',')[0].strip()}%"),
+        )
         .order_by(Product.id.desc())
         .limit(limit)
         .all()

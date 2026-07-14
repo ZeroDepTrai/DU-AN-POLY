@@ -60,6 +60,7 @@ class Product(Base):
     description: Mapped[str] = mapped_column(Text, default="", nullable=False)
     specifications: Mapped[str] = mapped_column(Text, default="", nullable=False)
     stock: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     order_items: Mapped[list["OrderItem"]] = relationship(back_populates="product")
 

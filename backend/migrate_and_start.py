@@ -79,6 +79,14 @@ def apply_schema_changes():
     else:
         print("[MIGRATION] products.description: already exists, skipping")
 
+    if not _col_exists(conn, "products", "is_active"):
+        safe_alter(
+            "ALTER TABLE products ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true",
+            "products.is_active (ADDED)",
+        )
+    else:
+        print("[MIGRATION] products.is_active: already exists, skipping")
+
     # --- blog_posts columns ---
     if not _col_exists(conn, "blog_posts", "tags"):
         safe_alter(
