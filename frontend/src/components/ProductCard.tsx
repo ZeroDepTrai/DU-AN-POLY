@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { memo } from "react";
 import { useCart } from "../context/CartContext";
 import type { Product } from "../types";
 
@@ -7,7 +8,13 @@ interface ProductCardProps {
   variant?: "small" | "featured" | "bento";
 }
 
-export default function ProductCard({ product, variant = "small" }: ProductCardProps) {
+/**
+ * Memoised so adding an item to the cart (which causes CartContext to
+ * re-render the page) does NOT re-render every visible card. Images below
+ * the fold get loading="lazy" + decoding="async" so the initial paint
+ * only downloads above-the-fold images.
+ */
+function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
   const { addItem } = useCart();
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -17,10 +24,14 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
   };
 
   const formattedPrice = new Intl.NumberFormat("vi-VN").format(product.price);
-  // Strip HTML so the description renders as plain text inside cards.
   const plainDescription = product.description
     ? product.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
     : "";
+
+  // Above-the-fold (bento + featured) gets eager loading so it doesn't flash;
+  // the small grid cards load lazily.
+  const aboveFold = variant === "bento" || variant === "featured";
+  const imgLoading: "eager" | "lazy" = aboveFold ? "eager" : "lazy";
 
   // ── Bento: tall hero card (matches Figma "Premium Case" featured span)
   if (variant === "bento") {
@@ -35,6 +46,9 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
             <img
               src={product.image_url}
               alt={product.name}
+              loading={imgLoading}
+              decoding="async"
+              fetchPriority={aboveFold ? "high" : "auto"}
               className="relative z-10 h-full w-full object-contain p-8 transition-transform duration-500 group-hover:scale-105"
             />
           )}
@@ -83,6 +97,9 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
             <img
               src={product.image_url}
               alt={product.name}
+              loading={imgLoading}
+              decoding="async"
+              fetchPriority={aboveFold ? "high" : "auto"}
               className="relative z-10 h-full w-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
             />
           )}
@@ -126,9 +143,12 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
         <div className="absolute inset-0 bg-gradient-to-br from-accentFrom/15 via-transparent to-accentTo/25" />
         {product.image_url && (
           <img
-            src={product.image_url}
-            alt={product.name}
-            className="relative z-10 h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
+src={product.image_url}
+              alt={product.name}
+              loading={imgLoading}
+              decoding="async"
+              fetchPriority={aboveFold ? "high" : "auto"}
+              className="relative z-10 h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
           />
         )}
         {product.tags && (
@@ -155,3 +175,5 @@ export default function ProductCard({ product, variant = "small" }: ProductCardP
     </Link>
   );
 }
+
+export default memo(ProductCardBase);

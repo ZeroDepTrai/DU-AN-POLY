@@ -161,6 +161,10 @@ export const adminApi = {
     ),
   restoreProduct: (id: number) =>
     api.post<Product>(`/api/admin/products/${id}/restore`),
+  orderItemCounts: () =>
+    api.get<{ counts: Array<{ product_id: number; count: number }> }>(
+      "/api/admin/products/order-item-counts",
+    ),
   importDocx: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);

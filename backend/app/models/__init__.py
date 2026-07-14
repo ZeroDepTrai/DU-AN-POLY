@@ -64,6 +64,13 @@ class Product(Base):
 
     order_items: Mapped[list["OrderItem"]] = relationship(back_populates="product")
 
+    __table_args__ = (
+        # Speeds up every public storefront query:
+        # `SELECT … FROM products WHERE is_active = TRUE ORDER BY id DESC / price`
+        Index("ix_products_active_id", "is_active", "id"),
+        Index("ix_products_active_price", "is_active", "price"),
+    )
+
 
 class Order(Base):
     __tablename__ = "orders"

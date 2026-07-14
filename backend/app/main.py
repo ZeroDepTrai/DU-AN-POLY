@@ -134,7 +134,20 @@ app.add_middleware(
 
 uploads_path = Path(settings.upload_dir)
 uploads_path.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
+
+
+# Static files (product / blog / wheel uploads) get an immutable, year-long
+# Cache-Control header — uploads/* URIs are content-addressable UUIDs so the
+# file body never changes. Without this, every ProductCard re-downloads the
+# original JPEG on every page mount.
+class _CachedStatic(StaticFiles):
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+        return response
+
+
+app.mount("/uploads", _CachedStatic(directory=str(uploads_path)), name="uploads")
 
 app.include_router(auth.router)
 app.include_router(products.router)

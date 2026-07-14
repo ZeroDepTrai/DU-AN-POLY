@@ -2,10 +2,31 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Product
+from app.models import Product, ProductMedia
 from app.schemas import CategoryResponse, PaginatedProductsResponse, ProductResponse
 
 router = APIRouter(prefix="/api/products", tags=["products"])
+
+
+def _attach_media(products: list[Product], db: Session) -> None:
+    """Hydrate Product.media in one batched query (replaces a per-row
+    `SELECT … FROM product_media WHERE product_id = ?` N+1).
+    Skipped silently on an empty list.
+    """
+    if not products:
+        return
+    product_ids = [p.id for p in products]
+    media_rows = (
+        db.query(ProductMedia)
+        .filter(ProductMedia.product_id.in_(product_ids))
+        .order_by(ProductMedia.position.asc(), ProductMedia.id.asc())
+        .all()
+    )
+    by_product: dict[int, list[ProductMedia]] = {}
+    for m in media_rows:
+        by_product.setdefault(m.product_id, []).append(m)
+    for p in products:
+        p.media = by_product.get(p.id, [])  # type: ignore[attr-defined]
 
 
 @router.get("", response_model=list[ProductResponse])
@@ -15,25 +36,7 @@ def list_products(tag: str | None = Query(default=None), db: Session = Depends(g
     if tag:
         query = query.filter(Product.tags.ilike(f"%{tag}%"))
     rows = query.order_by(Product.id.desc()).all()
-    return [_hydrate(p, db) for p in rows] if rows else _hydrate_all(rows, db)
-
-
-def _hydrate(p: Product, db: Session):
-    # Pydantic uses from_attributes; we attach `media` as a derived attr.
-    from app.models import ProductMedia
-    media_rows = (
-        db.query(ProductMedia)
-        .filter(ProductMedia.product_id == p.id)
-        .order_by(ProductMedia.position.asc(), ProductMedia.id.asc())
-        .all()
-    )
-    p.media = media_rows  # type: ignore[attr-defined]
-    return p
-
-
-def _hydrate_all(rows, db):
-    for r in rows:
-        _hydrate(r, db)
+    _attach_media(rows, db)
     return rows
 
 
@@ -56,7 +59,7 @@ def search_products(
     if search:
         query = query.filter(Product.name.ilike(f"%{search}%"))
 
-    total = query.count()
+    total = query.with_entities(Product.id).count()
 
     if sort == "price_asc":
         query = query.order_by(Product.price.asc())
@@ -65,11 +68,10 @@ def search_products(
     else:
         query = query.order_by(Product.id.desc())
 
-    products = query.offset((page - 1) * limit).limit(limit).all()
-    for p in products:
-        _hydrate(p, db)
+    page_rows = query.offset((page - 1) * limit).limit(limit).all()
+    _attach_media(page_rows, db)
     return PaginatedProductsResponse(
-        products=products,
+        products=page_rows,
         total=total,
         page=page,
         limit=limit,
@@ -95,12 +97,18 @@ def get_related_products(product_id: int, limit: int = Query(default=4, ge=1, le
         .limit(limit)
         .all()
     )
+    _attach_media(related, db)
     return related
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.get(Product, product_id)
+    product = (
+        db.query(Product)
+        .filter(Product.id == product_id, Product.is_active.is_(True))
+        .first()
+    )
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
-    return _hydrate(product, db)
+    _attach_media([product], db)
+    return product

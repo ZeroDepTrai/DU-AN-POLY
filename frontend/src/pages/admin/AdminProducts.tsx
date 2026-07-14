@@ -102,6 +102,23 @@ export default function AdminProducts() {
       const { data } = await adminApi.listProducts();
       return data;
     },
+    // Admin page wants fresh data after a mutation — ignore the global
+    // staleTime here so a save/delete invalidates and re-fetches.
+    staleTime: 0,
+  });
+
+  // Per-product OrderItem count, fetched alongside admin-products to drive
+  // the action-button copy (show "Xóa vĩnh viễn" vs "Xóa (sẽ ẩn)" up front
+  // instead of surprise-flipping after the click).
+  const { data: orderItemCounts = {} } = useQuery({
+    queryKey: ["admin-order-item-counts"],
+    queryFn: async () => {
+      const { data } = await adminApi.orderItemCounts();
+      const map: Record<number, number> = {};
+      for (const row of data.counts ?? []) map[row.product_id] = row.count;
+      return map;
+    },
+    staleTime: 60_000,
   });
 
   const saveMutation = useMutation({
@@ -160,6 +177,7 @@ export default function AdminProducts() {
         setError("");
       }
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-order-item-counts"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (err: Error) => {
@@ -177,6 +195,7 @@ export default function AdminProducts() {
       setInfo("Đã khôi phục sản phẩm.");
       setError("");
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-order-item-counts"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (err: Error) => setError(err.message || "Khôi phục thất bại"),
@@ -194,6 +213,7 @@ export default function AdminProducts() {
       );
       setError("");
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-order-item-counts"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (err: Error) => setError(err.message || "Ẩn sản phẩm thất bại"),
@@ -211,10 +231,16 @@ export default function AdminProducts() {
   };
 
   const handleDelete = (p: Product) => {
+    const orderItems = orderItemCounts[p.id] ?? 0;
     const ok = window.confirm(
-      `Xóa sản phẩm "${p.name}"?\n\n` +
-        `• Nếu không còn đơn hàng nào tham chiếu → xóa hoàn toàn.\n` +
-        `• Nếu còn đơn hàng tham chiếu → sản phẩm sẽ bị ẨN khỏi cửa hàng (vẫn giữ để xem lịch sử đơn).`,
+      orderItems === 0
+        ? `Xóa vĩnh viễn sản phẩm "${p.name}"?\n\n` +
+          `• Không còn đơn hàng nào tham chiếu → xóa hoàn toàn khỏi database.\n` +
+          `• Hành động này KHÔNG THỂ hoàn tác.`
+        : `Xóa sản phẩm "${p.name}"?\n\n` +
+          `• Còn ${orderItems} đơn hàng tham chiếu → sẽ được ẨN (không thể xóa hoàn toàn để giữ lịch sử đơn).\n` +
+          `• Bạn có thể "Khôi phục" từ nút ở hàng này sau.\n\n` +
+          `Muốn ẩn mà không cần xóa? Nhấn "Hủy" rồi dùng nút "Ẩn" thay thế.`,
     );
     if (!ok) return;
     deleteMutation.mutate(p.id);

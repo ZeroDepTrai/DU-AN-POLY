@@ -56,6 +56,27 @@ class ProductResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProductAdminSummary(BaseModel):
+    """Lightweight Product shape used by admin tables (lists).
+
+    Omits `description` and `specifications` (large TEXT columns the
+    admin table doesn't display), which dramatically shrinks the
+    response payload and lets the admin list endpoint finish in one
+    fast SELECT instead of streaming megabytes per product.
+    """
+
+    id: int
+    name: str
+    price: float
+    tags: str
+    image_url: str
+    stock: int
+    is_active: bool = True
+    media: list["ProductMediaItem"] = []
+
+    model_config = {"from_attributes": True}
+
+
 class ProductMediaItem(BaseModel):
     id: int
     url: str

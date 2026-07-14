@@ -87,6 +87,18 @@ def apply_schema_changes():
     else:
         print("[MIGRATION] products.is_active: already exists, skipping")
 
+    # Composite indexes that back the public storefront queries:
+    # WHERE is_active=TRUE ORDER BY id DESC   (Home, list_products)
+    # WHERE is_active=TRUE ORDER BY price …  (sort: price_asc / price_desc)
+    safe_alter(
+        "CREATE INDEX IF NOT EXISTS ix_products_active_id ON products (is_active, id)",
+        "ix_products_active_id",
+    )
+    safe_alter(
+        "CREATE INDEX IF NOT EXISTS ix_products_active_price ON products (is_active, price)",
+        "ix_products_active_price",
+    )
+
     # --- blog_posts columns ---
     if not _col_exists(conn, "blog_posts", "tags"):
         safe_alter(

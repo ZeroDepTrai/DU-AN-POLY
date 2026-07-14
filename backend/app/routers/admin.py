@@ -18,6 +18,7 @@ from app.schemas import (
     LocationUpdate,
     OrderResponse,
     OrderUpdate,
+    ProductAdminSummary,
     ProductResponse,
 )
 from app.services.orders import order_to_response
@@ -85,9 +86,33 @@ def quick_add_product(
     return product
 
 
-@router.get("/products", response_model=list[ProductResponse])
+@router.get("/products", response_model=list[ProductAdminSummary])
 def admin_list_products(db: Session = Depends(get_db), _: User = Depends(require_admin)):
-    return db.query(Product).order_by(Product.id.desc()).all()
+    """Lightweight list — drops `description`/`specifications` columns from
+    the response so the admin Products tab doesn't ship multi-MB text
+    payloads for fields the table never displays."""
+    rows = db.query(Product).order_by(Product.id.desc()).all()
+    return rows
+
+
+@router.get("/products/order-item-counts")
+def admin_product_order_item_counts(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """Return per-product OrderItem counts. The admin UI uses this to
+    preview whether a delete will hard-delete (count=0) or fall back to
+    soft-delete (count>0). Heavy: counts the entire order_items table —
+    only safe with the indexes already on order_items.product_id, but
+    cached in the React Query cache for 60s anyway.
+    """
+    from app.models import OrderItem
+    from sqlalchemy import func
+
+    rows = (
+        db.query(OrderItem.product_id, func.count(OrderItem.id))
+        .group_by(OrderItem.product_id)
+        .all()
+    )
+    counts = [{"product_id": pid, "count": int(c)} for pid, c in rows]
+    return {"counts": counts}
 
 
 @router.post("/products", response_model=ProductResponse)
