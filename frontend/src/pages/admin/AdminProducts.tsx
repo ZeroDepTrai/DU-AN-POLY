@@ -58,6 +58,7 @@ export default function AdminProducts() {
   const [importing, setImporting] = useState(false);
   const [customSpecLabel, setCustomSpecLabel] = useState("");
   const [customSpecLabels, setCustomSpecLabels] = useState<string[]>([]);
+  const [showHidden, setShowHidden] = useState(false);
 
   const toggleTag = (tag: string, chips: string[], setChips: React.Dispatch<React.SetStateAction<string[]>>) => {
     const t = tag.trim().toLowerCase();
@@ -96,7 +97,7 @@ export default function AdminProducts() {
     return result;
   };
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: productsRaw = [], isLoading, isFetching } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
       const { data } = await adminApi.listProducts();
@@ -110,7 +111,9 @@ export default function AdminProducts() {
   // Per-product OrderItem count, fetched alongside admin-products to drive
   // the action-button copy (show "Xóa vĩnh viễn" vs "Xóa (sẽ ẩn)" up front
   // instead of surprise-flipping after the click).
-  const { data: orderItemCounts = {} } = useQuery({
+  // IMPORTANT: until this resolves we don't allow delete-click — otherwise
+  // the confirm dialog shows the wrong text and the row appears unchanged.
+  const { data: orderItemCounts = {}, isLoading: countsLoading } = useQuery({
     queryKey: ["admin-order-item-counts"],
     queryFn: async () => {
       const { data } = await adminApi.orderItemCounts();
@@ -120,6 +123,12 @@ export default function AdminProducts() {
     },
     staleTime: 60_000,
   });
+
+  // Filter: hidden products are off by default so the admin sees a clean
+  // list of currently-sellable products. Toggle "Hiển thị đã ẩn" to reveal.
+  const products = showHidden
+    ? productsRaw
+    : productsRaw.filter((p) => p.is_active !== false);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -165,6 +174,7 @@ export default function AdminProducts() {
     onSuccess: (resp) => {
       const data: { soft_deleted?: boolean; message?: string; order_items?: number } =
         (resp as { data?: { soft_deleted?: boolean; message?: string; order_items?: number } }).data ?? {};
+      console.debug("[AdminProducts] deleteProduct OK", resp?.data);
       if (data?.soft_deleted) {
         const orderItems = data.order_items ?? 0;
         const msg =
@@ -173,7 +183,7 @@ export default function AdminProducts() {
         setInfo(msg);
         setError("");
       } else {
-        setInfo("Đã xóa sản phẩm.");
+        setInfo("Đã xóa hoàn toàn sản phẩm khỏi database.");
         setError("");
       }
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
@@ -181,6 +191,7 @@ export default function AdminProducts() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (err: Error) => {
+      console.error("[AdminProducts] deleteProduct FAIL", err);
       const message =
         axios.isAxiosError(err) && err.response?.data?.detail
           ? err.response.data.detail
@@ -192,13 +203,17 @@ export default function AdminProducts() {
   const restoreMutation = useMutation({
     mutationFn: (id: number) => adminApi.restoreProduct(id),
     onSuccess: () => {
+      console.debug("[AdminProducts] restoreProduct OK");
       setInfo("Đã khôi phục sản phẩm.");
       setError("");
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["admin-order-item-counts"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (err: Error) => setError(err.message || "Khôi phục thất bại"),
+    onError: (err: Error) => {
+      console.error("[AdminProducts] restoreProduct FAIL", err);
+      setError(err.message || "Khôi phục thất bại");
+    },
   });
 
   const softDeleteMutation = useMutation({
@@ -206,6 +221,7 @@ export default function AdminProducts() {
     onSuccess: (resp) => {
       const data = (resp as { data?: { already_hidden?: boolean; order_items?: number } }).data ?? {};
       const items = data.order_items ?? 0;
+      console.debug("[AdminProducts] softDeleteProduct OK", resp?.data);
       setInfo(
         data.already_hidden
           ? `Sản phẩm đã được ẩn trước đó (còn ${items} đơn hàng tham chiếu).`
@@ -216,7 +232,10 @@ export default function AdminProducts() {
       queryClient.invalidateQueries({ queryKey: ["admin-order-item-counts"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (err: Error) => setError(err.message || "Ẩn sản phẩm thất bại"),
+    onError: (err: Error) => {
+      console.error("[AdminProducts] softDeleteProduct FAIL", err);
+      setError(err.message || "Ẩn sản phẩm thất bại");
+    },
   });
 
   const handleHide = (p: Product) => {
@@ -231,6 +250,10 @@ export default function AdminProducts() {
   };
 
   const handleDelete = (p: Product) => {
+    if (countsLoading) {
+      window.alert("Đang tải thông tin đơn hàng…\nVui lòng thao tác lại sau vài giây.");
+      return;
+    }
     const orderItems = orderItemCounts[p.id] ?? 0;
     const ok = window.confirm(
       orderItems === 0
@@ -525,11 +548,36 @@ export default function AdminProducts() {
 
       {/* Table */}
       <div className="rounded-xl border border-gunmetal/60 bg-graphite overflow-hidden">
-        <div className="border-b border-gunmetal/40 px-4 py-3">
-          <span className="text-sm text-steelgray">{products.length} sản phẩm</span>
+        <div className="flex items-center justify-between gap-4 border-b border-gunmetal/40 px-4 py-3">
+          <span className="text-sm text-steelgray">
+            {products.length} sản phẩm
+            {!showHidden && productsRaw.length > products.length && (
+              <span className="ml-2 text-xs text-steelgray">
+                ({productsRaw.length - products.length} đã ẩn — bật công tắc bên phải để hiện)
+              </span>
+            )}
+            {(isFetching || countsLoading) && (
+              <span className="ml-2 text-xs text-amber-300">
+                · đang đồng bộ…
+              </span>
+            )}
+          </span>
+          <label className="flex items-center gap-2 text-xs text-steelgray cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showHidden}
+              onChange={(e) => setShowHidden(e.target.checked)}
+              className="h-4 w-4 rounded border-gunmetal bg-graphite accent-crimson"
+            />
+            Hiển thị đã ẩn
+          </label>
         </div>
         {products.length === 0 ? (
-          <div className="p-8 text-center text-steelgray">Không có sản phẩm nào.</div>
+          <div className="p-8 text-center text-steelgray">
+            {showHidden
+              ? "Không có sản phẩm nào."
+              : "Không có sản phẩm đang bán nào. Bật \"Hiển thị đã ẩn\" để xem các sản phẩm đã ẩn trước đó."}
+          </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-gunmetal/40 bg-charcoal">
