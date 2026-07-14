@@ -182,6 +182,34 @@ export default function AdminProducts() {
     onError: (err: Error) => setError(err.message || "Khôi phục thất bại"),
   });
 
+  const softDeleteMutation = useMutation({
+    mutationFn: (id: number) => adminApi.softDeleteProduct(id),
+    onSuccess: (resp) => {
+      const data = (resp as { data?: { already_hidden?: boolean; order_items?: number } }).data ?? {};
+      const items = data.order_items ?? 0;
+      setInfo(
+        data.already_hidden
+          ? `Sản phẩm đã được ẩn trước đó (còn ${items} đơn hàng tham chiếu).`
+          : `Đã ẩn sản phẩm khỏi cửa hàng${items > 0 ? ` (còn ${items} đơn hàng tham chiếu — lịch sử đơn vẫn được giữ)` : ""}.`,
+      );
+      setError("");
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (err: Error) => setError(err.message || "Ẩn sản phẩm thất bại"),
+  });
+
+  const handleHide = (p: Product) => {
+    const ok = window.confirm(
+      `Ẩn sản phẩm "${p.name}"?\n\n` +
+        `• Sản phẩm sẽ biến mất khỏi cửa hàng, trang chủ, tìm kiếm và sản phẩm liên quan.\n` +
+        `• Lịch sử đơn hàng vẫn được giữ nguyên — đơn cũ không bị ảnh hưởng.\n` +
+        `• Bạn có thể "Khôi phục" bất cứ lúc nào.\n\nTiếp tục?`,
+    );
+    if (!ok) return;
+    softDeleteMutation.mutate(p.id);
+  };
+
   const handleDelete = (p: Product) => {
     const ok = window.confirm(
       `Xóa sản phẩm "${p.name}"?\n\n` +
@@ -517,25 +545,44 @@ export default function AdminProducts() {
                       <span className={p.stock < 5 ? "text-deeprose font-semibold" : "text-warmwhite"}>{p.stock}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button onClick={() => startEdit(p)} className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => startEdit(p)}
+                          className="text-sm text-crimson hover:text-sakura transition-colors"
+                        >
+                          Sửa
+                        </button>
                         {p.is_active === false ? (
-                          <button
-                            onClick={() => handleRestore(p)}
-                            disabled={restoreMutation.isPending}
-                            className="text-sm text-emerald-400 hover:text-emerald-200 transition-colors disabled:opacity-50"
-                          >
-                            Khôi phục
-                          </button>
+                          <>
+                            <span className="text-xs text-steelgray">·</span>
+                            <button
+                              onClick={() => handleRestore(p)}
+                              disabled={restoreMutation.isPending}
+                              className="text-sm text-emerald-400 hover:text-emerald-200 transition-colors disabled:opacity-50"
+                            >
+                              Khôi phục
+                            </button>
+                          </>
                         ) : (
-                          <button
-                            onClick={() => handleDelete(p)}
-                            disabled={deleteMutation.isPending}
-                            className="text-sm text-deeprose hover:text-rose transition-colors disabled:opacity-50"
-                          >
-                            Xóa
-                          </button>
+                          <>
+                            <span className="text-xs text-steelgray">·</span>
+                            <button
+                              onClick={() => handleHide(p)}
+                              disabled={softDeleteMutation.isPending}
+                              className="text-sm text-amber-300 hover:text-amber-200 transition-colors disabled:opacity-50"
+                            >
+                              Ẩn
+                            </button>
+                          </>
                         )}
+                        <span className="text-xs text-steelgray">·</span>
+                        <button
+                          onClick={() => handleDelete(p)}
+                          disabled={deleteMutation.isPending}
+                          className="text-sm text-deeprose hover:text-rose transition-colors disabled:opacity-50"
+                        >
+                          Xóa
+                        </button>
                       </div>
                     </td>
                   </tr>

@@ -149,6 +149,34 @@ def update_product(
     return product
 
 
+@router.post("/products/{product_id}/soft-delete")
+def soft_delete_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """Hide a product from the shop without deleting it.
+
+    Always succeeds — sets `is_active = false` and returns the current
+    OrderItem reference count so the admin UI can show it. Use this when
+    you want to keep historical orders intact while removing the product
+    from the storefront, search results, and the product-edit page's live
+    previews.
+    """
+    from app.models import OrderItem
+
+    product = db.get(Product, product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    if product.is_active is False:
+        order_items = (
+            db.query(OrderItem).filter(OrderItem.product_id == product_id).count()
+        )
+        return {"ok": True, "already_hidden": True, "order_items": order_items}
+    order_items = (
+        db.query(OrderItem).filter(OrderItem.product_id == product_id).count()
+    )
+    product.is_active = False
+    db.commit()
+    return {"ok": True, "already_hidden": False, "order_items": order_items}
+
+
 @router.delete("/products/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
     """Delete a product.

@@ -155,6 +155,10 @@ export const adminApi = {
     api.delete<{ ok: boolean; soft_deleted: boolean; order_items: number; message?: string }>(
       `/api/admin/products/${id}`,
     ),
+  softDeleteProduct: (id: number) =>
+    api.post<{ ok: boolean; already_hidden: boolean; order_items: number }>(
+      `/api/admin/products/${id}/soft-delete`,
+    ),
   restoreProduct: (id: number) =>
     api.post<Product>(`/api/admin/products/${id}/restore`),
   importDocx: (file: File) => {
