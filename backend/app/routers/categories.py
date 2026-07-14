@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/categories", tags=["categories"])
 
 
 # Brand-ish tokens we use to bucket products into phones vs accessories.
-_PHONE_TOKENS = ["iphone", "samsung", "xiaomi", "oppo", "android", "flagship", "realme", "vivo"]
+_PHONE_TOKENS = ["iphone", "samsung", "xiaomi", "oppo", "android", "flagship", "realme", "vivo", "apple"]
 
 
 def _split_tags(p) -> tuple[str, ...]:
