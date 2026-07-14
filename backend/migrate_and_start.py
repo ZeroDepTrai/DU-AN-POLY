@@ -223,6 +223,18 @@ def apply_schema_changes():
         """,
         "spins table",
     )
+    # Patch older deployments that created `spins` BEFORE `product_id` /
+    # `coupon_code` existed. CREATE TABLE IF NOT EXISTS won't add columns to
+    # an already-existing table, so we explicitly ALTER for each missing one.
+    for col, ddl in [
+        ("coupon_id", "ALTER TABLE spins ADD COLUMN IF NOT EXISTS coupon_id INTEGER REFERENCES coupons(id)"),
+        ("product_id", "ALTER TABLE spins ADD COLUMN IF NOT EXISTS product_id INTEGER REFERENCES products(id)"),
+        ("coupon_code", "ALTER TABLE spins ADD COLUMN IF NOT EXISTS coupon_code VARCHAR(32)"),
+    ]:
+        if _col_exists(conn, "spins", col):
+            print(f"[MIGRATION] spins.{col}: already exists, skipping")
+        else:
+            safe_alter(ddl, f"spins.{col} (ADDED)")
     safe_alter(
         "CREATE INDEX IF NOT EXISTS ix_spins_user_id ON spins (user_id)",
         "ix_spins_user_id",

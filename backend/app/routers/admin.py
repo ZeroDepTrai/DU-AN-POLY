@@ -223,9 +223,15 @@ def delete_product(product_id: int, db: Session = Depends(get_db), _: User = Dep
         raise HTTPException(status_code=404, detail="Product not found")
 
     # Always safe to do first: free spin references (nullable FK).
-    db.query(Spin).filter(Spin.product_id == product_id).update(
-        {Spin.product_id: None}, synchronize_session=False
-    )
+    # Wrapped in try/except because older deployments may have a `spins`
+    # table missing `product_id` — in that case there's nothing to clear
+    # and we proceed without 500-ing.
+    try:
+        db.query(Spin).filter(Spin.product_id == product_id).update(
+            {Spin.product_id: None}, synchronize_session=False
+        )
+    except Exception:
+        db.rollback()
 
     order_item_count = (
         db.query(OrderItem)

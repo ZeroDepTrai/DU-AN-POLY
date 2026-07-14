@@ -108,7 +108,15 @@ def _order_subtotal(order: Order) -> float:
 def user_credit_balance(db: Session, user_id: int) -> int:
     rows = db.query(SpinCredit).filter(SpinCredit.user_id == user_id).all()
     earned = sum(c.amount for c in rows)
-    consumed = db.query(Spin).filter(Spin.user_id == user_id).count()
+    # Project to Spin.id only — selecting the full Spin row would expand to
+    # every column the model declares (incl. product_id, coupon_code) and
+    # 500 with UndefinedColumn on deployments where those columns are
+    # missing. We only need the count.
+    consumed = (
+        db.query(Spin.id)
+        .filter(Spin.user_id == user_id)
+        .count()
+    )
     return max(0, earned - consumed)
 
 

@@ -1,0 +1,12 @@
+[build]
+# Railway's default Nixpacks builder is fine for this FastAPI project.
+
+[deploy]
+# Run idempotent schema migrations, then start uvicorn. Without this the
+# app boots straight into uvicorn and never creates/alters tables — which
+# is why the production `spins` table was missing `product_id`.
+startCommand = "python migrate_and_start.py"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -91,6 +92,15 @@ async def lifespan(app: FastAPI):
                        "ALTER TABLE products ADD COLUMN specifications TEXT NOT NULL DEFAULT ''")
             _force_add(conn, "products", "description",
                        "ALTER TABLE products ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+            # Patches for older deployments: the `spins` table was created
+            # without these columns. SQLAlchemy will 500 (UndefinedColumn)
+            # anywhere the Spin model is loaded until they exist.
+            _force_add(conn, "spins", "coupon_id",
+                       "ALTER TABLE spins ADD COLUMN coupon_id INTEGER REFERENCES coupons(id)")
+            _force_add(conn, "spins", "product_id",
+                       "ALTER TABLE spins ADD COLUMN product_id INTEGER REFERENCES products(id)")
+            _force_add(conn, "spins", "coupon_code",
+                       "ALTER TABLE spins ADD COLUMN coupon_code VARCHAR(32)")
             _force_add(conn, "blog_posts", "tags",
                        "ALTER TABLE blog_posts ADD COLUMN tags VARCHAR(500) NOT NULL DEFAULT ''")
             _force_add(conn, "blog_posts", "image_url",
@@ -123,6 +133,38 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Phone Store API", lifespan=lifespan)
+
+
+# Catch-all for unhandled exceptions. Without this, an Internal Server Error
+# would propagate back without CORS headers and the browser would surface a
+# misleading "CORS header missing" message — hiding the real 500 traceback.
+# This handler logs the full exception to the server log AND echoes it in the
+# response body (so it shows up in the browser console / network tab too).
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception):
+    import logging
+    import traceback
+
+    logging.getLogger("uvicorn.error").error(
+        "[UNHANDLED %s %s] %s\n%s",
+        request.method,
+        request.url.path,
+        exc,
+        traceback.format_exc(),
+    )
+    origin = request.headers.get("origin")
+    headers: dict[str, str] = {"Vary": "Origin"}
+    if origin:
+        # Echo the requesting origin so the browser is allowed to read the
+        # response. We can't blindly use "*" because allow_credentials=True.
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"{type(exc).__name__}: {exc}"},
+        headers=headers,
+    )
+
 
 app.add_middleware(
     CORSMiddleware,
