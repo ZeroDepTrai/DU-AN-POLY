@@ -1,5 +1,6 @@
-﻿import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminApi,
@@ -369,6 +370,7 @@ function ProductsTab({ products }: { products: Product[] }) {
   const [formTab, setFormTab] = useState<"quick" | "full">("quick");
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [search, setSearch] = useState("");
 
   // Quick form
@@ -462,17 +464,55 @@ function ProductsTab({ products }: { products: Product[] }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => adminApi.deleteProduct(id),
-    onSuccess: () => {
+    mutationFn: async (id: number) => {
+      const resp = await adminApi.deleteProduct(id);
+      return resp.data as { ok: boolean; soft_deleted?: boolean; order_items?: number; message?: string };
+    },
+    onSuccess: (data) => {
+      if (data?.soft_deleted) {
+        setInfo(
+          data.message ||
+            `Sản phẩm đã được ẩn khỏi cửa hàng (còn ${data.order_items ?? 0} đơn hàng tham chiếu — không thể xóa hoàn toàn để giữ lịch sử).`,
+        );
+      } else {
+        setInfo("Đã xóa hoàn toàn sản phẩm khỏi database.");
+      }
+      setError("");
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (err: Error) => {
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.detail
+          ? err.response.data.detail
+          : err.message || "Xóa thất bại";
+      setError(typeof message === "string" ? message : "Xóa thất bại");
+      setInfo("");
     },
   });
 
   // ── Handlers ──────────────────────────────────────────
+  // Edit needs the FULL product (description + specifications). The
+  // listProducts() endpoint deliberately drops those to keep the table
+  // payload small, so we fetch them on demand here.
+  const editQuery = useQuery({
+    queryKey: ["admin-product", editing?.id],
+    queryFn: async () => {
+      if (!editing) return null;
+      const { data } = await adminApi.getProduct(editing.id);
+      return data;
+    },
+    enabled: !!editing,
+    staleTime: 30_000,
+  });
+
   const startEdit = (p: Product) => {
     setEditing(p);
     setFormTab("full");
+    setError("");
+    // Pre-populate the cheap fields immediately so the form looks
+    // responsive; description/specs get patched in once the detail query
+    // resolves.
     const chips = p.tags
       ? p.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
       : [];
@@ -481,12 +521,24 @@ function ProductsTab({ products }: { products: Product[] }) {
       name: p.name,
       price: String(p.price),
       tags: p.tags,
-      description: p.description,
+      description: p.description ?? "",
       specifications: p.specifications ? parseSpecsStr(p.specifications) : {},
       stock: String(p.stock),
     });
     setFullImage(null);
   };
+
+  // Once the detail query resolves, overwrite description/specifications
+  // with the authoritative values from the backend.
+  useEffect(() => {
+    const data = editQuery.data;
+    if (!data) return;
+    setFullForm((prev) => ({
+      ...prev,
+      description: data.description ?? prev.description,
+      specifications: data.specifications ? parseSpecsStr(data.specifications) : prev.specifications,
+    }));
+  }, [editQuery.data]);
 
   const cancelEdit = () => {
     setEditing(null);
@@ -495,6 +547,17 @@ function ProductsTab({ products }: { products: Product[] }) {
     setFullImage(null);
     setFormTab("quick");
     setError("");
+  };
+
+  const handleDelete = async (p: Product) => {
+    const ok = window.confirm(
+      `Xóa "${p.name}"?\n\n` +
+        `• Nếu sản phẩm chưa từng được đặt hàng, sẽ bị xóa hoàn toàn khỏi database.\n` +
+        `• Nếu đã có đơn hàng tham chiếu, sản phẩm sẽ được ẨN (giữ lịch sử đơn).\n\n` +
+        `Hành động này KHÔNG THỂ hoàn tác đối với xóa hoàn toàn.`,
+    );
+    if (!ok) return;
+    deleteMutation.mutate(p.id);
   };
 
   const handleImportDocx = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -770,8 +833,17 @@ function ProductsTab({ products }: { products: Product[] }) {
           onSubmit={(e) => { e.preventDefault(); fullMutation.mutate(); }}
           className="mb-6 space-y-6 rounded-2xl border border-gunmetal/60 bg-graphite p-5"
         >
-          <h3 className="text-base font-bold text-warmwhite">
+          <h3 className="text-base font-bold text-warmwhite flex items-center gap-2">
             {editing ? `Sửa: ${editing.name}` : "Thêm sản phẩm đầy đủ"}
+            {editing && editQuery.isFetching && (
+              <span className="inline-flex items-center gap-1 text-xs font-normal text-steelgray">
+                <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                đang tải mô tả + thông số…
+              </span>
+            )}
           </h3>
 
           {/* Name, Price, Stock */}
@@ -908,6 +980,26 @@ function ProductsTab({ products }: { products: Product[] }) {
         <div className="border-b border-gunmetal/40 px-4 py-3">
           <span className="text-sm text-steelgray">{filtered.length} sản phẩm</span>
         </div>
+        {(info || deleteMutation.isError || error) && (
+          <div
+            className={`mx-4 mt-3 rounded-lg border p-3 text-sm ${
+              deleteMutation.isError || error
+                ? "border-deeprose/30 bg-deeprose/10 text-rose"
+                : "border-emerald-400/30 bg-emerald-500/10 text-emerald-300"
+            }`}
+          >
+            {deleteMutation.isError || error
+              ? error || "Xóa thất bại"
+              : info}
+            <button
+              type="button"
+              onClick={() => { setError(""); setInfo(""); deleteMutation.reset(); }}
+              className="ml-3 text-xs underline opacity-70 hover:opacity-100"
+            >
+              đóng
+            </button>
+          </div>
+        )}
         {filtered.length === 0 ? (
           <div className="p-8 text-center text-steelgray">Không có sản phẩm nào.</div>
         ) : (
@@ -963,12 +1055,13 @@ function ProductsTab({ products }: { products: Product[] }) {
                           Sửa
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm(`Xóa "${p.name}"?`)) deleteMutation.mutate(p.id);
-                          }}
-                          className="text-sm text-deeprose hover:text-rose transition-colors"
+                          onClick={() => handleDelete(p)}
+                          disabled={deleteMutation.isPending}
+                          className="text-sm text-deeprose hover:text-rose transition-colors disabled:opacity-50"
                         >
-                          Xóa
+                          {deleteMutation.isPending && deleteMutation.variables === p.id
+                            ? "Đang xóa..."
+                            : "Xóa"}
                         </button>
                       </div>
                     </td>

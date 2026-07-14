@@ -95,6 +95,29 @@ def admin_list_products(db: Session = Depends(get_db), _: User = Depends(require
     return rows
 
 
+@router.get("/products/{product_id}", response_model=ProductResponse)
+def admin_get_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """Full product detail for the admin edit form — includes
+    ``description``/``specifications`` (the lightweight list endpoint
+    deliberately drops those to keep the table payload small).
+
+    Unlike the public ``GET /api/products/{id}``, this does NOT filter on
+    ``is_active``, so admins can still load and edit soft-deleted
+    products.
+    """
+    product = db.get(Product, product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    media_rows = (
+        db.query(ProductMedia)
+        .filter(ProductMedia.product_id == product.id)
+        .order_by(ProductMedia.position.asc(), ProductMedia.id.asc())
+        .all()
+    )
+    product.media = media_rows  # type: ignore[attr-defined]
+    return product
+
+
 @router.get("/products/order-item-counts")
 def admin_product_order_item_counts(db: Session = Depends(get_db), _: User = Depends(require_admin)):
     """Return per-product OrderItem counts. The admin UI uses this to

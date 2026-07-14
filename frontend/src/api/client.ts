@@ -139,6 +139,10 @@ export const ordersApi = {
 
 export const adminApi = {
   listProducts: () => api.get<Product[]>("/api/admin/products"),
+  // Fetches the full product (description + specifications) — the
+  // listProducts() endpoint deliberately drops those fields, so editing
+  // has to call this to populate the rich-text editor / specs grid.
+  getProduct: (id: number) => api.get<Product>(`/api/admin/products/${id}`),
   createProduct: (formData: FormData) =>
     api.post<Product>("/api/admin/products", formData, {
       headers: { "Content-Type": "multipart/form-data" },
