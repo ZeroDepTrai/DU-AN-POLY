@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     store_name: str = "Phone Store HQ"
     admin_email: str = "admin@phone-store.com"
     admin_password: str = "admin123"
-    cors_origins: str = "http://localhost:5173,http://localhost:8081,exp://,exp://localhost:8081"
+    cors_origins: str = "https://cellzone.site,https://du-an-poly.vercel.app,http://localhost:5173,http://localhost:8081,exp://,exp://localhost:8081"
     upload_dir: str = "/data/uploads"
     resend_api_key: str = ""
     email_from: str = "Phone Store <onboarding@resend.dev>"
