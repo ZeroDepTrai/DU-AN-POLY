@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.config import settings
 from app.database import get_db
 from app.deps import require_admin
-from app.models import AdminEmail, Order, OrderItem, Product, User
+from app.models import AdminEmail, Order, OrderItem, Product, ProductMedia, User
 from app.schemas import (
     AdminEmailCreate,
     AdminEmailResponse,

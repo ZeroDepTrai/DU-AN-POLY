@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -844,6 +844,11 @@ function ProductsTab({ products }: { products: Product[] }) {
                 đang tải mô tả + thông số…
               </span>
             )}
+            {editing && editQuery.isError && (
+              <span className="text-xs font-normal text-deeprose">
+                — Không tải được mô tả/thông số. Vẫn có thể lưu.
+              </span>
+            )}
           </h3>
 
           {/* Name, Price, Stock */}
@@ -1569,6 +1574,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const [nextIsCover, setNextIsCover] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: media = [], isLoading } = useQuery({
     queryKey: ["product-media", product.id],
@@ -1619,7 +1625,18 @@ function ProductGalleryEditor({ product }: { product: Product }) {
         </div>
       </div>
 
-      <label className="mb-4 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gunmetal/60 bg-charcoal/40 py-6 text-center hover:border-crimson cursor-pointer transition-colors">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => fileInputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
+        className="mb-4 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gunmetal/60 bg-charcoal/40 py-6 text-center hover:border-crimson cursor-pointer transition-colors"
+      >
         <svg className="h-6 w-6 text-rose" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
@@ -1627,16 +1644,21 @@ function ProductGalleryEditor({ product }: { product: Product }) {
           {uploading ? "Đang tải lên..." : "Kéo thả hoặc nhấn để chọn ảnh/video"}
         </span>
         <span className="text-[10px] text-steelgray">JPG, PNG, WEBP, MP4, WEBM — tối đa 100MB mỗi file</span>
-        <label className="mt-2 inline-flex items-center gap-2 text-xs text-softgray">
+        <span
+          className="mt-2 inline-flex items-center gap-2 text-xs text-softgray"
+          onClick={(e) => e.stopPropagation()}
+        >
           <input
             type="checkbox"
             className="accent-rose"
             checked={nextIsCover}
             onChange={(e) => setNextIsCover(e.target.checked)}
+            onClick={(e) => e.stopPropagation()}
           />
           Đặt file tải lên đầu tiên làm ảnh cover
-        </label>
+        </span>
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*,video/*"
           multiple
@@ -1644,7 +1666,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
           disabled={uploading}
           onChange={(e) => handleFiles(e.target.files)}
         />
-      </label>
+      </div>
 
       {isLoading ? (
         <LoadingSpinner label="Đang tải gallery..." />
