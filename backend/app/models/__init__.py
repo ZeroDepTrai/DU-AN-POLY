@@ -178,8 +178,8 @@ class Coupon(Base):
     max_discount: Mapped[float | None] = mapped_column(Float, nullable=True)
     usage_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
     usage_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    starts_at: Mapped[str] = mapped_column(String(30), default="", nullable=False)
-    expires_at: Mapped[str] = mapped_column(String(30), default="", nullable=False)
+    starts_at: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    expires_at: Mapped[str] = mapped_column(String(64), default="", nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 

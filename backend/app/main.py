@@ -71,6 +71,56 @@ async def lifespan(app: FastAPI):
         except SQLAlchemyError as e:
             logger.warning(f"[MIGRATION] Could not add {table}.{column}: {e}")
 
+    def _widen_varchar(conn, table: str, column: str, target_size: int) -> None:
+        """Resize an existing VARCHAR column to at least ``target_size``.
+
+        Older Railway deployments captured ``coupons.description`` at
+        VARCHAR(30) before the model declared VARCHAR(255); the spin reward
+        code now writes 34-char Vietnamese strings there, so we widen on
+        startup. Same for ``coupons.starts_at`` / ``expires_at`` which catch
+        32-char ``datetime.isoformat()`` values.
+        """
+        if not _has_column(conn, table, column):
+            logger.warning(f"[MIGRATION] {table}.{column} missing, skipping widen")
+            return
+        try:
+            current = conn.execute(
+                text(
+                    """
+                    SELECT character_maximum_length
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = :t
+                      AND column_name = :c
+                    """
+                ),
+                {"t": table, "c": column},
+            ).scalar()
+        except SQLAlchemyError as e:
+            logger.warning(f"[MIGRATION] Could not read {table}.{column} width: {e}")
+            return
+        if current is None or current >= target_size:
+            logger.warning(
+                f"[MIGRATION] {table}.{column} already VARCHAR({current}), target {target_size}, skipping"
+            )
+            return
+        try:
+            alt = engine.connect().execution_options(isolation_level="AUTOCOMMIT")
+            try:
+                alt.execute(
+                    text(
+                        f"ALTER TABLE {table} ALTER COLUMN {column} "
+                        f"TYPE VARCHAR({target_size})"
+                    )
+                )
+                logger.warning(
+                    f"[MIGRATION] Widened {table}.{column} VARCHAR({current}) -> VARCHAR({target_size})"
+                )
+            finally:
+                alt.close()
+        except SQLAlchemyError as e:
+            logger.warning(f"[MIGRATION] Could not widen {table}.{column}: {e}")
+
     # Use a connection from the SAME engine SQLAlchemy uses for queries,
     # so the column is visible to every subsequent ORM operation.
     with engine.connect() as conn:
@@ -115,6 +165,13 @@ async def lifespan(app: FastAPI):
                        "ALTER TABLE blog_posts ADD COLUMN content TEXT NOT NULL DEFAULT ''")
             _force_add(conn, "orders", "coupon_id",
                        "ALTER TABLE orders ADD COLUMN coupon_id INTEGER REFERENCES coupons(id)")
+
+            # Existing columns whose declared length is too narrow for the
+            # strings the runtime now produces (spin reward Vietnamese
+            # description, full-precision isoformat() timestamps, etc.).
+            _widen_varchar(conn, "coupons", "description", 255)
+            _widen_varchar(conn, "coupons", "starts_at", 64)
+            _widen_varchar(conn, "coupons", "expires_at", 64)
         except SQLAlchemyError as e:
             logger.warning(f"[MIGRATION] Outer migration error: {e}")
 

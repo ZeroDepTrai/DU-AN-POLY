@@ -260,7 +260,7 @@ def _fulfil_coupon_reward(
         max_discount=None,
         usage_limit=1,
         usage_count=0,
-        starts_at=datetime.now(timezone.utc).isoformat(),
+        starts_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         expires_at="",
         active=True,
     )
