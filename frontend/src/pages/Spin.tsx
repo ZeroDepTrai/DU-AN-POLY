@@ -264,6 +264,13 @@ function PrizeModal({
           </div>
         )}
 
+        {isJackpot && (
+          <div className="mb-5 rounded-xl border border-yellow-400/50 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">
+            🎉 Chúc mừng bạn trúng <strong>{prize.name}</strong>!<br />
+            Vui lòng liên hệ admin qua Zalo hoặc hotline để nhận thưởng.
+          </div>
+        )}
+
         {isCoupon && prize.coupon_code && (
           <div className="mb-5">
             <p className="mb-1 text-[11px] uppercase tracking-wider text-white/60">Mã giảm giá của bạn</p>
