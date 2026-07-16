@@ -1,6 +1,4 @@
 import os
-from alembic.config import Config
-from alembic import command
 from sqlalchemy import create_engine, text
 from app.config import settings
 
@@ -189,23 +187,28 @@ def apply_schema_changes():
         """,
         "wheel_config seed (id=1)",
     )
-    safe_alter(
-        """
-        UPDATE wheel_config
-        SET prizes_json = '[' ||
-            '{"name":"Mã giảm giá 2%","image":"/uploads/case.png","weight":35,"jackpot":false,"icon":"🎟️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":2},' ||
-            '{"name":"Cường Lực miễn phí","image":"/uploads/screen.png","weight":25,"jackpot":false,"icon":"🛡️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":10},' ||
-            '{"name":"Ốp Iphone miễn phí","image":"/uploads/cable.png","weight":20,"jackpot":false,"icon":"📱","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},' ||
-            '{"name":"Dây sạc miễn phí","image":"/uploads/charger.png","weight":14,"jackpot":false,"icon":"🔌","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},' ||
-            '{"name":"Mã giảm giá 5%","image":"/uploads/airpod.png","weight":5,"jackpot":false,"icon":"🎁","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},' ||
-            '{"name":"Chúc bạn may mắn lần sau","image":"/uploads/smartwatch.png","weight":0.5,"jackpot":false,"icon":"🍀","coupon_id":null,"product_id":null},' ||
-            '{"name":"Apple Watch","image":"/uploads/watch.png","weight":0.4,"jackpot":true,"icon":"⌚","coupon_id":null,"product_id":null},' ||
-            '{"name":"IPhone 17 Pro Max","image":"/uploads/iphone.png","weight":0.1,"jackpot":true,"icon":"📱","coupon_id":null,"product_id":null}' ||
-            ']'
-        WHERE id = 1
-        """,
-        "wheel_config default prizes",
+    # Seed default prizes the first time wheel_config is created.
+    # Use %% to escape % in SQLAlchemy text() to avoid parameter placeholder issues.
+    prizes_json = (
+        '['
+        '{"name":"Mã giảm giá 2%%","image":"/uploads/case.png","weight":35,"jackpot":false,"icon":"🎟️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":2},'
+        '{"name":"Cường Lực miễn phí","image":"/uploads/screen.png","weight":25,"jackpot":false,"icon":"🛡️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":10},'
+        '{"name":"Ốp Iphone miễn phí","image":"/uploads/cable.png","weight":20,"jackpot":false,"icon":"📱","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
+        '{"name":"Dây sạc miễn phí","image":"/uploads/charger.png","weight":14,"jackpot":false,"icon":"🔌","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
+        '{"name":"Mã giảm giá 5%%","image":"/uploads/airpod.png","weight":5,"jackpot":false,"icon":"🎁","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
+        '{"name":"Chúc bạn may mắn lần sau","image":"/uploads/smartwatch.png","weight":0.5,"jackpot":false,"icon":"🍀","coupon_id":null,"product_id":null},'
+        '{"name":"Apple Watch","image":"/uploads/watch.png","weight":0.4,"jackpot":true,"icon":"⌚","coupon_id":null,"product_id":null},'
+        '{"name":"IPhone 17 Pro Max","image":"/uploads/iphone.png","weight":0.1,"jackpot":true,"icon":"📱","coupon_id":null,"product_id":null}'
+        ']'
     )
+    try:
+        conn.execute(
+            text("UPDATE wheel_config SET prizes_json = :prizes WHERE id = 1"),
+            {"prizes": prizes_json}
+        )
+        print("[MIGRATION] wheel_config default prizes: applied")
+    except Exception as e:
+        print(f"[MIGRATION] wheel_config default prizes: SKIPPED ({type(e).__name__}: {e})")
 
     # --- spins (audit) ---
     safe_alter(
@@ -272,9 +275,9 @@ def apply_schema_changes():
 
 
 def run_migrations():
-    cfg = Config("alembic.ini")
-    command.upgrade(cfg, "head")
-    print("Migrations complete.")
+    # Skip Alembic - raw SQL migrations in apply_schema_changes() handle everything.
+    # Alembic's migration state got out of sync (no '004' revision file exists).
+    print("Skipping Alembic migrations (handled by raw SQL schema changes).")
 
 
 if __name__ == "__main__":
