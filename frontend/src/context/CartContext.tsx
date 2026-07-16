@@ -1,123 +1,103 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
-import type { CartItem, Product } from "../types";
+import { cartApi } from "../api/client";
+
+interface CartItemResponse {
+  id: number;
+  product_id: number;
+  quantity: number;
+  source: string;
+  product_name: string;
+  product_price: number;
+  product_image_url: string;
+  product_tags: string;
+}
 
 interface CartContextValue {
-  items: CartItem[];
-  addItem: (product: Product, quantity?: number) => void;
-  addFreeItem: (product: Product) => void;
-  removeItem: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
-  clearCart: () => void;
+  items: CartItemResponse[];
+  loading: boolean;
+  addItem: (productId: number, quantity?: number) => Promise<void>;
+  addFreeItem: (productId: number) => Promise<void>;
+  removeItem: (itemId: number) => Promise<void>;
+  updateQuantity: (itemId: number, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   totalItems: number;
   totalPrice: number;
-  freeItemIds: Set<number>;
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
-const STORAGE_KEY = "phone-store-cart";
-const FREE_KEY = "phone-store-free-items";
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? (JSON.parse(saved) as CartItem[]) : [];
-  });
+  const [items, setItems] = useState<CartItemResponse[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [freeItemIds, setFreeItemIds] = useState<Set<number>>(() => {
-    const saved = localStorage.getItem(FREE_KEY);
-    if (!saved) return new Set();
+  const fetchCart = useCallback(async () => {
     try {
-      return new Set(JSON.parse(saved) as number[]);
+      const { data } = await cartApi.get();
+      setItems(data.items);
     } catch {
-      return new Set();
+      setItems([]);
+    } finally {
+      setLoading(false);
     }
-  });
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
-
-  useEffect(() => {
-    localStorage.setItem(FREE_KEY, JSON.stringify([...freeItemIds]));
-  }, [freeItemIds]);
-
-  const addItem = (product: Product, quantity = 1) => {
-    setItems((prev) => {
-      if (freeItemIds.has(product.id)) {
-        return prev;
-      }
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
-      return [...prev, { product, quantity }];
-    });
-  };
-
-  const addFreeItem = (product: Product) => {
-    setFreeItemIds((prev) => {
-      if (prev.has(product.id)) return prev;
-      const next = new Set(prev);
-      next.add(product.id);
-      return next;
-    });
-    setItems((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev;
-      }
-      return [...prev, { product, quantity: 1 }];
-    });
-  };
-
-  const removeItem = (productId: number) => {
-    setItems((prev) => prev.filter((item) => item.product.id !== productId));
-    setFreeItemIds((prev) => {
-      if (!prev.has(productId)) return prev;
-      const next = new Set(prev);
-      next.delete(productId);
-      return next;
-    });
-  };
-
-  const updateQuantity = (productId: number, quantity: number) => {
-    if (quantity <= 0) {
-      removeItem(productId);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
       return;
     }
-    setItems((prev) =>
-      prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
-    );
+    fetchCart();
+  }, [fetchCart]);
+
+  const addItem = async (productId: number, quantity = 1) => {
+    await cartApi.addItem({ product_id: productId, quantity, source: "paid" });
+    await fetchCart();
   };
 
-  const clearCart = () => {
+  const addFreeItem = async (productId: number) => {
+    await cartApi.addFreeItem({ product_id: productId, quantity: 1 });
+    await fetchCart();
+  };
+
+  const removeItem = async (itemId: number) => {
+    await cartApi.removeItem(itemId);
+    await fetchCart();
+  };
+
+  const updateQuantity = async (itemId: number, quantity: number) => {
+    if (quantity <= 0) {
+      await cartApi.removeItem(itemId);
+    } else {
+      await cartApi.updateQuantity(itemId, quantity);
+    }
+    await fetchCart();
+  };
+
+  const clearCart = async () => {
+    await cartApi.clear();
     setItems([]);
-    setFreeItemIds(new Set());
   };
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = items.reduce((s, i) => s + i.quantity, 0);
 
-  const totalPrice = items.reduce((sum, item) => {
-    if (freeItemIds.has(item.product.id)) return sum;
-    return sum + item.product.price * item.quantity;
+  const totalPrice = items.reduce((s, i) => {
+    if (i.source === "free") return s;
+    return s + i.product_price * i.quantity;
   }, 0);
 
   const value = useMemo(
     () => ({
       items,
+      loading,
       addItem,
       addFreeItem,
       removeItem,
@@ -125,9 +105,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clearCart,
       totalItems,
       totalPrice,
-      freeItemIds,
     }),
-    [items, freeItemIds, totalItems, totalPrice]
+    [items, loading, totalItems, totalPrice]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

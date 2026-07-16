@@ -2,7 +2,15 @@ import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, totalPrice } = useCart();
+  const { items, updateQuantity, removeItem, totalPrice, loading } = useCart();
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-20 text-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-crimson border-t-transparent mx-auto" />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -43,70 +51,85 @@ export default function CartPage() {
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Items */}
         <div className="lg:col-span-2 space-y-3">
-          {items.map((item) => (
-            <div
-              key={item.product.id}
-              className="flex items-center gap-4 rounded-2xl border border-gunmetal/60 bg-graphite p-4"
-            >
-              <Link to={`/products/${item.product.id}`} className="shrink-0">
-                <img
-                  src={item.product.image_url}
-                  alt={item.product.name}
-                  className="h-24 w-24 rounded-xl object-cover"
-                />
-              </Link>
-              <div className="flex flex-1 flex-col justify-between gap-2">
-                <div>
-                  <Link
-                    to={`/products/${item.product.id}`}
-                    className="font-semibold text-warmwhite hover:text-sakura transition-colors"
-                  >
-                    {item.product.name}
-                  </Link>
-                  <span className="ml-2 tag-badge text-xs">{item.product.tags}</span>
-                  <span className="ml-1 rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
-                    Quà tặng
-                  </span>
-                  <p className="mt-1 text-sm font-bold text-emerald-400">
-                    Miễn phí
-                  </p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-gunmetal/60 bg-charcoal text-warmwhite hover:bg-gunmetal transition-colors text-lg font-light"
+          {items.map((item) => {
+            const isFree = item.source === "free";
+            return (
+              <div
+                key={item.id}
+                className="flex items-center gap-4 rounded-2xl border border-gunmetal/60 bg-graphite p-4"
+              >
+                <Link to={`/products/${item.product_id}`} className="shrink-0">
+                  <img
+                    src={item.product_image_url}
+                    alt={item.product_name}
+                    className="h-24 w-24 rounded-xl object-cover"
+                  />
+                </Link>
+                <div className="flex flex-1 flex-col justify-between gap-2">
+                  <div>
+                    <Link
+                      to={`/products/${item.product_id}`}
+                      className="font-semibold text-warmwhite hover:text-sakura transition-colors"
                     >
-                      −
-                    </button>
-                    <span className="w-8 text-center text-sm font-semibold text-warmwhite">
-                      {item.quantity}
-                    </span>
+                      {item.product_name}
+                    </Link>
+                    <span className="ml-2 tag-badge text-xs">{item.product_tags}</span>
+                    {isFree && (
+                      <span className="ml-1 rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                        Quà tặng
+                      </span>
+                    )}
+                    {isFree ? (
+                      <p className="mt-1 text-sm font-bold text-emerald-400">Miễn phí</p>
+                    ) : (
+                      <p className="mt-1 text-sm font-bold text-crimson">
+                        {new Intl.NumberFormat("vi-VN").format(item.product_price)} VND
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    {!isFree && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gunmetal/60 bg-charcoal text-warmwhite hover:bg-gunmetal transition-colors text-lg font-light"
+                        >
+                          −
+                        </button>
+                        <span className="w-8 text-center text-sm font-semibold text-warmwhite">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gunmetal/60 bg-charcoal text-warmwhite hover:bg-gunmetal transition-colors text-lg font-light"
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
+                    {isFree && (
+                      <span className="text-xs text-steelgray">Số lượng: {item.quantity}</span>
+                    )}
                     <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-gunmetal/60 bg-charcoal text-warmwhite hover:bg-gunmetal transition-colors text-lg font-light"
+                      onClick={() => removeItem(item.id)}
+                      className="flex items-center gap-1 text-sm text-steelgray hover:text-deeprose transition-colors"
                     >
-                      +
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Xóa
                     </button>
                   </div>
-                  <button
-                    onClick={() => removeItem(item.product.id)}
-                    className="flex items-center gap-1 text-sm text-steelgray hover:text-deeprose transition-colors"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Xóa
-                  </button>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className={`text-base font-bold ${isFree ? "text-emerald-400" : "text-crimson"}`}>
+                    {isFree ? "Miễn phí" : new Intl.NumberFormat("vi-VN").format(item.product_price * item.quantity)}
+                    {!isFree && <span className="text-xs font-normal text-steelgray"> VND</span>}
+                  </p>
                 </div>
               </div>
-              <div className="shrink-0 text-right">
-                <p className="text-base font-bold text-emerald-400">
-                  Miễn phí
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Summary */}

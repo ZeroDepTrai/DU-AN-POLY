@@ -1,7 +1,7 @@
 import { useCart } from "../context/CartContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { productsApi, spinApi, type SpinHistoryItem, type WheelConfig, type WheelPrize } from "../api/client";
+import { spinApi, type SpinHistoryItem, type WheelConfig, type WheelPrize } from "../api/client";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 const FALLBACK_PRIZES: WheelPrize[] = [
@@ -484,12 +484,7 @@ export default function Spin() {
         });
 
           if (prize.reward_type === "free_product" && prize.product_id) {
-            try {
-              const { data: product } = await productsApi.get(prize.product_id);
-              if (product) addFreeItem(product);
-            } catch {
-              // Silently ignore — the prize modal still shows.
-            }
+            addFreeItem(prize.product_id);
           }
 
         setSpinning(false);

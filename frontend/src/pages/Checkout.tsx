@@ -36,7 +36,7 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Checkout() {
-  const { items, clearCart, totalPrice, freeItemIds } = useCart();
+  const { items, clearCart, totalPrice } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -92,9 +92,9 @@ export default function Checkout() {
         delivery_address: address,
         delivery_phone: phone,
         items: items
-          .filter((item) => !freeItemIds.has(item.product.id))
+          .filter((item) => item.source !== "free")
           .map((item) => ({
-            product_id: item.product.id,
+            product_id: item.product_id,
             quantity: item.quantity,
           })),
         coupon_code: appliedCoupon?.coupon.code,
@@ -237,24 +237,30 @@ export default function Checkout() {
             <h3 className="mb-4 text-lg font-bold text-warmwhite">Tóm tắt đơn hàng</h3>
 
             <div className="mb-4 space-y-3">
-              {items.map((item) => (
-                <div key={item.product.id} className="flex items-center gap-3">
-                  <img
-                    src={item.product.image_url}
-                    alt={item.product.name}
-                    className="h-14 w-14 rounded-xl object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-medium text-warmwhite">{item.product.name}</p>
-                    <p className="text-xs text-steelgray">x{item.quantity}</p>
+              {items.map((item) => {
+                const isFree = item.source === "free";
+                return (
+                  <div key={item.id} className="flex items-center gap-3">
+                    <img
+                      src={item.product_image_url}
+                      alt={item.product_name}
+                      className="h-14 w-14 rounded-xl object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium text-warmwhite">{item.product_name}</p>
+                      {isFree && (
+                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-400">Quà tặng</span>
+                      )}
+                      <p className="text-xs text-steelgray">x{item.quantity}</p>
+                    </div>
+                    <p className={`text-sm font-semibold shrink-0 ${isFree ? "text-emerald-400" : "text-crimson"}`}>
+                      {isFree
+                        ? "Miễn phí"
+                        : `${new Intl.NumberFormat("vi-VN").format(item.product_price * item.quantity)} VND`}
+                    </p>
                   </div>
-                  <p className="text-sm font-semibold text-crimson shrink-0">
-                    {freeItemIds.has(item.product.id)
-                      ? "Miễn phí"
-                      : `${new Intl.NumberFormat("vi-VN").format(item.product.price * item.quantity)} VND`}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="border-t border-gunmetal/40 pt-4 space-y-2">

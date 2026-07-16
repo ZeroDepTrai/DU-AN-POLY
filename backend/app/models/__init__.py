@@ -34,6 +34,7 @@ class User(Base):
 
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
     spins: Mapped[list["Spin"]] = relationship(back_populates="user")
+    cart_items: Mapped[list["CartItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Driver(Base):
@@ -63,6 +64,7 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     order_items: Mapped[list["OrderItem"]] = relationship(back_populates="product")
+    cart_items: Mapped[list["CartItem"]] = relationship(back_populates="product")
 
     __table_args__ = (
         # Speeds up every public storefront query:
@@ -105,6 +107,25 @@ class OrderItem(Base):
 
     order: Mapped["Order"] = relationship(back_populates="items")
     product: Mapped["Product"] = relationship(back_populates="order_items")
+
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), index=True, nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    # "paid" = normal purchase, "free" = spin-wheel prize (unit_price=0 in checkout)
+    source: Mapped[str] = mapped_column(String(16), default="paid", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    user: Mapped["User"] = relationship(back_populates="cart_items")
+    product: Mapped["Product"] = relationship(back_populates="cart_items")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "product_id", name="uq_cart_user_product"),
+    )
 
 
 class VerificationCode(Base):

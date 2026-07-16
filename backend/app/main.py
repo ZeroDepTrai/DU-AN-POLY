@@ -12,7 +12,7 @@ from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.deps import hash_password
 from app.models import User, UserRole
-from app.routers import admin, auth, blog, categories, coupons, driver, media, orders, products, spin
+from app.routers import admin, auth, blog, cart, categories, coupons, driver, media, orders, products, spin
 from app.websocket import manager
 
 
@@ -251,6 +251,7 @@ app.mount("/uploads", _CachedStatic(directory=str(uploads_path)), name="uploads"
 app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(categories.router)
+app.include_router(cart.router)
 app.include_router(orders.router)
 app.include_router(admin.router)
 app.include_router(blog.router)

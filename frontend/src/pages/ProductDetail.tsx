@@ -273,7 +273,7 @@ export default function ProductDetail() {
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
-              onClick={() => addItem(product)}
+              onClick={() => addItem(product.id)}
               disabled={!inStock}
               className="btn-primary flex-1 py-3 text-base disabled:opacity-40"
             >

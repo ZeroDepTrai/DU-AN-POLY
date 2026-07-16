@@ -20,7 +20,7 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem(product, 1);
+    addItem(product.id, 1);
   };
 
   const formattedPrice = new Intl.NumberFormat("vi-VN").format(product.price);

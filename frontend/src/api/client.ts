@@ -249,6 +249,37 @@ export const adminCouponsApi = {
   delete: (id: number) => api.delete(`/api/admin/coupons/${id}`),
 };
 
+// Cart
+
+interface CartItemResponse {
+  id: number;
+  product_id: number;
+  quantity: number;
+  source: string;
+  product_name: string;
+  product_price: number;
+  product_image_url: string;
+  product_tags: string;
+}
+
+interface CartGetResponse {
+  items: CartItemResponse[];
+  total_items: number;
+  total_price: number;
+}
+
+export const cartApi = {
+  get: () => api.get<CartGetResponse>("/api/cart"),
+  addItem: (payload: { product_id: number; quantity: number; source: string }) =>
+    api.post<CartItemResponse>("/api/cart/items", payload),
+  addFreeItem: (payload: { product_id: number; quantity: number }) =>
+    api.post<CartItemResponse>("/api/cart/items/free", payload),
+  updateQuantity: (itemId: number, quantity: number) =>
+    api.patch<CartItemResponse>(`/api/cart/items/${itemId}/quantity`, { quantity }),
+  removeItem: (itemId: number) => api.delete(`/api/cart/items/${itemId}`),
+  clear: () => api.delete("/api/cart"),
+};
+
 // Spin / Wheel
 
 export const spinApi = {
