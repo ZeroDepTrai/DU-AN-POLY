@@ -12,7 +12,8 @@ from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.deps import hash_password
 from app.models import User, UserRole
-from app.routers import admin, auth, blog, cart, categories, coupons, driver, media, orders, products, spin
+from app.routers import admin, auth, blog, categories, coupons, driver, media, orders, products, spin
+from app import cart
 from app.websocket import manager
 
 
