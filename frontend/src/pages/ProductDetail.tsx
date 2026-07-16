@@ -7,25 +7,25 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { useCart } from "../context/CartContext";
 
 const SPEC_LABELS: Record<string, string> = {
-  "He dien hanh": "os",
+  "Hệ điều hành": "os",
   "Chipset": "chipset",
-  "Bo nho trong": "ram",
-  "Loai CPU": "cpu_type",
+  "Bộ nhớ trong": "ram",
+  "Loại CPU": "cpu_type",
   "GPU": "gpu",
-  "Kich thuoc man hinh": "screen_size",
-  "Cong nghe man hinh": "screen_tech",
-  "Do phan giai man hinh": "screen_res",
+  "Kích thước màn hình": "screen_size",
+  "Công nghệ màn hình": "screen_tech",
+  "Độ phân giải màn hình": "screen_res",
   "Camera Sau": "cam_back",
-  "Camera truoc": "cam_front",
-  "Ho tro mang": "network",
-  "The SIM": "sim",
-  "Cong nghe NFC": "nfc",
-  "Thoi diem ra mat": "launch",
+  "Camera trước": "cam_front",
+  "Hỗ trợ mạng": "network",
+  "Thẻ SIM": "sim",
+  "Công nghệ NFC": "nfc",
+  "Thời điểm ra mắt": "launch",
   "Pin": "pin",
-  "Sac": "sac",
-  "Bao mat": "bao_mat",
+  "Sạc": "sac",
+  "Bảo mật": "bao_mat",
   "RAM": "ram",
-  "The nho": "the_nho",
+  "Thẻ nhớ": "the_nho",
 };
 
 function parseSpecValue(specs: string, label: string): string {
@@ -105,7 +105,7 @@ function ProductGallery({ product }: { product: Product }) {
   if (items.length === 0) {
     return (
       <div className="flex aspect-square items-center justify-center rounded-2xl bg-graphite border border-gunmetal/40 text-steelgray text-sm">
-        No images
+        Chưa có hình ảnh
       </div>
     );
   }
@@ -144,7 +144,7 @@ function ProductGallery({ product }: { product: Product }) {
                 <path d="M11 8v6" />
                 <path d="M8 11h6" />
               </svg>
-              Click to zoom
+              Phóng to
             </span>
           </div>
           {current.media_type === "video" && (
@@ -267,7 +267,7 @@ export default function ProductDetail() {
   });
 
   if (isLoading) {
-    return <LoadingSpinner label="Loading..." />;
+    return <LoadingSpinner label="Đang tải sản phẩm..." />;
   }
 
   if (error || !product) {
@@ -280,10 +280,10 @@ export default function ProductDetail() {
             </svg>
           </div>
         </div>
-        <h2 className="text-2xl font-bold text-warmwhite mb-2">Product not found</h2>
-        <p className="text-steelgray mb-8">This product may have been removed.</p>
+        <h2 className="text-2xl font-bold text-warmwhite mb-2">Sản phẩm không tồn tại</h2>
+        <p className="text-steelgray mb-8">Sản phẩm này có thể đã bị xóa hoặc không còn bán.</p>
         <button onClick={() => navigate("/")} className="btn-primary">
-          Back to home
+          Quay lại trang chủ
         </button>
       </div>
     );
@@ -300,7 +300,7 @@ export default function ProductDetail() {
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
-          Home
+          Trang chủ
         </button>
         <svg className="h-4 w-4 text-gunmetal" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -328,7 +328,7 @@ export default function ProductDetail() {
             {product.tags && (
               <div className="flex items-center gap-2 mb-3">
                 <span className="tag-badge">{product.tags}</span>
-                <span className="text-xs text-steelgray">/ SKU: #{product.id.toString().padStart(4, "0")}</span>
+                <span className="text-xs text-steelgray">/ Mã: #{product.id.toString().padStart(4, "0")}</span>
               </div>
             )}
             <h1 className="text-3xl lg:text-4xl font-extrabold text-warmwhite leading-tight mb-5">
@@ -344,7 +344,7 @@ export default function ProductDetail() {
                   </svg>
                 ))}
               </div>
-              <span className="text-sm text-steelgray">5.0 / 0 reviews</span>
+              <span className="text-sm text-steelgray">5.0 · 0 đánh giá</span>
             </div>
 
             {/* Price */}
@@ -359,7 +359,7 @@ export default function ProductDetail() {
                 <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                VAT included
+                Đã bao gồm VAT
               </div>
             </div>
 
@@ -369,10 +369,10 @@ export default function ProductDetail() {
                 <div className="flex items-center gap-2">
                   <div className={`h-2 w-2 rounded-full ${inStock ? "bg-emerald-400 animate-pulse" : "bg-deeprose"}`} />
                   <span className={`text-sm font-semibold ${inStock ? "text-emerald-400" : "text-deeprose"}`}>
-                    {inStock ? "In Stock" : "Out of Stock"}
+                    {inStock ? "Còn hàng" : "Hết hàng"}
                   </span>
                 </div>
-                <span className="text-sm text-steelgray">{product.stock} available</span>
+                <span className="text-sm text-steelgray">{product.stock} sản phẩm</span>
               </div>
               {inStock && (
                 <div className="w-full bg-charcoal rounded-full h-1.5">
@@ -388,7 +388,7 @@ export default function ProductDetail() {
           {/* Quantity + Add to Cart */}
           <div className="bg-graphite/60 rounded-2xl border border-gunmetal/40 p-5 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-softgray mb-2">Quantity</label>
+              <label className="block text-sm font-medium text-softgray mb-2">Số lượng</label>
               <div className="flex items-center gap-3">
                 <div className="flex items-center border border-gunmetal/60 bg-charcoal rounded-xl overflow-hidden">
                   <button
@@ -408,7 +408,7 @@ export default function ProductDetail() {
                   </button>
                 </div>
                 <span className="text-xs text-steelgray">
-                  {product.stock} in stock
+                  Còn {product.stock} sản phẩm
                 </span>
               </div>
             </div>
@@ -422,7 +422,7 @@ export default function ProductDetail() {
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                {inStock ? "Add to Cart" : "Out of Stock"}
+                {inStock ? "Thêm vào giỏ hàng" : "Hết hàng"}
               </button>
               <button
                 onClick={() => navigate("/checkout")}
@@ -433,7 +433,7 @@ export default function ProductDetail() {
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Buy Now
+                Mua ngay
               </button>
             </div>
 
@@ -442,14 +442,14 @@ export default function ProductDetail() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-                Wishlist
+                Yêu thích
               </button>
               <div className="h-4 w-px bg-gunmetal/60" />
               <button className="flex items-center gap-1.5 text-sm text-steelgray hover:text-sakura transition-colors">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
-                Share
+                Chia sẻ
               </button>
             </div>
           </div>
@@ -457,10 +457,10 @@ export default function ProductDetail() {
           {/* Trust Badges */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: "12", text: "12-month warranty" },
-              { icon: "7", text: "7-day returns" },
-              { icon: "FT", text: "Free shipping" },
-              { icon: "0%", text: "0% installments" },
+              { icon: "12T", text: "Bảo hành 12 tháng" },
+              { icon: "7N", text: "Đổi trả 7 ngày" },
+              { icon: "FT", text: "Giao hàng miễn phí" },
+              { icon: "0%", text: "Trả góp 0%" },
             ].map((b) => (
               <div key={b.text} className="flex items-center gap-2.5 rounded-xl border border-gunmetal/40 bg-graphite/40 px-3.5 py-3">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-crimson/10 text-xs font-bold text-crimson">
@@ -473,7 +473,7 @@ export default function ProductDetail() {
 
           {/* Delivery Info */}
           <div className="rounded-2xl border border-gunmetal/40 bg-graphite/40 p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-warmwhite mb-1">Delivery</h3>
+            <h3 className="text-sm font-semibold text-warmwhite mb-1">Thông tin giao hàng</h3>
             <div className="space-y-2.5">
               <div className="flex items-start gap-3">
                 <svg className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -481,8 +481,8 @@ export default function ProductDetail() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <div>
-                  <p className="text-sm text-warmwhite">Nationwide delivery</p>
-                  <p className="text-xs text-steelgray">2-5 business days</p>
+                  <p className="text-sm text-warmwhite">Giao hàng toàn quốc</p>
+                  <p className="text-xs text-steelgray">2-5 ngày làm việc</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -490,8 +490,8 @@ export default function ProductDetail() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
                 <div>
-                  <p className="text-sm text-warmwhite">100% authentic</p>
-                  <p className="text-xs text-steelgray">Brand new, sealed</p>
+                  <p className="text-sm text-warmwhite">Cam kết chính hãng 100%</p>
+                  <p className="text-xs text-steelgray">Hàng mới, nguyên seal</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -499,8 +499,8 @@ export default function ProductDetail() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 <div>
-                  <p className="text-sm text-warmwhite">Express 2h in major cities</p>
-                  <p className="text-xs text-steelgray">Ho Chi Minh, Hanoi</p>
+                  <p className="text-sm text-warmwhite">Giao nhanh 2h trong nội thành</p>
+                  <p className="text-xs text-steelgray">Áp dụng TP.HCM, Hà Nội</p>
                 </div>
               </div>
             </div>
@@ -512,8 +512,8 @@ export default function ProductDetail() {
       <div className="border-t border-gunmetal/40 pt-8 mb-8">
         <div className="flex gap-1 bg-graphite/60 rounded-xl p-1 border border-gunmetal/40 w-fit mb-8">
           {[
-            { key: "mota", label: "Description" },
-            { key: "thongso", label: "Specifications" },
+            { key: "mota", label: "Mô tả sản phẩm" },
+            { key: "thongso", label: "Thông số kỹ thuật" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -545,7 +545,7 @@ export default function ProductDetail() {
         )}
 
         {activeTab === "mota" && !product.description && (
-          <p className="text-steelgray text-sm">No description available.</p>
+          <p className="text-steelgray text-sm">Sản phẩm này chưa có mô tả.</p>
         )}
       </div>
 
