@@ -1,6 +1,7 @@
+import { useCart } from "../context/CartContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { spinApi, type SpinHistoryItem, type WheelConfig, type WheelPrize } from "../api/client";
+import { productsApi, spinApi, type SpinHistoryItem, type WheelConfig, type WheelPrize } from "../api/client";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 const FALLBACK_PRIZES: WheelPrize[] = [
@@ -260,7 +261,7 @@ function PrizeModal({
 
         {isProduct && (
           <div className="mb-5 rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-            Quà tặng miễn phí — đơn hàng đã được ghi nhận, bạn không cần thanh toán.
+            Sản phẩm đã được thêm vào giỏ hàng — bạn không cần thanh toán cho sản phẩm này.
           </div>
         )}
 
@@ -320,6 +321,7 @@ const REWARD_TYPE_LABEL: Record<string, string> = {
 export default function Spin() {
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { addItem } = useCart();
   const [cfg, setCfg] = useState<WheelConfig | null>(null);
   const [history, setHistory] = useState<SpinHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -464,7 +466,7 @@ export default function Spin() {
       const data = resp.data;
       const prize = data.prize || {};
       const idx = prizes.findIndex((p) => p.name === prize.name);
-      const showModal = () => {
+      const showModal = async () => {
         setModalPrize({
           name: prize.name || "Quà bí mật",
           image: prize.image,
@@ -480,6 +482,16 @@ export default function Spin() {
           coupon_discount_value: (prize as { coupon_discount_value?: number | null }).coupon_discount_value ?? null,
           spin_id: data.spin_id ?? null,
         });
+
+        if (prize.reward_type === "free_product" && prize.product_id) {
+          try {
+            const { data: product } = await productsApi.get(prize.product_id);
+            if (product) addItem(product);
+          } catch {
+            // Silently ignore — the prize modal still shows.
+          }
+        }
+
         setSpinning(false);
         refreshConfig();
         refreshHistory();
