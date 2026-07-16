@@ -64,8 +64,11 @@ export default function CartPage() {
                     {item.product.name}
                   </Link>
                   <span className="ml-2 tag-badge text-xs">{item.product.tags}</span>
-                  <p className="mt-1 text-sm font-bold text-crimson">
-                    {new Intl.NumberFormat("vi-VN").format(item.product.price)} VND
+                  <span className="ml-1 rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                    Quà tặng
+                  </span>
+                  <p className="mt-1 text-sm font-bold text-emerald-400">
+                    Miễn phí
                   </p>
                 </div>
                 <div className="flex items-center justify-between">
@@ -98,9 +101,8 @@ export default function CartPage() {
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-base font-bold text-crimson">
-                  {new Intl.NumberFormat("vi-VN").format(item.product.price * item.quantity)}
-                  <span className="text-xs font-normal text-steelgray"> VND</span>
+                <p className="text-base font-bold text-emerald-400">
+                  Miễn phí
                 </p>
               </div>
             </div>

@@ -321,7 +321,7 @@ const REWARD_TYPE_LABEL: Record<string, string> = {
 export default function Spin() {
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { addItem } = useCart();
+  const { addFreeItem } = useCart();
   const [cfg, setCfg] = useState<WheelConfig | null>(null);
   const [history, setHistory] = useState<SpinHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -483,14 +483,14 @@ export default function Spin() {
           spin_id: data.spin_id ?? null,
         });
 
-        if (prize.reward_type === "free_product" && prize.product_id) {
-          try {
-            const { data: product } = await productsApi.get(prize.product_id);
-            if (product) addItem(product);
-          } catch {
-            // Silently ignore — the prize modal still shows.
+          if (prize.reward_type === "free_product" && prize.product_id) {
+            try {
+              const { data: product } = await productsApi.get(prize.product_id);
+              if (product) addFreeItem(product);
+            } catch {
+              // Silently ignore — the prize modal still shows.
+            }
           }
-        }
 
         setSpinning(false);
         refreshConfig();

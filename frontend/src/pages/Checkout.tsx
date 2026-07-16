@@ -36,7 +36,7 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Checkout() {
-  const { items, clearCart, totalPrice } = useCart();
+  const { items, clearCart, totalPrice, freeItemIds } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -91,10 +91,12 @@ export default function Checkout() {
       const { data } = await ordersApi.create({
         delivery_address: address,
         delivery_phone: phone,
-        items: items.map((item) => ({
-          product_id: item.product.id,
-          quantity: item.quantity,
-        })),
+        items: items
+          .filter((item) => !freeItemIds.has(item.product.id))
+          .map((item) => ({
+            product_id: item.product.id,
+            quantity: item.quantity,
+          })),
         coupon_code: appliedCoupon?.coupon.code,
       });
       clearCart();
@@ -247,7 +249,9 @@ export default function Checkout() {
                     <p className="text-xs text-steelgray">x{item.quantity}</p>
                   </div>
                   <p className="text-sm font-semibold text-crimson shrink-0">
-                    {new Intl.NumberFormat("vi-VN").format(item.product.price * item.quantity)} VND
+                    {freeItemIds.has(item.product.id)
+                      ? "Miễn phí"
+                      : `${new Intl.NumberFormat("vi-VN").format(item.product.price * item.quantity)} VND`}
                   </p>
                 </div>
               ))}
