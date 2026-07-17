@@ -16,6 +16,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   shipped: "Đã xuất kho",
   in_transit: "Đang giao",
   delivered: "Đã giao",
+  cancelled: "Đã hủy",
 };
 
 interface MapTrackerProps {
