@@ -72,9 +72,12 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
               </div>
             )}
           </div>
-          <div className="flex flex-1 flex-col gap-3 border-t border-white/10 p-6 md:border-l md:border-t-0">
+          {/* min-w-0 lets this flex item shrink below its content's intrinsic
+              min size, so the right pane respects max-w-3xl even when the
+              title contains long unbroken strings (emoji runs, long URLs, etc). */}
+          <div className="flex min-w-0 flex-1 flex-col gap-3 border-t border-white/10 p-6 md:border-l md:border-t-0">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="line-clamp-2 min-h-[3.5rem] text-2xl font-bold text-warmwhite group-hover:text-sakura transition-colors">
+              <h3 className="line-clamp-2 min-h-[3.5rem] min-w-0 flex-1 break-words text-2xl font-bold text-warmwhite group-hover:text-sakura transition-colors">
                 {product.name}
               </h3>
               <p className="shrink-0 aurora-text-rainbow text-2xl font-extrabold">{formattedPrice}₫</p>
@@ -83,7 +86,7 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
               <StarRating value={ratingAvg} readonly showCount={ratingCount} size="sm" />
             )}
             {plainDescription && (
-              <p className="line-clamp-2 text-sm leading-relaxed text-softgray">
+              <p className="line-clamp-2 min-w-0 break-words text-sm leading-relaxed text-softgray">
                 {plainDescription}
               </p>
             )}

@@ -12,9 +12,9 @@ interface HeartButtonProps {
 }
 
 const sizeMap = {
-  sm: { btn: "h-8 w-8", icon: "h-4 w-4", count: "text-xs" },
-  md: { btn: "h-10 w-10", icon: "h-5 w-5", count: "text-sm" },
-  lg: { btn: "h-12 w-12", icon: "h-6 w-6", count: "text-base" },
+  sm: { btn: "h-8 w-8 px-2", icon: "h-4 w-4", count: "text-xs" },
+  md: { btn: "h-10 w-10 px-2", icon: "h-5 w-5", count: "text-sm" },
+  lg: { btn: "h-12 w-12 px-3", icon: "h-6 w-6", count: "text-base" },
 };
 
 export default function HeartButton({
@@ -28,7 +28,13 @@ export default function HeartButton({
   labelInactive = "Yêu thích",
 }: HeartButtonProps) {
   const [burst, setBurst] = useState(0);
+  // When showLabel is true we render an icon + label + count on a single row.
+  // The fixed w-* in sizeMap would clip them onto two lines, so override the
+  // width to auto and let the button grow horizontally to fit its content.
   const sz = sizeMap[size];
+  const widthClass = showLabel ? "w-auto" : sz.btn.split(" ").find((c) => c.startsWith("w-")) ?? "w-auto";
+  const heightClass = sz.btn.split(" ").find((c) => c.startsWith("h-")) ?? "";
+  const horizPad = showLabel ? "px-4" : sz.btn.split(" ").find((c) => c.startsWith("px-")) ?? "px-2";
 
   const handleClick = () => {
     if (loading) return;
@@ -44,8 +50,13 @@ export default function HeartButton({
       aria-pressed={liked}
       aria-label={liked ? labelActive : labelInactive}
       className={[
-        "group relative inline-flex items-center justify-center gap-2 rounded-full border transition-all focus-aurora",
-        sz.btn,
+        // When showLabel is true this becomes a pill button — wrap content
+        // with whitespace-nowrap so icon + label + count stay on one line
+        // even when the button width is constrained by a flex parent.
+        "group relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border transition-all focus-aurora",
+        heightClass,
+        widthClass,
+        horizPad,
         liked
           ? "border-crimson/60 bg-crimson/15 text-crimson shadow-glow"
           : "border-white/10 bg-white/[0.04] text-warmwhite backdrop-blur-xl hover:border-crimson/40 hover:text-crimson",
