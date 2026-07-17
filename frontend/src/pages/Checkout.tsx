@@ -168,7 +168,7 @@ export default function Checkout() {
                   key={m.id}
                   className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
                     payment === m.id
-                      ? "border-sakura/60 bg-sakura/10 shadow-glow-cyan"
+                      ? "border-sakura/60 bg-sakura/10 shadow-glow"
                       : "border-white/10 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
                   }`}
                 >

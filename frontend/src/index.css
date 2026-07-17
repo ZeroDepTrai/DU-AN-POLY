@@ -129,6 +129,58 @@
     @apply outline-none ring-2 ring-rose/60 ring-offset-2 ring-offset-charcoal;
   }
 
+  /* ── Aurora utility classes (used across pages) ─────────────────────── */
+  /* Primary CTA — crimson gradient with soft glow. Used by aurora-glow-btn
+     (Home hero CTA, ProductCard "Them vao gio", Header register, Footer
+     newsletter, Cart checkout). */
+  .aurora-glow-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold text-white transition-all;
+    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
+    box-shadow: 0 10px 30px -10px rgba(217, 74, 99, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  .aurora-glow-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 36px -10px rgba(217, 74, 99, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  .aurora-glow-btn:active {
+    transform: translateY(0);
+  }
+
+  /* Accent text gradient (sakura → rose → crimson). Was the "rainbow" in
+     old aurora UI; replaced with brand ramp so prices, headlines, and
+     tracking codes render on-brand. */
+  .aurora-text-rainbow {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #F28CA6 0%, #E36A86 50%, #D94A63 100%);
+  }
+
+  /* Soft gradient for headlines (warmwhite → softgray → sakura). */
+  .aurora-text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #EEE7E8 0%, #C9C4C6 50%, #F28CA6 100%);
+  }
+
+  /* Transparent rose-tinted input. Semi-transparent graphite bg with rose
+     focus ring. Used by AuroraInput / AuroraTextarea on Login, Register,
+     Contact form, and any future form. */
+  .aurora-input {
+    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-warmwhite placeholder-steelgray backdrop-blur-xl transition-colors;
+  }
+  .aurora-input::placeholder {
+    color: #8A858A;
+  }
+  .aurora-input:focus {
+    @apply border-sakura/60 outline-none ring-2 ring-sakura/25;
+  }
+  .aurora-input:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  /* Focus ring for buttons using aurora-glow-btn. */
+  .focus-aurora:focus-visible {
+    @apply outline-none ring-2 ring-sakura/60 ring-offset-2 ring-offset-charcoal;
+  }
+
   /* ── Admin Dashboard specific ────────────────────────────────────────── */
   .admin-sidebar {
     @apply hidden w-64 shrink-0 flex-col border-r border-gunmetal/50 bg-charcoal/80 backdrop-blur-xl md:flex;

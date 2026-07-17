@@ -76,7 +76,7 @@ export default function Home() {
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div className="relative z-10">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur-xl">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-sakura shadow-glow-cyan" />
+                <span className="h-2 w-2 animate-pulse rounded-full bg-sakura shadow-glow" />
                 <span className="text-xs font-semibold uppercase tracking-[0.25em] text-sakura">
                   CellZone · Aurora UI
                 </span>
@@ -253,7 +253,7 @@ export default function Home() {
             </div>
           </GlassCard>
           <GlassCard intensity="med" hoverable className="flex items-start gap-5 p-7">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-aurora-mint to-sakura shadow-glow-cyan">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-aurora-mint to-sakura shadow-glow">
               <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
