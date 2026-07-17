@@ -89,9 +89,9 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
             )}
             <button
               onClick={handleAddToCart}
-              className="aurora-glow-btn mt-2 w-full justify-center text-sm"
+              className="aurora-glow-btn mt-3 w-full justify-center px-5 py-3 text-base"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
               Thêm vào giỏ
@@ -198,9 +198,9 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
           </div>
           <button
             onClick={handleAddToCart}
-            className="aurora-glow-btn mt-2 w-full justify-center text-xs"
+            className="aurora-glow-btn mt-3 w-full justify-center px-5 py-3 text-base"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             Thêm vào giỏ
