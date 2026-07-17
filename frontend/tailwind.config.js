@@ -20,6 +20,9 @@ export default {
         softgray: "#C9C4C6",
         steelgray: "#8A858A",
         silvergray: "#BDB7BC",
+        // Status colors
+        emerald: "#34D399",       // Success
+        amber: "#F59E0B",         // Warning
         // Decorative
         gold: "#B88B52",          // Antique Gold
         bronze: "#8D683E",
