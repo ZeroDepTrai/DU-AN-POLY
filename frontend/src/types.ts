@@ -25,6 +25,20 @@ export interface Product {
   stock: number;
   is_active?: boolean;
   media?: ProductMediaItem[];
+  avg_rating?: number;
+  rating_count?: number;
+  like_count?: number;
+}
+
+export interface RatingSummary {
+  avg: number;
+  count: number;
+  my_rating: number | null;
+}
+
+export interface LikeStatus {
+  liked: boolean;
+  count: number;
 }
 
 export interface ProductMediaItem {

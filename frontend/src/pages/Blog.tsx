@@ -5,6 +5,10 @@ import { blogApi } from "../api/client";
 import BlogCard from "../components/BlogCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Pagination from "../components/Pagination";
+import GlassCard from "../components/aurora/GlassCard";
+import SectionHeading from "../components/aurora/SectionHeading";
+import AuroraBadge from "../components/aurora/AuroraBadge";
+import AuroraInput from "../components/aurora/AuroraInput";
 
 const PAGE_SIZE = 6;
 
@@ -21,7 +25,6 @@ export default function Blog() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  // Always fetch featured posts for the hero section
   const { data: featuredPosts = [] } = useQuery({
     queryKey: ["blog-featured"],
     queryFn: async () => {
@@ -30,7 +33,6 @@ export default function Blog() {
     },
   });
 
-  // Main posts query — filtered by selected tags
   const { data: allPosts = [], isLoading } = useQuery({
     queryKey: ["blog-posts", selectedTags],
     queryFn: async () => {
@@ -39,10 +41,8 @@ export default function Blog() {
     },
   });
 
-  // Featured hero: always the most recent featured post
   const featuredPost = featuredPosts[0];
 
-  // Exclude featured post from the grid to avoid duplication
   const posts = featuredPost
     ? allPosts.filter((p) => p.id !== featuredPost.id)
     : allPosts;
@@ -75,118 +75,100 @@ export default function Blog() {
     });
 
   return (
-    <div className="min-h-screen bg-charcoal">
-      {/* ── Page Header ─────────────────────────────────── */}
-      <div className="border-b border-gunmetal/40 bg-graphite/40">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-          <div className="flex items-center gap-2 text-sm text-steelgray mb-3">
-            <Link to="/" className="hover:text-crimson transition-colors">Trang chủ</Link>
-            <span>/</span>
-            <span className="text-warmwhite">Blog</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-1 rounded-full bg-crimson" />
-            <h1 className="text-3xl font-extrabold text-warmwhite tracking-tight">
-              Tin công nghệ &amp; Reviews
-            </h1>
-          </div>
+    <div>
+      <div className="container-padding py-10">
+        <div className="mb-4 flex items-center gap-2 text-sm text-steelgray">
+          <Link to="/" className="hover:text-aurora-cyan transition-colors">Trang chủ</Link>
+          <span>/</span>
+          <span className="text-warmwhite">Blog</span>
         </div>
+        <SectionHeading
+          eyebrow="Blog"
+          title="Tin công nghệ & Reviews"
+          subtitle="Khám phá những tin tức, đánh giá và mẹo hay từ đội ngũ CellZone."
+        />
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
-        {/* ── Featured Post ───────────────────────────────── */}
+      <div className="container-padding pb-16">
         {!isLoading && featuredPost && (
-          <Link
-            to={`/blog/${featuredPost.slug}`}
-            className="group mb-10 flex flex-col overflow-hidden rounded-2xl border border-gunmetal/60 bg-graphite transition-all hover:border-rose/30 lg:flex-row"
-          >
-            <div className="relative w-full overflow-hidden lg:w-1/2">
-              <img
-                src={featuredPost.image_url}
-                alt={featuredPost.title}
-                className="aspect-video h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 lg:aspect-auto"
-              />
-              <div className="absolute left-4 top-4 rounded-full bg-crimson px-3 py-1 text-xs font-bold text-white">
-                Nổi bật
-              </div>
-            </div>
-            <div className="flex flex-col justify-center p-8 lg:w-1/2">
-              {featuredTags.length > 0 && (
-                <div className="mb-3 flex flex-wrap gap-1.5">
-                  {featuredTags.map((t: string) => (
-                    <span key={t} className="rounded-full bg-crimson/20 px-3 py-0.5 text-xs font-medium text-sakura">
-                      {t}
-                    </span>
-                  ))}
+          <Link to={`/blog/${featuredPost.slug}`} className="group mb-10 block">
+            <GlassCard intensity="med" hoverable className="flex flex-col overflow-hidden p-0 lg:flex-row">
+              <div className="relative w-full overflow-hidden lg:w-1/2">
+                <img
+                  src={featuredPost.image_url}
+                  alt={featuredPost.title}
+                  className="aspect-video h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 lg:aspect-auto"
+                />
+                <div className="absolute left-4 top-4">
+                  <AuroraBadge tone="violet" glow>Nổi bật</AuroraBadge>
                 </div>
-              )}
-              <p className="mb-3 text-xs font-medium text-steelgray">
-                {formattedDate(featuredPost.created_at)}
-              </p>
-              <h2 className="mb-4 text-2xl font-extrabold text-warmwhite group-hover:text-sakura transition-colors line-clamp-3 lg:text-3xl">
-                {featuredPost.title}
-              </h2>
-              <p className="mb-6 text-sm leading-relaxed text-steelgray line-clamp-2">
-                Khám phá những tin tức công nghệ mới nhất, đánh giá chi tiết sản phẩm và những mẹo hay dành cho bạn.
-              </p>
-              <div className="flex items-center gap-1 text-sm font-semibold text-crimson group-hover:text-sakura transition-colors">
-                Đọc ngay
-                <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
               </div>
-            </div>
+              <div className="flex flex-col justify-center p-8 lg:w-1/2">
+                {featuredTags.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-1.5">
+                    {featuredTags.map((t: string) => (
+                      <AuroraBadge key={t} tone="cyan">{t}</AuroraBadge>
+                    ))}
+                  </div>
+                )}
+                <p className="mb-3 text-xs font-medium text-steelgray">
+                  {formattedDate(featuredPost.created_at)}
+                </p>
+                <h2 className="mb-4 line-clamp-3 text-2xl font-extrabold text-warmwhite group-hover:text-aurora-cyan transition-colors lg:text-3xl">
+                  {featuredPost.title}
+                </h2>
+                <p className="mb-6 line-clamp-2 text-sm leading-relaxed text-steelgray">
+                  Khám phá những tin tức công nghệ mới nhất, đánh giá chi tiết sản phẩm và những mẹo hay dành cho bạn.
+                </p>
+                <div className="flex items-center gap-1 text-sm font-semibold aurora-text-rainbow group-hover:text-aurora-cyan transition-colors">
+                  Đọc ngay
+                  <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </div>
+              </div>
+            </GlassCard>
           </Link>
         )}
 
-        {/* ── Tag Tabs + Search ─────────────────────────────── */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
-            {TAG_TABS.map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => toggleTag(tab.value)}
-                className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
-                  tab.value === "" && selectedTags.length === 0
-                    ? "bg-crimson text-white"
-                    : tab.value !== "" && selectedTags.includes(tab.value)
-                    ? "bg-crimson/80 text-white"
-                    : "border border-gunmetal/60 bg-graphite text-softgray hover:border-silvergray hover:text-warmwhite"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {TAG_TABS.map((tab) => {
+              const active = tab.value === "" ? selectedTags.length === 0 : selectedTags.includes(tab.value);
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => toggleTag(tab.value)}
+                  className={[
+                    "rounded-full border px-5 py-2 text-sm font-medium transition-all",
+                    active
+                      ? "border-transparent aurora-chip-active"
+                      : "border-white/10 bg-white/[0.04] text-softgray hover:border-white/30 hover:text-warmwhite",
+                  ].join(" ")}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
-          <div className="relative">
-            <svg
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-steelgray"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
+          <div className="w-full sm:w-64">
+            <AuroraInput
               type="search"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Tìm kiếm bài viết..."
-              className="input-field pl-10 w-full sm:w-64"
             />
           </div>
         </div>
 
-        {/* ── Blog Grid ─────────────────────────────────── */}
         {isLoading ? (
           <LoadingSpinner label="Đang tải blog..." />
         ) : paginated.length === 0 ? (
-          <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-16 text-center">
+          <GlassCard intensity="med" className="p-16 text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gunmetal/40">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-aurora-gradient shadow-glow-violet">
                 <svg
-                  className="h-10 w-10 text-steelgray"
+                  className="h-10 w-10 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -202,7 +184,7 @@ export default function Blog() {
             </div>
             <h3 className="mb-2 text-xl font-bold text-warmwhite">Chưa có bài viết nào</h3>
             <p className="text-sm text-steelgray">Quay lại sau để đọc những bài viết thú vị nhất!</p>
-          </div>
+          </GlassCard>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {paginated.map((post) => (
@@ -211,7 +193,6 @@ export default function Blog() {
           </div>
         )}
 
-        {/* ── Pagination ─────────────────────────────────── */}
         {totalPages > 1 && (
           <div className="mt-10">
             <Pagination
@@ -222,8 +203,6 @@ export default function Blog() {
           </div>
         )}
       </div>
-
-      <div className="h-16" />
     </div>
   );
 }

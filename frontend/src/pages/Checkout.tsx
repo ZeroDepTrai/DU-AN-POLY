@@ -4,6 +4,11 @@ import { couponsApi, ordersApi } from "../api/client";
 import type { CouponValidateResult } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import GlassCard from "../components/aurora/GlassCard";
+import GlowButton from "../components/aurora/GlowButton";
+import { AuroraInput, AuroraTextarea } from "../components/aurora/AuroraInput";
+import AuroraBadge from "../components/aurora/AuroraBadge";
+import SectionHeading from "../components/aurora/SectionHeading";
 
 const PAYMENT_METHODS = [
   {
@@ -112,81 +117,59 @@ export default function Checkout() {
     }
   };
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <div className="mb-8">
-        <div className="mb-1 flex items-center gap-2">
-          <div className="h-px w-8 bg-crimson" />
-          <span className="text-xs font-medium uppercase tracking-widest text-crimson">Thanh toán</span>
-        </div>
-        <h1 className="text-3xl font-extrabold text-warmwhite">Phương thức thanh toán</h1>
-        <p className="mt-1 text-sm text-steelgray">
-          {items.length} sản phẩm — Tổng: {new Intl.NumberFormat("vi-VN").format(grand)} VND
-        </p>
-      </div>
+      <SectionHeading
+        eyebrow="Thanh toán"
+        title="Phương thức thanh toán"
+        subtitle={`${items.length} sản phẩm · Tổng ${new Intl.NumberFormat("vi-VN").format(grand)} VND`}
+      />
 
-      <div className="grid gap-8 lg:grid-cols-[760px_1fr]">
-        {/* Left: Form */}
+      <div className="mt-10 grid gap-6 lg:grid-cols-[760px_1fr]">
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Shipping */}
-          <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-6">
+          <GlassCard intensity="med" className="p-6">
             <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-crimson/10 text-sm font-bold text-crimson">1</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-aurora-gradient text-sm font-bold text-white shadow-glow-violet">1</div>
               <h2 className="text-lg font-bold text-warmwhite">Địa chỉ giao hàng</h2>
             </div>
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-softgray">Họ và tên</label>
-                  <input disabled value={user.name} className="input-field opacity-60" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-softgray">Email</label>
-                  <input disabled value={user.email} className="input-field opacity-60" />
-                </div>
+                <AuroraInput label="Họ và tên" value={user.name} disabled className="opacity-70" />
+                <AuroraInput label="Email" value={user.email} disabled className="opacity-70" />
               </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-softgray">Số điện thoại *</label>
-                <input
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="input-field"
-                  placeholder="VD: 090 123 4567"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-softgray">Địa chỉ nhận hàng *</label>
-                <textarea
-                  required
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="input-field resize-none"
-                  rows={3}
-                  placeholder="VD: 123 Nguyễn Huệ, Quận 1, TP.HCM"
-                />
-              </div>
+              <AuroraInput
+                label="Số điện thoại *"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="VD: 090 123 4567"
+                required
+              />
+              <AuroraTextarea
+                label="Địa chỉ nhận hàng *"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="VD: 123 Nguyễn Huệ, Quận 1, TP.HCM"
+                rows={3}
+                required
+              />
             </div>
-          </div>
+          </GlassCard>
 
-          {/* Payment */}
-          <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-6">
+          <GlassCard intensity="med" className="p-6">
             <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-crimson/10 text-sm font-bold text-crimson">2</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-aurora-gradient text-sm font-bold text-white shadow-glow-violet">2</div>
               <h2 className="text-lg font-bold text-warmwhite">Phương thức thanh toán</h2>
             </div>
             <div className="space-y-2">
               {PAYMENT_METHODS.map((m) => (
                 <label
                   key={m.id}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-colors ${
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
                     payment === m.id
-                      ? "border-crimson bg-crimson/5"
-                      : "border-gunmetal/60 bg-charcoal hover:border-silvergray/40"
+                      ? "border-aurora-cyan/60 bg-aurora-cyan/10 shadow-glow-cyan"
+                      : "border-white/10 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
                   }`}
                 >
                   <input
@@ -195,45 +178,31 @@ export default function Checkout() {
                     value={m.id}
                     checked={payment === m.id}
                     onChange={() => setPayment(m.id)}
-                    className="accent-rose"
+                    className="sr-only"
                   />
+                  <span className={`flex h-5 w-5 items-center justify-center rounded-full border ${payment === m.id ? "border-aurora-cyan bg-aurora-cyan" : "border-white/30"}`}>
+                    {payment === m.id && <span className="h-2 w-2 rounded-full bg-white" />}
+                  </span>
                   <span className="text-warmwhite">{m.icon}</span>
                   <span className="flex-1 text-sm font-medium text-warmwhite">{m.label}</span>
                 </label>
               ))}
             </div>
-          </div>
+          </GlassCard>
 
           {error && (
-            <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">
+            <div className="rounded-xl border border-deeprose/40 bg-deeprose/10 p-3 text-sm text-rose">
               {error}
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading || items.length === 0}
-            className="btn-primary w-full py-3.5 text-base disabled:opacity-40"
-          >
-            {loading ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Đang xử lý...
-              </>
-            ) : (
-              <>
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Đặt hàng ngay
-              </>
-            )}
-          </button>
+          <GlowButton variant="aurora" size="lg" loading={loading} type="submit" disabled={items.length === 0} className="w-full justify-center">
+            Đặt hàng ngay
+          </GlowButton>
         </form>
 
-        {/* Right: Summary */}
         <div>
-          <div className="sticky top-24 rounded-2xl border border-gunmetal/60 bg-graphite p-6">
+          <GlassCard intensity="med" glow className="sticky top-24 p-6">
             <h3 className="mb-4 text-lg font-bold text-warmwhite">Tóm tắt đơn hàng</h3>
 
             <div className="mb-4 space-y-3">
@@ -248,12 +217,10 @@ export default function Checkout() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-warmwhite">{item.product_name}</p>
-                      {isFree && (
-                        <span className="rounded bg-emerald-500/20 px-1 py-0.5 text-[10px] font-semibold text-emerald-400">Quà tặng</span>
-                      )}
+                      {isFree && <AuroraBadge tone="mint">Quà tặng</AuroraBadge>}
                       <p className="text-xs text-steelgray">x{item.quantity}</p>
                     </div>
-                    <p className={`text-sm font-semibold shrink-0 ${isFree ? "text-emerald-400" : "text-crimson"}`}>
+                    <p className={`text-sm font-semibold shrink-0 ${isFree ? "text-emerald-400" : "aurora-text-rainbow"}`}>
                       {isFree
                         ? "Miễn phí"
                         : `${new Intl.NumberFormat("vi-VN").format(item.product_price * item.quantity)} VND`}
@@ -263,69 +230,71 @@ export default function Checkout() {
               })}
             </div>
 
-            <div className="border-t border-gunmetal/40 pt-4 space-y-2">
-              <div className="flex justify-between text-sm text-steelgray">
+            <div className="space-y-2 border-t border-white/10 pt-4">
+              <div className="flex justify-between text-sm text-softgray">
                 <span>Tạm tính</span>
                 <span>{new Intl.NumberFormat("vi-VN").format(totalPrice)} VND</span>
               </div>
-              <div className="flex justify-between text-sm text-steelgray">
+              <div className="flex justify-between text-sm text-softgray">
                 <span>Phí giao hàng</span>
-                <span className="text-crimson">Miễn phí</span>
+                <span className="aurora-text-rainbow font-semibold">Miễn phí</span>
               </div>
-              <div className="flex justify-between text-sm text-steelgray">
+              <div className="flex justify-between text-sm text-softgray">
                 <span>Thuế (VAT 10%)</span>
                 <span>{new Intl.NumberFormat("vi-VN").format(tax)} VND</span>
               </div>
               {appliedCoupon && (
-                <div className="flex justify-between text-sm text-emerald">
+                <div className="flex justify-between text-sm text-emerald-400">
                   <span className="flex items-center gap-1">
                     Coupon {appliedCoupon.coupon.code}
-                    <button onClick={removeCoupon} className="ml-1 text-[10px] text-rose hover:underline">bỏ</button>
+                    <button onClick={removeCoupon} className="ml-1 text-[10px] text-aurora-pink hover:underline">bỏ</button>
                   </span>
                   <span>-{new Intl.NumberFormat("vi-VN").format(discount)} VND</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-gunmetal/40 pt-3 text-lg font-bold text-warmwhite">
+              <div className="flex justify-between border-t border-white/10 pt-3 text-lg font-bold text-warmwhite">
                 <span>Tổng cộng</span>
-                <span className="text-crimson">
+                <span className="aurora-text-rainbow">
                   {new Intl.NumberFormat("vi-VN").format(grand)} VND
                 </span>
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-gunmetal/40 bg-charcoal/40 p-3">
-              <p className="mb-1.5 text-xs text-steelgray">Mã giảm giá</p>
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-3">
+              <p className="mb-1.5 text-xs text-aurora-cyan">Mã giảm giá</p>
               <div className="flex gap-2">
                 <input
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                   placeholder="Nhập mã..."
-                  className="input-field flex-1 text-sm"
+                  className="aurora-input flex-1 text-sm"
                   disabled={!!appliedCoupon}
                 />
                 {appliedCoupon ? (
-                  <button onClick={removeCoupon} className="btn-secondary text-sm whitespace-nowrap">Bỏ</button>
+                  <GlowButton variant="ghost" onClick={removeCoupon} className="text-sm whitespace-nowrap">Bỏ</GlowButton>
                 ) : (
-                  <button
+                  <GlowButton
+                    variant="aurora"
                     onClick={applyCoupon}
                     disabled={applyingCoupon || !couponCode.trim()}
-                    className="btn-primary text-sm whitespace-nowrap disabled:opacity-60"
+                    loading={applyingCoupon}
+                    className="text-sm whitespace-nowrap"
                   >
-                    {applyingCoupon ? "..." : "Áp dụng"}
-                  </button>
+                    Áp dụng
+                  </GlowButton>
                 )}
               </div>
-              {couponMessage && <p className="mt-2 text-xs text-emerald">{couponMessage}</p>}
-              {couponError && <p className="mt-2 text-xs text-rose">{couponError}</p>}
+              {couponMessage && <p className="mt-2 text-xs text-emerald-400">{couponMessage}</p>}
+              {couponError && <p className="mt-2 text-xs text-aurora-pink">{couponError}</p>}
             </div>
 
-            <div className="mt-4 flex items-center gap-2 text-xs text-steelgray">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div className="mt-4 flex items-center gap-2 text-xs text-softgray">
+              <svg className="h-4 w-4 text-aurora-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               Thanh toán an toàn & bảo mật
             </div>
-          </div>
+          </GlassCard>
         </div>
       </div>
     </div>

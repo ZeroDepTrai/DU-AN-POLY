@@ -4,6 +4,8 @@ import { productsApi } from "../api/client";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Pagination from "../components/Pagination";
 import ProductCard from "../components/ProductCard";
+import GlassCard from "../components/aurora/GlassCard";
+import SectionHeading from "../components/aurora/SectionHeading";
 
 const PAGE_SIZE = 12;
 
@@ -21,11 +23,11 @@ const BRAND_FILTERS = [
 ];
 
 const PRICE_FILTERS = [
-  { label: "Tất cả", min: 0, max: Infinity },
+  { label: "Tất cả", min: 0, max: 0 },
   { label: "Dưới 5 triệu", min: 0, max: 5000000 },
   { label: "5 - 10 triệu", min: 5000000, max: 10000000 },
   { label: "10 - 20 triệu", min: 10000000, max: 20000000 },
-  { label: "Trên 20 triệu", min: 20000000, max: Infinity },
+  { label: "Trên 20 triệu", min: 20000000, max: 0 },
 ];
 
 export default function Products() {
@@ -36,7 +38,7 @@ export default function Products() {
   const search = searchParams.get("search") ?? "";
   const priceMin = Number(searchParams.get("priceMin") ?? 0);
   const priceMax = Number(
-    searchParams.get("priceMax") === "Infinity" ? Infinity : (searchParams.get("priceMax") ?? 0)
+    searchParams.get("priceMax") === "0" ? 0 : (searchParams.get("priceMax") ?? 0)
   );
 
   const { data, isLoading } = useQuery({
@@ -72,63 +74,65 @@ export default function Products() {
     setSearchParams(next);
   };
 
-  // Split: first product gets the bento (featured span), rest get the standard grid
   const [bentoProduct, ...gridProducts] = products;
 
   return (
     <div className="container-padding py-10">
-      {/* ── Page header (Figma "Page Header" 19:410) ──────────────────── */}
-      <div className="mb-10 flex flex-wrap items-end justify-between gap-6">
-        <div>
-          <div className="mb-2 flex items-center gap-2">
-            <div className="h-px w-10 bg-crimson" />
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-rose">
-              Sản phẩm
-            </span>
+      <SectionHeading
+        eyebrow="Sản phẩm"
+        title="Điện thoại thông minh"
+        subtitle="Khám phá bộ sưu tập smartphone cao cấp mới nhất — tuyển chọn bởi CellZone."
+        rightSlot={
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-softgray">{total} sản phẩm</span>
+            <select
+              value={sort}
+              onChange={(e) => setParam("sort", e.target.value)}
+              className="aurora-input w-48 py-2"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value} className="bg-aurora-bg-deep">
+                  {o.label}
+                </option>
+              ))}
+            </select>
           </div>
-          <h1 className="mb-2 text-4xl font-extrabold text-warmwhite">Điện thoại thông minh</h1>
-          <p className="text-sm text-softgray">
-            Khám phá bộ sưu tập smartphone cao cấp mới nhất.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-softgray">{total} sản phẩm</span>
-          <select
-            value={sort}
-            onChange={(e) => setParam("sort", e.target.value)}
-            className="input-field w-44"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="flex gap-8">
-        {/* ── Sidebar filters (Figma 19:4 / 19:7) ──────────────────────── */}
+      <div className="mt-10 flex gap-8">
         <aside className="hidden w-72 shrink-0 lg:block">
-          <div className="sticky top-24 rounded-bento border border-rose/20 bg-cardtint/60 p-6 backdrop-blur-sm">
+          <GlassCard intensity="med" className="sticky top-24 p-6">
             <h3 className="mb-6 text-lg font-bold uppercase tracking-wider text-warmwhite">
               Bộ lọc
             </h3>
 
-            {/* Brand */}
             <div className="mb-6">
-              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
                 Hãng
               </p>
               <div className="space-y-2">
                 {BRAND_FILTERS.map((f) => (
                   <label key={f.value} className="flex cursor-pointer items-center gap-3 group">
-                    <input
-                      type="checkbox"
-                      checked={brand === f.value}
-                      onChange={() => setParam("brand", brand === f.value ? "" : f.value)}
-                      className="h-4 w-4 accent-rose"
-                    />
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-md border transition-all ${
+                        brand === f.value
+                          ? "border-aurora-cyan bg-aurora-cyan/20"
+                          : "border-white/15 bg-white/[0.04] group-hover:border-aurora-cyan/60"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={brand === f.value}
+                        onChange={() => setParam("brand", brand === f.value ? "" : f.value)}
+                        className="sr-only"
+                      />
+                      {brand === f.value && (
+                        <svg className="h-3 w-3 text-aurora-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </span>
                     <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
                       {f.label}
                     </span>
@@ -137,12 +141,11 @@ export default function Products() {
               </div>
             </div>
 
-            {/* Price */}
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
                 Khoảng giá
               </p>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {PRICE_FILTERS.map((f) => {
                   const isActive = priceMin === f.min && priceMax === f.max;
                   return (
@@ -155,15 +158,15 @@ export default function Products() {
                           next.delete("priceMin");
                           next.delete("priceMax");
                         } else {
-                          next.set("priceMin", String(f.min));
-                          next.set("priceMax", String(f.max));
+                          if (f.min) next.set("priceMin", String(f.min)); else next.delete("priceMin");
+                          if (f.max) next.set("priceMax", String(f.max)); else next.delete("priceMax");
                         }
                         setSearchParams(next);
                       }}
-                      className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-colors ${
+                      className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-all ${
                         isActive
-                          ? "bg-rose/15 text-rose"
-                          : "text-softgray hover:bg-gunmetal hover:text-warmwhite"
+                          ? "border border-aurora-cyan/50 bg-aurora-cyan/15 text-aurora-cyan"
+                          : "border border-transparent text-softgray hover:bg-white/5 hover:text-warmwhite"
                       }`}
                     >
                       {f.label}
@@ -172,19 +175,18 @@ export default function Products() {
                 })}
               </div>
             </div>
-          </div>
+          </GlassCard>
         </aside>
 
-        {/* ── Grid (Figma "Product Grid" 19:485) ───────────────────────── */}
         <div className="flex-1 min-w-0">
           {isLoading ? (
             <LoadingSpinner label="Đang tải sản phẩm..." />
           ) : products.length === 0 ? (
-            <div className="rounded-showcase border border-rose/20 bg-cardtint/60 p-16 text-center backdrop-blur-sm">
+            <GlassCard intensity="med" className="p-16 text-center">
               <div className="mb-4 flex justify-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gunmetal/40">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-aurora-gradient shadow-glow-violet">
                   <svg
-                    className="h-10 w-10 text-steelgray"
+                    className="h-10 w-10 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -202,17 +204,15 @@ export default function Products() {
               <p className="text-sm text-softgray">
                 Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
               </p>
-            </div>
+            </GlassCard>
           ) : (
             <>
-              {/* Bento: featured span (Figma card 19:487) */}
               {bentoProduct && (
                 <div className="mb-5 h-[560px]">
                   <ProductCard product={bentoProduct} variant="bento" />
                 </div>
               )}
 
-              {/* Standard 3-col grid */}
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {gridProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
@@ -221,7 +221,6 @@ export default function Products() {
             </>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-10">
               <Pagination

@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { productsApi } from "../api/client";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ProductCard from "../components/ProductCard";
+import GlassCard from "../components/aurora/GlassCard";
+import GlowButton from "../components/aurora/GlowButton";
+import SectionHeading from "../components/aurora/SectionHeading";
 
-// Each accessory falls into a "category" keyword that we look for in product.tags.
-// e.g. an "Ốp lưng" tag matches the "ốp" keyword in our accessory data.
 const CATEGORIES: { label: string; keywords: string[] }[] = [
   { label: "Ốp lưng", keywords: ["ốp", "op", "case"] },
   { label: "Tai nghe", keywords: ["tai nghe", "earphone", "earbud", "airpod"] },
@@ -30,7 +31,7 @@ function matchesCategory(tags: string, cat: { keywords: string[] }) {
 
 function matchesCompat(tags: string, c: string) {
   const t = tags.toLowerCase();
-  if (c === "Universal") return true; // universal is the safe fallback
+  if (c === "Universal") return true;
   return t.includes(c.toLowerCase());
 }
 
@@ -48,21 +49,16 @@ export default function Accessories() {
     },
   });
 
-  // Each filter is applied in this pipeline. An empty filter array means "no
-  // filter on this dimension" (do not restrict).
   const filtered = useMemo(() => {
     return allProducts.filter((p) => {
-      // Price
       if (selectedPrice.min !== 0) {
         if (p.price < selectedPrice.min || p.price > selectedPrice.max) return false;
       }
-      // Category (OR within the same group: any chosen bucket matches)
       if (selectedCategories.length > 0) {
         const cats = CATEGORIES.filter((c) => selectedCategories.includes(c.label));
         const ok = cats.some((c) => matchesCategory(p.tags, c));
         if (!ok) return false;
       }
-      // Compatibility (OR within the group)
       if (selectedCompatibility.length > 0) {
         const ok = selectedCompatibility.some((c) => matchesCompat(p.tags, c));
         if (!ok) return false;
@@ -97,7 +93,7 @@ export default function Accessories() {
   const FilterChips = () => {
     const total = selectedCategories.length + selectedCompatibility.length;
     return total > 0 ? (
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-softgray">
+      <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-softgray">
         <span>Đang lọc:</span>
         {[...selectedCategories, ...selectedCompatibility].map((f) => (
           <button
@@ -106,14 +102,14 @@ export default function Accessories() {
               if (selectedCategories.includes(f)) toggleCategory(f);
               else toggleCompat(f);
             }}
-            className="rounded-full bg-rose/15 px-3 py-1 text-rose hover:bg-rose/25 transition-colors"
+            className="rounded-full border border-aurora-cyan/40 bg-aurora-cyan/10 px-3 py-1 text-aurora-cyan hover:bg-aurora-cyan/20 transition-colors"
           >
             {f} ×
           </button>
         ))}
         <button
           onClick={clearAll}
-          className="rounded-full border border-gunmetal/60 px-3 py-1 text-softgray hover:text-warmwhite transition-colors"
+          className="rounded-full border border-white/15 px-3 py-1 text-softgray hover:text-warmwhite transition-colors"
         >
           Xóa hết
         </button>
@@ -124,7 +120,7 @@ export default function Accessories() {
   const Sidebar = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
           Danh mục
         </h3>
         <div className="space-y-2">
@@ -134,7 +130,7 @@ export default function Accessories() {
                 type="checkbox"
                 checked={selectedCategories.includes(cat.label)}
                 onChange={() => toggleCategory(cat.label)}
-                className="h-4 w-4 accent-rose"
+                className="h-4 w-4 accent-aurora-cyan"
               />
               <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
                 {cat.label}
@@ -145,7 +141,7 @@ export default function Accessories() {
       </div>
 
       <div>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
           Tương thích
         </h3>
         <div className="space-y-2">
@@ -155,7 +151,7 @@ export default function Accessories() {
                 type="checkbox"
                 checked={selectedCompatibility.includes(c)}
                 onChange={() => toggleCompat(c)}
-                className="h-4 w-4 accent-rose"
+                className="h-4 w-4 accent-aurora-cyan"
               />
               <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
                 {c}
@@ -166,18 +162,18 @@ export default function Accessories() {
       </div>
 
       <div>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-softgray">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
           Khoảng giá
         </h3>
-        <div className="space-y-2">
+        <div className="space-y-1">
           {PRICE_RANGE.map((p) => (
             <button
               key={p.label}
               onClick={() => setSelectedPrice(p)}
-              className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-colors ${
+              className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-all ${
                 selectedPrice.label === p.label
-                  ? "bg-rose/15 text-rose"
-                  : "text-softgray hover:bg-gunmetal hover:text-warmwhite"
+                  ? "border border-aurora-cyan/50 bg-aurora-cyan/15 text-aurora-cyan"
+                  : "border border-transparent text-softgray hover:bg-white/5 hover:text-warmwhite"
               }`}
             >
               {p.label}
@@ -188,105 +184,89 @@ export default function Accessories() {
     </div>
   );
 
-  // Split: first product bento, rest standard
   const [bentoProduct, ...gridProducts] = filtered;
 
   return (
     <div className="container-padding py-10">
-      {/* ── Header ────────────────────────────────────────────── */}
-      <div className="mb-10 flex flex-wrap items-end justify-between gap-6">
-        <div>
-          <div className="mb-2 flex items-center gap-2">
-            <div className="h-px w-10 bg-crimson" />
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-rose">
-              Phụ kiện
-            </span>
-          </div>
-          <h1 className="mb-2 text-4xl font-extrabold text-warmwhite">Phụ kiện điện thoại</h1>
-          <p className="text-sm text-softgray">
-            Nâng tầm trải nghiệm di động với phụ kiện chính hãng.
+      <SectionHeading
+        eyebrow="Phụ kiện"
+        title="Phụ kiện điện thoại"
+        subtitle="Nâng tầm trải nghiệm di động với phụ kiện chính hãng."
+        rightSlot={
+          <p className="aurora-text-rainbow text-sm font-semibold">
+            {filtered.length} / {allProducts.length} sản phẩm
           </p>
+        }
+      />
+
+      <div className="mt-8">
+        <FilterChips />
+
+        <div className="mb-4 lg:hidden">
+          <GlowButton variant="ghost" onClick={() => setFilterOpen(true)} className="w-full justify-center">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Bộ lọc {hasFilters ? `(${selectedCategories.length + selectedCompatibility.length + (selectedPrice !== PRICE_RANGE[0] ? 1 : 0)})` : ""}
+          </GlowButton>
         </div>
-        <p className="text-sm text-softgray">
-          {filtered.length} / {allProducts.length} sản phẩm
-        </p>
-      </div>
 
-      <FilterChips />
-
-      {/* Mobile filter button */}
-      <div className="mb-4 lg:hidden">
-        <button
-          onClick={() => setFilterOpen(true)}
-          className="btn-secondary w-full justify-center"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          Bộ lọc {hasFilters ? `(${selectedCategories.length + selectedCompatibility.length + (selectedPrice !== PRICE_RANGE[0] ? 1 : 0)})` : ""}
-        </button>
-      </div>
-
-      <div className="flex gap-8">
-        {/* Desktop Sidebar */}
-        <aside className="hidden w-72 shrink-0 lg:block">
-          <div className="sticky top-24 rounded-bento border border-rose/20 bg-cardtint/60 p-6 backdrop-blur-sm">
-            <Sidebar />
-            {hasFilters && (
-              <button
-                onClick={clearAll}
-                className="mt-6 w-full rounded-lg border border-gunmetal/60 bg-gunmetal/40 py-2 text-sm text-softgray hover:text-warmwhite transition-colors"
-              >
-                Xóa bộ lọc
-              </button>
-            )}
-          </div>
-        </aside>
-
-        {/* Products */}
-        <div className="flex-1 min-w-0">
-          {isLoading ? (
-            <LoadingSpinner label="Đang tải phụ kiện..." />
-          ) : filtered.length === 0 ? (
-            <div className="rounded-showcase border border-rose/20 bg-cardtint/60 p-16 text-center backdrop-blur-sm">
-              <h3 className="mb-2 text-xl font-bold text-warmwhite">Không có phụ kiện</h3>
-              <p className="text-sm text-softgray">
-                {hasFilters ? "Thử thay đổi bộ lọc." : "Hãy quay lại sau."}
-              </p>
+        <div className="flex gap-8">
+          <aside className="hidden w-72 shrink-0 lg:block">
+            <GlassCard intensity="med" className="sticky top-24 p-6">
+              <Sidebar />
               {hasFilters && (
-                <button onClick={clearAll} className="btn-secondary mt-4">
+                <button
+                  onClick={clearAll}
+                  className="mt-6 w-full rounded-lg border border-white/15 bg-white/5 py-2 text-sm text-softgray hover:text-warmwhite transition-colors"
+                >
                   Xóa bộ lọc
                 </button>
               )}
-            </div>
-          ) : (
-            <>
-              {/* Bento featured */}
-              {bentoProduct && (
-                <div className="mb-5 h-[560px]">
-                  <ProductCard product={bentoProduct} variant="bento" />
-                </div>
-              )}
+            </GlassCard>
+          </aside>
 
-              {/* Standard 3-col grid */}
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {gridProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            </>
-          )}
+          <div className="flex-1 min-w-0">
+            {isLoading ? (
+              <LoadingSpinner label="Đang tải phụ kiện..." />
+            ) : filtered.length === 0 ? (
+              <GlassCard intensity="med" className="p-16 text-center">
+                <h3 className="mb-2 text-xl font-bold text-warmwhite">Không có phụ kiện</h3>
+                <p className="text-sm text-softgray">
+                  {hasFilters ? "Thử thay đổi bộ lọc." : "Hãy quay lại sau."}
+                </p>
+                {hasFilters && (
+                  <GlowButton variant="ghost" onClick={clearAll} className="mt-4">
+                    Xóa bộ lọc
+                  </GlowButton>
+                )}
+              </GlassCard>
+            ) : (
+              <>
+                {bentoProduct && (
+                  <div className="mb-5 h-[560px]">
+                    <ProductCard product={bentoProduct} variant="bento" />
+                  </div>
+                )}
+
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {gridProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Mobile Filter Sheet */}
       {filterOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <div
-            className="absolute inset-0 bg-charcoal/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setFilterOpen(false)}
           />
-          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto border-l border-rose/20 bg-cardtint p-6">
+          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto border-l border-white/10 bg-aurora-bg-deep/95 p-6 backdrop-blur-2xl">
             <div className="mb-6 flex items-center justify-between">
               <h3 className="font-bold text-warmwhite">Bộ lọc</h3>
               <button onClick={() => setFilterOpen(false)} className="btn-ghost p-2">
@@ -296,12 +276,9 @@ export default function Accessories() {
               </button>
             </div>
             <Sidebar />
-            <button
-              onClick={() => setFilterOpen(false)}
-              className="btn-primary mt-6 w-full"
-            >
+            <GlowButton variant="aurora" onClick={() => setFilterOpen(false)} className="mt-6 w-full justify-center">
               Áp dụng ({filtered.length})
-            </button>
+            </GlowButton>
           </div>
         </div>
       )}

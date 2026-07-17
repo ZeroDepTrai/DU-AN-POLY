@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { BlogPost, BlogPostListItem, Order, Product, User } from "../types";
+import type { BlogPost, BlogPostListItem, Order, Product, RatingSummary, LikeStatus, User } from "../types";
 
 export interface ProductMediaItem {
   id: number;
@@ -115,6 +115,24 @@ export const productsApi = {
     api.get<Product[]>(`/api/products/${id}/related`, { params: { limit } }),
   listMedia: (id: number) =>
     api.get<ProductMediaItem[]>(`/api/products/${id}/media`),
+};
+
+export const ratingsApi = {
+  get: (productId: number) =>
+    api.get<RatingSummary>(`/api/products/${productId}/ratings`),
+  upsert: (productId: number, payload: { stars: number; review?: string }) =>
+    api.post<RatingSummary>(`/api/products/${productId}/ratings`, payload),
+};
+
+export const likesApi = {
+  get: (productId: number) =>
+    api.get<LikeStatus>(`/api/products/${productId}/like`),
+  toggle: (productId: number) =>
+    api.post<LikeStatus>(`/api/products/${productId}/like`),
+};
+
+export const favoritesApi = {
+  list: () => api.get<Product[]>("/api/me/favorites"),
 };
 
 export const categoriesApi = {

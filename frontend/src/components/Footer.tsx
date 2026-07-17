@@ -1,83 +1,106 @@
 import { Link } from "react-router-dom";
+import GlassCard from "./aurora/GlassCard";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-gunmetal/40 bg-charcoal">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
-          {/* Brand */}
-          <div>
-            <Link to="/" className="mb-4 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-crimson">
+    <footer className="relative mt-16 border-t border-white/10 bg-aurora-bg-deep/40 backdrop-blur-xl">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-aurora-indigo/50 to-transparent" />
+      <div className="container-padding py-12 lg:py-16">
+        <div className="grid gap-10 lg:grid-cols-4">
+          <div className="space-y-4">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-aurora bg-aurora-gradient shadow-glow-violet">
                 <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
-              <span className="text-lg font-bold text-warmwhite">
-                Cell<span className="text-crimson">Zone</span>
+              <span className="text-xl font-bold tracking-tight">
+                <span className="aurora-text-gradient">Cell</span>
+                <span className="aurora-text-rainbow">Zone</span>
               </span>
             </Link>
-            <p className="text-sm text-steelgray leading-relaxed">
-              Redefining the standard of premium mobile technology through precision engineering and visionary design.
+            <p className="max-w-sm text-sm leading-relaxed text-softgray">
+              Trải nghiệm mua sắm thiết bị di động đẳng cấp với công nghệ Aurora — nơi công nghệ tối tân hội tụ cùng nghệ thuật thiết kế đỉnh cao.
             </p>
+            <div className="flex items-center gap-2">
+              {["facebook", "instagram", "youtube", "tiktok"].map((s) => (
+                <a
+                  key={s}
+                  href="#"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-softgray transition-all hover:border-aurora-cyan/40 hover:text-aurora-cyan"
+                  aria-label={s}
+                >
+                  <span className="text-[10px] font-bold uppercase">{s.slice(0, 2)}</span>
+                </a>
+              ))}
+            </div>
           </div>
 
-          {/* Products */}
           <div>
-            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-warmwhite">Sản phẩm</h4>
-            <ul className="space-y-3">
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-warmwhite">Khám phá</h4>
+            <ul className="space-y-2 text-sm text-softgray">
               {[
-                { label: "Smartphones", to: "/products" },
-                { label: "Accessories", to: "/accessories" },
-              ].map((item) => (
-                <li key={item.to}>
-                  <Link to={item.to} className="text-sm text-steelgray transition-colors hover:text-crimson">
-                    {item.label}
+                { to: "/products", label: "Sản phẩm" },
+                { to: "/accessories", label: "Phụ kiện cao cấp" },
+                { to: "/blog", label: "Blog công nghệ" },
+                { to: "/spin", label: "Vòng quay may mắn" },
+              ].map((l) => (
+                <li key={l.to}>
+                  <Link to={l.to} className="transition-colors hover:text-aurora-cyan">
+                    {l.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Support */}
           <div>
-            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-warmwhite">Hỗ trợ</h4>
-            <ul className="space-y-3">
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-warmwhite">Hỗ trợ</h4>
+            <ul className="space-y-2 text-sm text-softgray">
               {[
-                { label: "Support", to: "/#contact" },
-                { label: "Contact Us", to: "/#contact" },
-              ].map((item) => (
-                <li key={item.label}>
-                  <Link to={item.to} className="text-sm text-steelgray transition-colors hover:text-crimson">
-                    {item.label}
-                  </Link>
+                "Trung tâm hỗ trợ",
+                "Chính sách bảo hành",
+                "Đổi trả 7 ngày",
+                "Trả góp 0%",
+              ].map((l) => (
+                <li key={l}>
+                  <a href="#" className="transition-colors hover:text-aurora-cyan">
+                    {l}
+                  </a>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Legal */}
-          <div>
-            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-warmwhite">Pháp lý</h4>
-            <ul className="space-y-3">
-              {[
-                { label: "Privacy Policy", to: "/privacy" },
-                { label: "Terms of Service", to: "/terms" },
-              ].map((item) => (
-                <li key={item.label}>
-                  <Link to={item.to} className="text-sm text-steelgray transition-colors hover:text-crimson">
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <GlassCard intensity="med" className="p-5">
+            <h4 className="mb-2 text-sm font-semibold uppercase tracking-wider text-warmwhite">
+              Bản tin Aurora
+            </h4>
+            <p className="mb-4 text-xs text-softgray">
+              Nhận thông báo sớm nhất về sản phẩm mới và ưu đãi độc quyền.
+            </p>
+            <form
+              className="space-y-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+            >
+              <input
+                type="email"
+                placeholder="email@example.com"
+                className="aurora-input text-sm"
+                required
+              />
+              <button type="submit" className="aurora-glow-btn w-full justify-center text-sm">
+                Đăng ký
+              </button>
+            </form>
+          </GlassCard>
         </div>
 
-        <div className="mt-10 border-t border-gunmetal/40 pt-6 text-center">
-          <p className="text-sm text-steelgray">
-            &copy; 2026 CellZone Tech. All rights reserved.
-          </p>
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs text-steelgray sm:flex-row">
+          <p>© {new Date().getFullYear()} CellZone. All rights reserved.</p>
+          <p className="aurora-text-rainbow">Crafted with Aurora UI · v2.0</p>
         </div>
       </div>
     </footer>

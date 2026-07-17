@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import type { BlogPostListItem } from "../types";
+import GlassCard from "./aurora/GlassCard";
+import AuroraBadge from "./aurora/AuroraBadge";
 
 interface BlogCardProps {
   post: BlogPostListItem;
@@ -18,40 +20,43 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
     : [];
 
   return (
-    <Link
-      to={`/blog/${post.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-gunmetal/60 bg-graphite transition-all hover:border-rose/30"
-    >
-      {post.image_url && (
-        <div className={`overflow-hidden ${featured ? "aspect-[16/9]" : "aspect-video"}`}>
-          <img
-            src={post.image_url}
-            alt={post.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        </div>
-      )}
-      <div className="flex flex-1 flex-col p-5">
-        {tagList.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-1">
-            {tagList.map((t: string) => (
-              <span key={t} className="rounded-full bg-crimson/20 px-2.5 py-0.5 text-xs font-medium text-sakura">
-                {t}
-              </span>
-            ))}
+    <Link to={`/blog/${post.slug}`} className="group block">
+      <GlassCard intensity="low" hoverable className="flex h-full flex-col overflow-hidden p-0">
+        {post.image_url && (
+          <div className={`relative overflow-hidden ${featured ? "aspect-[16/9]" : "aspect-video"}`}>
+            <div className="absolute inset-0 bg-aurora-gradient opacity-0 transition-opacity group-hover:opacity-30" />
+            <img
+              src={post.image_url}
+              alt={post.title}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+            {tagList[0] && (
+              <div className="absolute left-3 top-3">
+                <AuroraBadge tone="violet" glow>{tagList[0]}</AuroraBadge>
+              </div>
+            )}
           </div>
         )}
-        <p className="text-xs font-medium text-steelgray">{formattedDate}</p>
-        <h3 className="mt-1 flex-1 text-lg font-bold text-warmwhite group-hover:text-sakura transition-colors line-clamp-3">
-          {post.title}
-        </h3>
-        <div className="mt-4 flex items-center gap-1 text-sm font-medium text-crimson group-hover:text-sakura transition-colors">
-          Đọc thêm
-          <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-          </svg>
+        <div className="flex flex-1 flex-col p-5">
+          {tagList.length > 1 && (
+            <div className="mb-2 flex flex-wrap gap-1">
+              {tagList.slice(1).map((t: string) => (
+                <AuroraBadge key={t} tone="cyan">{t}</AuroraBadge>
+              ))}
+            </div>
+          )}
+          <p className="text-xs font-medium text-steelgray">{formattedDate}</p>
+          <h3 className="mt-1 flex-1 text-lg font-bold text-warmwhite group-hover:text-aurora-cyan transition-colors line-clamp-3">
+            {post.title}
+          </h3>
+          <div className="mt-4 flex items-center gap-1 text-sm font-medium aurora-text-rainbow transition-colors">
+            Đọc thêm
+            <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </div>
         </div>
-      </div>
+      </GlassCard>
     </Link>
   );
 }

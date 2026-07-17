@@ -5,12 +5,16 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    min-height: 100%;
+  }
   body {
     margin: 0;
     min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: #1E1E1E;
+    background-color: #0B1020;
     color: #F4EFEC;
+    -webkit-font-smoothing: antialiased;
   }
 
   * {
@@ -19,22 +23,31 @@
 
   ::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #2A2024;
+    background: #0B1020;
   }
   ::-webkit-scrollbar-thumb {
-    background: #8A858A;
+    background: linear-gradient(180deg, #5B6CFF 0%, #22D3EE 100%);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #C9C4C6;
+    background: linear-gradient(180deg, #8B5CF6 0%, #34D399 100%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-crimson px-5 py-2.5 font-semibold text-white transition-colors hover:bg-raspberry active:bg-deeprose disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-crimson px-5 py-2.5 font-semibold text-white transition-all hover:bg-raspberry active:bg-deeprose disabled:opacity-50;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gunmetal bg-graphite px-5 py-2.5 font-semibold text-warmwhite transition-colors hover:border-silvergray hover:bg-gunmetal disabled:opacity-50;
@@ -66,6 +79,79 @@
   .container-padding {
     @apply mx-auto max-w-7xl px-4 sm:px-6;
   }
+
+  /* ── Aurora UI utilities ─────────────────────────────────────────────── */
+  .aurora-surface {
+    @apply relative overflow-hidden rounded-aurora border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-aurora-card;
+  }
+  .aurora-surface-hover {
+    @apply transition-all hover:border-white/20 hover:shadow-glow-soft hover:-translate-y-0.5;
+  }
+  .aurora-text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #F4EFEC 0%, #C9C4C6 35%, #F28CA6 70%, #D94A63 100%);
+  }
+  .aurora-text-rainbow {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(120deg, #5B6CFF 0%, #8B5CF6 25%, #22D3EE 55%, #34D399 80%, #F472B6 100%);
+  }
+  .aurora-divider {
+    background-image: linear-gradient(90deg, transparent, rgba(91,108,255,0.6), rgba(34,211,238,0.6), transparent);
+    height: 1px;
+  }
+  .aurora-input {
+    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-warmwhite placeholder:text-steelgray backdrop-blur-xl transition-all;
+  }
+  .aurora-input:focus {
+    @apply border-aurora-cyan/60 outline-none ring-2 ring-aurora-indigo/40;
+  }
+  .aurora-chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-warmwhite backdrop-blur-xl;
+  }
+  .aurora-chip-active {
+    background-image: linear-gradient(135deg, #5B6CFF 0%, #8B5CF6 50%, #22D3EE 100%);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 6px 20px -8px rgba(91, 108, 255, 0.7);
+  }
+  .aurora-glow-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-semibold text-white transition-all;
+    background-image: linear-gradient(135deg, #5B6CFF 0%, #8B5CF6 50%, #22D3EE 100%);
+    box-shadow: 0 10px 30px -10px rgba(91, 108, 255, 0.7), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .aurora-glow-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 36px -10px rgba(139, 92, 246, 0.8), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .aurora-glow-btn:active {
+    transform: translateY(0);
+  }
+  .rose-glow-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-semibold text-white transition-all;
+    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
+    box-shadow: 0 10px 30px -10px rgba(217, 74, 99, 0.75), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .rose-glow-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 36px -10px rgba(217, 74, 99, 0.85), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .aurora-shimmer {
+    background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2.4s linear infinite;
+  }
+  .focus-aurora:focus-visible {
+    @apply outline-none ring-2 ring-aurora-cyan/60 ring-offset-2 ring-offset-aurora-bg-deep;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(180deg, #000 65%, transparent 100%);
+            mask-image: linear-gradient(180deg, #000 65%, transparent 100%);
+  }
 }
 
 .leaflet-container {
@@ -75,12 +161,18 @@
 }
 
 .leaflet-popup-content-wrapper {
-  background: #2A2024 !important;
+  background: #131A33 !important;
   color: #F4EFEC !important;
   border-radius: 8px !important;
-  border: 1px solid #3A2F33 !important;
+  border: 1px solid rgba(91,108,255,0.4) !important;
 }
 
 .leaflet-popup-tip {
-  background: #2A2024 !important;
+  background: #131A33 !important;
+}
+
+/* Smooth out gallery zoom transitions (used by ProductDetail) */
+.gallery-zoom-layer {
+  transition: opacity 200ms ease-out;
+  will-change: transform, transform-origin, opacity;
 }

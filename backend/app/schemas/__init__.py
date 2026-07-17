@@ -52,6 +52,11 @@ class ProductResponse(BaseModel):
     stock: int
     is_active: bool = True
     media: list["ProductMediaItem"] = []
+    avg_rating: float = 0
+    rating_count: int = 0
+    like_count: int = 0
+    my_rating: int | None = None
+    liked: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -73,6 +78,9 @@ class ProductAdminSummary(BaseModel):
     stock: int
     is_active: bool = True
     media: list["ProductMediaItem"] = []
+    avg_rating: float = 0
+    rating_count: int = 0
+    like_count: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -371,3 +379,43 @@ class DriverResponse(BaseModel):
     is_active: bool
 
     model_config = {"from_attributes": True}
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Aurora: rating + like (favorites)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class RatingCreate(BaseModel):
+    stars: int = Field(ge=1, le=5)
+    review: str = Field(default="", max_length=2000)
+
+
+class RatingResponse(BaseModel):
+    id: int
+    product_id: int
+    user_id: int
+    user_name: str
+    stars: int
+    review: str
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class RatingSummary(BaseModel):
+    avg: float
+    count: int
+    my_rating: int | None = None
+
+
+class LikeStatus(BaseModel):
+    liked: bool
+    count: int
+
+
+class PaginatedRatingsResponse(BaseModel):
+    items: list[RatingResponse]
+    total: int
+    page: int
+    limit: int

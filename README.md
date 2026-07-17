@@ -9,6 +9,8 @@ Website bán điện thoại với **ReactJS** (Frontend) + **FastAPI** (Backend
 - **Theo dõi đơn hàng real-time** với bản đồ Leaflet, vẽ lộ trình theo đường thật (OSRM)
 - **Blog với Rich Text Editor** (Tiptap) cho phép chèn ảnh inline có thể resize
 - **Admin Dashboard** quản lý sản phẩm, đơn hàng, blog
+- **Aurora UI design system** — animated gradients, glassmorphism, glow trên toàn site
+- **Hệ thống đánh giá · yêu thích · favorite** (sao + like + tab Yêu thích trên Profile)
 - Đăng nhập / Đăng ký với JWT
 
 ## Công Nghệ
@@ -21,6 +23,15 @@ Website bán điện thoại với **ReactJS** (Frontend) + **FastAPI** (Backend
 | Deploy | **Vercel** (frontend), **Railway** (backend) |
 
 ## Hướng Dẫn Deploy Nhanh
+
+### Migration cơ sở dữ liệu
+
+Sau khi pull code mới (đặc biệt sau khi thêm migration mới như `004_rating_like_favorite.py`), chạy:
+
+```bash
+cd backend
+alembic upgrade head
+```
 
 ### Bước 1: Tạo GitHub Repo
 

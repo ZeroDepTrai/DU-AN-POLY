@@ -262,3 +262,61 @@ class SpinCredit(Base):
     amount: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     reason: Mapped[str] = mapped_column(String(120), default="delivered_order", nullable=False)
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Aurora: rating + like (favorites)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class ProductRating(Base):
+    """A 1..5 star rating a user gave to a product.
+
+    Unique on (product_id, user_id) so each user has exactly one rating
+    per product. Upserts rewrite ``stars`` + ``review`` and reset
+    ``created_at`` so the new value floats to the top of admin listings.
+    """
+
+    __tablename__ = "product_ratings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    stars: Mapped[int] = mapped_column(Integer, nullable=False)  # 1..5
+    review: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (
+        UniqueConstraint("product_id", "user_id", name="uq_rating_product_user"),
+    )
+
+
+class ProductLike(Base):
+    """A user "like" on a product. Doubles as a favorite row.
+
+    A like row also constitutes the favorite: the user's favorites list
+    is the union of ``ProductLike`` rows where ``user_id = me``.
+    """
+
+    __tablename__ = "product_likes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (
+        UniqueConstraint("product_id", "user_id", name="uq_like_product_user"),
+    )

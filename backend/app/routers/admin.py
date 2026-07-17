@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.config import settings
 from app.database import get_db
 from app.deps import require_admin
-from app.models import AdminEmail, Order, OrderItem, Product, ProductMedia, User
+from app.models import AdminEmail, Order, OrderItem, Product, ProductLike, ProductMedia, ProductRating, User
 from app.schemas import (
     AdminEmailCreate,
     AdminEmailResponse,
@@ -23,6 +23,7 @@ from app.schemas import (
 )
 from app.services.orders import order_to_response
 from app.websocket import manager
+from app.routers.products import _attach_media, _attach_rating_like
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -92,6 +93,7 @@ def admin_list_products(db: Session = Depends(get_db), _: User = Depends(require
     the response so the admin Products tab doesn't ship multi-MB text
     payloads for fields the table never displays."""
     rows = db.query(Product).order_by(Product.id.desc()).all()
+    _attach_rating_like(rows, db, None)
     return rows
 
 
@@ -115,6 +117,7 @@ def admin_get_product(product_id: int, db: Session = Depends(get_db), _: User = 
         .all()
     )
     product.media = media_rows  # type: ignore[attr-defined]
+    _attach_rating_like([product], db, None)
     return product
 
 
