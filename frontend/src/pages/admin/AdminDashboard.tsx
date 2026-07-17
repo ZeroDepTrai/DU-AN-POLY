@@ -13,8 +13,6 @@ import AdminRatings from "./AdminRatings";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import AdminMapPicker from "../../components/AdminMapPicker";
 import RichTextEditor from "../../components/RichTextEditor";
-import GlassCard from "../../components/aurora/GlassCard";
-import AuroraBadge from "../../components/aurora/AuroraBadge";
 import type { Order, OrderStatus, Product } from "../../types";
 
 type Tab = "dashboard" | "products" | "orders" | "blog" | "media" | "coupons" | "spin" | "settings" | "ratings";
@@ -22,7 +20,7 @@ type Tab = "dashboard" | "products" | "orders" | "blog" | "media" | "coupons" | 
 const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   {
     id: "dashboard",
-    label: "Dashboard",
+    label: "T?ng quan",
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
@@ -67,7 +65,7 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   },
   {
     id: "coupons",
-    label: "Coupon",
+    label: "Mã gi?m giá",
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h6m-6 4h10M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
@@ -113,6 +111,28 @@ const ORDER_STATUSES: { value: OrderStatus; label: string }[] = [
   { value: "delivered", label: "?ã giao" },
 ];
 
+const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  pending: "Ch? xác nh?n",
+  processing: "?ang x? lý",
+  shipped: "?ã xu?t kho",
+  in_transit: "?ang giao",
+  delivered: "?ã giao",
+  cancelled: "?ã h?y",
+};
+
+function statusBadgeClass(status: OrderStatus): string {
+  switch (status) {
+    case "delivered":
+      return "admin-badge-success";
+    case "pending":
+      return "admin-badge-warning";
+    case "cancelled":
+      return "admin-badge-danger";
+    default:
+      return "admin-badge-info";
+  }
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
 
@@ -138,7 +158,7 @@ export default function AdminDashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </div>
-          <a href="/" className="font-extrabold aurora-text-gradient">CellZone</a>
+          <a href="/" className="font-extrabold title-gradient">CellZone</a>
           <span className="ml-auto rounded-full bg-crimson/20 px-2 py-0.5 text-xs font-semibold text-crimson">Admin</span>
         </div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
@@ -149,7 +169,7 @@ export default function AdminDashboard() {
               className={`admin-nav-item ${activeTab === tab.id ? "admin-nav-item-active" : "admin-nav-item-inactive"}`}
             >
               {tab.icon}
-              {tab.label}
+              <span>{tab.label}</span>
             </button>
           ))}
         </nav>
@@ -158,22 +178,22 @@ export default function AdminDashboard() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile top tabs */}
-        <div className="flex gap-1 overflow-x-auto border-b border-gunmetal/50 bg-charcoal/80 backdrop-blur-xl/80 p-2 md:hidden">
+        <div className="flex gap-1 overflow-x-auto border-b border-gunmetal/50 bg-charcoal/80 backdrop-blur-xl p-2 md:hidden">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${activeTab === tab.id ? "bg-crimson text-white" : "text-softgray hover:bg-gunmetal/50"}`}
+              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${activeTab === tab.id ? "bg-rose-button text-white" : "text-softgray hover:bg-gunmetal/50"}`}
             >
               {tab.icon}
-              {tab.label}
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
 
         <main className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
-            <LoadingSpinner label="?ang t?i dashboard..." />
+            <LoadingSpinner label="?ang t?i b?ng ?i?u khi?n..." />
           ) : (
             <>
               {activeTab === "dashboard" && <DashboardTab products={products} orders={orders} />}
@@ -210,10 +230,10 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
   return (
     <div>
       <div className="mb-6">
-        <AuroraBadge tone="rose" glow className="mb-2">
-          CellZone Admin Dashboard
-        </AuroraBadge>
-        <h1 className="aurora-text-gradient text-2xl font-extrabold md:text-3xl">Xin chào, Admin</h1>
+        <span className="mb-2 inline-flex items-center gap-1 rounded-full border border-crimson/30 bg-crimson/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-crimson">
+          CellZone Admin
+        </span>
+        <h1 className="title-gradient text-2xl font-extrabold md:text-3xl">Xin chào, Admin</h1>
         <p className="mt-1 text-sm text-softgray">?ây là b?ng ?i?u khi?n c?a CellZone</p>
       </div>
 
@@ -266,7 +286,7 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
       </div>
 
       {lowStock.length > 0 && (
-        <GlassCard intensity="med" className="mb-8 border-crimson/30 p-5">
+        <div className="admin-form-card mb-8 border-crimson/30">
           <h2 className="mb-3 flex items-center gap-2 font-bold text-crimson">
             <span className="text-xl">?</span> C?nh báo t?n kho th?p
           </h2>
@@ -281,13 +301,13 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
               </div>
             ))}
           </div>
-        </GlassCard>
+        </div>
       )}
 
-      <GlassCard intensity="med" className="overflow-hidden p-0">
+      <div className="admin-form-card overflow-hidden p-0">
         <div className="flex items-center justify-between border-b border-gunmetal/30 px-5 py-4">
-          <h2 className="font-bold text-warmwhite">??n hàng g?n ?ây</h2>
-          <span className="text-sm text-softgray">{orders.length} ??n hàng</span>
+          <h2 className="admin-section-title">??n hàng g?n ?ây</h2>
+          <span className="admin-section-sub">{orders.length} ??n hàng</span>
         </div>
         {recentOrders.length === 0 ? (
           <div className="p-8 text-center text-softgray">Ch?a có ??n hàng nào.</div>
@@ -304,15 +324,15 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
             <tbody>
               {recentOrders.map((order) => (
                 <tr key={order.id} className="admin-table-row">
-                  <td className="px-5 py-3 font-mono font-medium aurora-text-gradient">{order.tracking_code}</td>
+                  <td className="px-5 py-3 font-mono font-medium title-gradient">{order.tracking_code}</td>
                   <td className="px-5 py-3">
-                    <AuroraBadge tone={order.status === "delivered" ? "mint" : order.status === "pending" ? "amber" : "cyan"}>
-                      {order.status.replace("_", " ")}
-                    </AuroraBadge>
+                    <span className={`admin-badge ${statusBadgeClass(order.status)}`}>
+                      {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                    </span>
                   </td>
                   <td className="px-5 py-3 max-w-xs truncate text-softgray">{order.delivery_address}</td>
                   <td className="px-5 py-3">
-                    <Link to={`/track/${order.tracking_code}`} className="text-sm aurora-text-rainbow hover:text-crimson transition-colors">
+                    <Link to={`/track/${order.tracking_code}`} className="admin-link">
                       Theo dõi ?
                     </Link>
                   </td>
@@ -321,7 +341,7 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
             </tbody>
           </table>
         )}
-      </GlassCard>
+      </div>
     </div>
   );
 }
@@ -343,24 +363,14 @@ const KPI_TONE: Record<string, { gradient: string; iconBg: string; text: string 
     text: "text-gold",
   },
   warning: {
-    gradient: "from-amber-500 to-amber-600",
-    iconBg: "bg-amber-500/20 text-amber-400",
-    text: "text-amber-400",
+    gradient: "from-amber to-amber",
+    iconBg: "bg-amber/20 text-amber",
+    text: "text-amber",
   },
   mint: {
-    gradient: "from-emerald-500 to-teal-500",
-    iconBg: "bg-emerald-500/20 text-emerald-400",
-    text: "text-emerald-400",
-  },
-  violet: {
-    gradient: "from-purple-500 to-pink-500",
-    iconBg: "bg-purple-500/20 text-purple-400",
-    text: "text-purple-400",
-  },
-  amber: {
-    gradient: "from-amber-400 to-amber-500",
-    iconBg: "bg-amber-500/20 text-amber-200",
-    text: "text-amber-200",
+    gradient: "from-emerald to-emerald",
+    iconBg: "bg-emerald/20 text-emerald",
+    text: "text-emerald",
   },
 };
 
@@ -393,8 +403,6 @@ function KpiTile({
 
 // -- Products Tab ------------------------------------------
 
-// Phone / general-purpose tag presets
-// Shared chip button used everywhere in the products tab.
 function ChipButton({
   tag,
   label,
@@ -410,7 +418,7 @@ function ChipButton({
     <button
       type="button"
       onClick={() => onToggle(tag)}
-      className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${selected ? "bg-crimson text-white" : "border border-gunmetal/50 bg-cardoverlay backdrop-blur-xl text-softgray hover:border-crimson/50 hover:text-warmwhite"}`}
+      className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${selected ? "bg-rose-button text-white shadow-md" : "border border-gunmetal/50 bg-cardoverlay backdrop-blur-xl text-softgray hover:border-crimson/50 hover:text-warmwhite"}`}
     >
       {label ?? tag}
     </button>
@@ -517,7 +525,7 @@ function ProductsTab({ products }: { products: Product[] }) {
 
   const quickMutation = useMutation({
     mutationFn: async () => {
-      if (!quickImage) throw new Error("Hình ?nh b?t bu?c");
+      if (!quickImage) throw new Error("Hình ?nh là b?t bu?c");
       const fd = new FormData();
       fd.append("name", quickForm.name);
       fd.append("price", quickForm.price);
@@ -705,9 +713,8 @@ function ProductsTab({ products }: { products: Product[] }) {
 
   return (
     <div>
-      {/* Header + Search */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-extrabold text-warmwhite">Qu?n lý s?n ph?m</h1>
+        <h1 className="admin-heading">Qu?n lý s?n ph?m</h1>
         <input
           type="search"
           value={search}
@@ -717,7 +724,6 @@ function ProductsTab({ products }: { products: Product[] }) {
         />
       </div>
 
-      {/* Tag presets */}
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="self-center text-xs font-semibold uppercase tracking-wider text-softgray">S?n ph?m</span>
@@ -805,27 +811,25 @@ function ProductsTab({ products }: { products: Product[] }) {
         </div>
       </div>
 
-      {/* Form tabs */}
       <div className="mb-4 flex gap-1 rounded-xl bg-cardoverlay p-1 border border-gunmetal/30 w-fit">
         <button
           onClick={() => { setFormTab("quick"); setEditing(null); setError(""); }}
-          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${formTab === "quick" ? "bg-crimson text-white" : "text-softgray hover:text-warmwhite"}`}
+          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${formTab === "quick" ? "bg-rose-button text-white" : "text-softgray hover:text-warmwhite"}`}
         >
           Thêm nhanh
         </button>
         <button
           onClick={() => { setFormTab("full"); setEditing(null); setError(""); }}
-          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${formTab === "full" ? "bg-crimson text-white" : "text-softgray hover:text-warmwhite"}`}
+          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${formTab === "full" ? "bg-rose-button text-white" : "text-softgray hover:text-warmwhite"}`}
         >
           Thêm ??y ??
         </button>
       </div>
 
-      {/* Quick add form */}
       {formTab === "quick" && (
         <form
           onSubmit={(e) => { e.preventDefault(); quickMutation.mutate(); }}
-          className="mb-6 space-y-4 rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-5"
+          className="admin-form-card mb-6 space-y-4"
         >
           <h3 className="text-base font-bold text-crimson">Thêm s?n ph?m nhanh</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -870,18 +874,17 @@ function ProductsTab({ products }: { products: Product[] }) {
               )}
             </div>
           </div>
-          {error && <p className="text-sm text-rose-400">{error}</p>}
+          {error && <p className="text-sm text-crimson">{error}</p>}
           <button type="submit" disabled={quickMutation.isPending} className="btn-primary">
             {quickMutation.isPending ? "?ang thêm..." : "Thêm s?n ph?m"}
           </button>
         </form>
       )}
 
-      {/* Full add/edit form */}
       {formTab === "full" && (
         <form
           onSubmit={(e) => { e.preventDefault(); fullMutation.mutate(); }}
-          className="mb-6 space-y-6 rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-5"
+          className="admin-form-card mb-6 space-y-6"
         >
           <h3 className="text-base font-bold text-warmwhite flex items-center gap-2">
             {editing ? `S?a: ${editing.name}` : "Thêm s?n ph?m ??y ??"}
@@ -895,7 +898,7 @@ function ProductsTab({ products }: { products: Product[] }) {
               </span>
             )}
             {editing && editQuery.isError && (
-              <span className="text-xs font-normal text-crimson">?ã Không t?i ???c mô t?/thông s?. V?n có th? l?u.</span>
+              <span className="text-xs font-normal text-crimson">? Không t?i ???c mô t?/thông s?. V?n có th? l?u.</span>
             )}
           </h3>
 
@@ -1019,13 +1022,12 @@ function ProductsTab({ products }: { products: Product[] }) {
         </form>
       )}
 
-      {/* Products table */}
-      <div className="rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl overflow-hidden">
+      <div className="admin-form-card overflow-hidden p-0">
         <div className="border-b border-gunmetal/30 px-4 py-3">
-          <span className="text-sm text-softgray">{filtered.length} s?n ph?m</span>
+          <span className="admin-section-sub">{filtered.length} s?n ph?m</span>
         </div>
         {(info || deleteMutation.isError || error) && (
-          <div className={`mx-4 mt-3 rounded-lg border p-3 text-sm ${deleteMutation.isError || error ? "border-crimson/30 bg-crimson/10 text-crimson" : "border-emerald-400/30 bg-emerald-500/10 text-emerald-400"}`}>
+          <div className={`mx-4 mt-3 rounded-lg border p-3 text-sm ${deleteMutation.isError || error ? "border-crimson/30 bg-crimson/10 text-crimson" : "border-emerald/30 bg-emerald/10 text-emerald"}`}>
             {deleteMutation.isError || error ? error || "Xóa th?t b?i" : info}
             <button
               type="button"
@@ -1077,11 +1079,11 @@ function ProductsTab({ products }: { products: Product[] }) {
                       <div className="flex gap-3">
                         <button
                           onClick={() => startEdit(p)}
-                          className="text-sm text-crimson hover:text-blushlight transition-colors">S?a</button>
+                          className="admin-link">S?a</button>
                         <button
                           onClick={() => handleDelete(p)}
                           disabled={deleteMutation.isPending}
-                          className="text-sm text-blushlight hover:text-rose transition-colors disabled:opacity-50">
+                          className="admin-link-danger disabled:opacity-50">
                           {deleteMutation.isPending && deleteMutation.variables === p.id ? "?ang xóa..." : "Xóa"}
                         </button>
                       </div>
@@ -1127,7 +1129,7 @@ function OrdersTab({ orders }: { orders: Order[] }) {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold text-warmwhite">Qu?n lý ??n hàng</h1>
+        <h1 className="admin-heading">Qu?n lý ??n hàng</h1>
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="input-field w-48">
           <option value="">T?t c? tr?ng thái</option>
           {ORDER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -1135,9 +1137,9 @@ function OrdersTab({ orders }: { orders: Order[] }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3 rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl overflow-hidden">
+        <div className="lg:col-span-3 admin-form-card overflow-hidden p-0">
           <div className="border-b border-gunmetal/30 px-4 py-3">
-            <span className="text-sm text-softgray">{filtered.length} ??n hàng</span>
+            <span className="admin-section-sub">{filtered.length} ??n hàng</span>
           </div>
           {filtered.length === 0 ? (
             <div className="p-8 text-center text-softgray">Ch?a có ??n hàng nào.</div>
@@ -1160,13 +1162,15 @@ function OrdersTab({ orders }: { orders: Order[] }) {
                   >
                     <td className="px-4 py-3 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
                     <td className="px-4 py-3">
-                      <span className="admin-badge admin-badge-info">{order.status.replace("_", " ")}</span>
+                      <span className={`admin-badge ${statusBadgeClass(order.status)}`}>
+                        {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                      </span>
                     </td>
                     <td className="px-4 py-3 max-w-xs truncate text-softgray">{order.delivery_address}</td>
                     <td className="px-4 py-3">
                       <Link to={`/track/${order.tracking_code}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-crimson hover:text-blushlight transition-colors">Theo dõi ?</Link>
+                        className="admin-link">Theo dõi ?</Link>
                     </td>
                   </tr>
                 ))}
@@ -1175,8 +1179,8 @@ function OrdersTab({ orders }: { orders: Order[] }) {
           )}
         </div>
 
-        <div className="lg:col-span-2 rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-5 space-y-4">
-          <h2 className="font-bold text-warmwhite">C?p nh?t v? trí giao hàng</h2>
+        <div className="lg:col-span-2 admin-form-card space-y-4">
+          <h2 className="admin-section-title">C?p nh?t v? trí giao hàng</h2>
           {selectedOrder ? (
             <>
               <div className="rounded-lg border border-gunmetal/30 bg-gunmetal/40 p-3 text-sm">
@@ -1203,7 +1207,7 @@ function OrdersTab({ orders }: { orders: Order[] }) {
                 </select>
               </div>
               {success && (
-                <div className="flex items-center gap-2 rounded-lg border border-crimson/30 bg-crimson/10 p-3 text-sm text-crimson">
+                <div className="flex items-center gap-2 rounded-lg border border-emerald/30 bg-emerald/10 p-3 text-sm text-emerald">
                   <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
@@ -1301,9 +1305,9 @@ function BlogTab() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold text-warmwhite">Qu?n lý Blog</h1>
+      <h1 className="admin-heading mb-6">Qu?n lý Blog</h1>
 
-      <div className="mb-6 space-y-4 rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-5">
+      <div className="admin-form-card mb-6 space-y-4">
         <h2 className="text-base font-bold text-warmwhite">
           {editing ? `S?a bài: ${editing.title}` : "Vi?t bài m?i"}
         </h2>
@@ -1372,9 +1376,9 @@ function BlogTab() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl overflow-hidden">
+      <div className="admin-form-card overflow-hidden p-0">
         <div className="border-b border-gunmetal/30 px-4 py-3">
-          <span className="text-sm text-softgray">{posts.length} bài vi?t</span>
+          <span className="admin-section-sub">{posts.length} bài vi?t</span>
         </div>
         {posts.length === 0 ? (
           <div className="p-8 text-center text-softgray">Ch?a có bài vi?t nào.</div>
@@ -1416,9 +1420,9 @@ function BlogTab() {
                           setTagChips(postTags);
                           setImage(null); setCoverPreview(null);
                         }}
-                          className="text-sm text-crimson hover:text-blushlight transition-colors">S?a</button>
+                          className="admin-link">S?a</button>
                         <button onClick={() => { if (confirm(`Xóa "${post.title}"?`)) deleteMutation.mutate(post.id); }}
-                          className="text-sm text-blushlight hover:text-rose transition-colors">Xóa</button>
+                          className="admin-link-danger">Xóa</button>
                       </div>
                     </td>
                   </tr>
@@ -1467,10 +1471,10 @@ function SettingsTab() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Cài ??t</h1>
-      <p className="mb-6 text-sm text-softgray">Qu?n lý email nh?n thông báo ??n hàng</p>
+      <h1 className="admin-heading mb-2">Cài ??t</h1>
+      <p className="admin-section-sub mb-6">Qu?n lý email nh?n thông báo ??n hàng</p>
 
-      <div className="rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-6">
+      <div className="admin-form-card p-6">
         <h2 className="mb-4 text-base font-semibold text-warmwhite">Email nh?n thông báo ??n hàng</h2>
 
         {emails.length === 0 ? (
@@ -1501,7 +1505,7 @@ function SettingsTab() {
         </form>
 
         {addError && <p className="mt-2 text-sm text-crimson">{addError}</p>}
-        {addSuccess && <p className="mt-2 text-sm text-crimson">{addSuccess}</p>}
+        {addSuccess && <p className="mt-2 text-sm text-emerald">{addSuccess}</p>}
       </div>
     </div>
   );
@@ -1520,12 +1524,12 @@ function MediaTab({ products }: { products: Product[] }) {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Hình ?nh & Video s?n ph?m</h1>
-      <p className="mb-6 text-sm text-softgray">
+      <h1 className="admin-heading mb-2">Hình ?nh & Video s?n ph?m</h1>
+      <p className="admin-section-sub mb-6">
         Ch?n m?t s?n ph?m ?? xem và qu?n lý gallery (?nh + video). ?nh ??u tiên (cover) s? ???c dùng làm thumbnail s?n ph?m trên toàn trang.
       </p>
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <div className="rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-4">
+        <div className="admin-form-card p-4">
           <input
             type="search"
             value={filter}
@@ -1558,7 +1562,7 @@ function MediaTab({ products }: { products: Product[] }) {
           {target ? (
             <ProductGalleryEditor product={target} />
           ) : (
-            <div className="rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-10 text-center text-softgray">
+            <div className="admin-form-card p-10 text-center text-softgray">
               Ch?n m?t s?n ph?m bên trái ?? b?t ??u.
             </div>
           )}
@@ -1612,7 +1616,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
   };
 
   return (
-    <div className="rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-5">
+    <div className="admin-form-card p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-warmwhite">{product.name}</h2>
@@ -1674,7 +1678,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
                 {!m.is_cover && (
                   <button onClick={() => setCover(m)} className="rounded-lg bg-crimson px-2 py-1 text-[10px] font-semibold text-white hover:bg-blush">??t làm cover</button>
                 )}
-                <button onClick={() => deleteMedia(m)} className="ml-auto rounded-lg bg-blushlight px-2 py-1 text-[10px] font-semibold text-white hover:bg-rose">Xóa</button>
+                <button onClick={() => deleteMedia(m)} className="ml-auto rounded-lg bg-blushlight px-2 py-1 text-[10px] font-semibold text-white hover:bg-blush">Xóa</button>
               </div>
             </div>
           ))}
@@ -1771,10 +1775,10 @@ function CouponsTab() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Qu?n lý mã gi?m giá (Coupon)</h1>
-      <p className="mb-6 text-sm text-softgray">T?o và qu?n lý các mã gi?m giá áp d?ng khi thanh toán.</p>
+      <h1 className="admin-heading mb-2">Qu?n lý mã gi?m giá (Coupon)</h1>
+      <p className="admin-section-sub mb-6">T?o và qu?n lý các mã gi?m giá áp d?ng khi thanh toán.</p>
 
-      <div className="mb-6 rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-5 space-y-3">
+      <div className="admin-form-card mb-6 space-y-3">
         <h2 className="text-base font-bold text-warmwhite">{editing ? `S?a: ${editing.code}` : "T?o coupon m?i"}</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
@@ -1789,7 +1793,7 @@ function CouponsTab() {
           </div>
           <div>
             <label className="mb-1 block text-xs text-softgray">Mô t?</label>
-            <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="VD: Gi?m 10% cho ??n >=3 tri?u" className="input-field" />
+            <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="VD: Gi?m 10% cho ??n t? 3 tri?u" className="input-field" />
           </div>
           <div>
             <label className="mb-1 block text-xs text-softgray">Lo?i gi?m giá</label>
@@ -1845,9 +1849,9 @@ function CouponsTab() {
       {isLoading ? (
         <LoadingSpinner label="?ang t?i coupon..." />
       ) : coupons.length === 0 ? (
-        <div className="rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-8 text-center text-sm text-softgray">Ch?a có coupon nào.</div>
+        <div className="admin-form-card p-8 text-center text-sm text-softgray">Ch?a có coupon nào.</div>
       ) : (
-        <div className="rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl overflow-hidden">
+        <div className="admin-form-card overflow-hidden p-0">
           <table className="admin-table">
             <thead className="admin-table-header">
               <tr>
@@ -1879,8 +1883,8 @@ function CouponsTab() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <button onClick={() => startEdit(c)} className="text-sm text-crimson hover:text-blushlight">S?a</button>
-                      <button onClick={() => { if (confirm(`Xóa mã ${c.code}?`)) deleteMutation.mutate(c.id); }} className="text-sm text-blushlight hover:text-rose">Xóa</button>
+                      <button onClick={() => startEdit(c)} className="admin-link">S?a</button>
+                      <button onClick={() => { if (confirm(`Xóa mã ${c.code}?`)) deleteMutation.mutate(c.id); }} className="admin-link-danger">Xóa</button>
                     </div>
                   </td>
                 </tr>
