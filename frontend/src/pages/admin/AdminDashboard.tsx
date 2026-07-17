@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,12 +9,15 @@ import {
 } from "../../api/client";
 import type { Coupon, ProductMediaItem } from "../../api/client";
 import SpinTab from "./SpinTab";
+import AdminRatings from "./AdminRatings";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import AdminMapPicker from "../../components/AdminMapPicker";
 import RichTextEditor from "../../components/RichTextEditor";
+import GlassCard from "../../components/aurora/GlassCard";
+import AuroraBadge from "../../components/aurora/AuroraBadge";
 import type { Order, OrderStatus, Product } from "../../types";
 
-type Tab = "dashboard" | "products" | "orders" | "blog" | "media" | "coupons" | "spin" | "settings";
+type Tab = "dashboard" | "products" | "orders" | "blog" | "media" | "coupons" | "spin" | "settings" | "ratings";
 
 const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   {
@@ -28,7 +31,7 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   },
   {
     id: "products",
-    label: "Sản phẩm",
+    label: "S?n ph?m",
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -37,7 +40,7 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   },
   {
     id: "media",
-    label: "Hình ảnh / Video",
+    label: "H?nh ?nh / Video",
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 10l-4 4m0-4l4 4M3 17l5-5 7 7" />
@@ -46,7 +49,7 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   },
   {
     id: "orders",
-    label: "Đơn hàng",
+    label: "?on h?ng",
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -73,7 +76,7 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   },
   {
     id: "spin",
-    label: "Vòng quay",
+    label: "V?ng quay",
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <circle cx="12" cy="12" r="9" />
@@ -82,8 +85,17 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
     ),
   },
   {
+    id: "ratings",
+    label: "??nh gi?",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+      </svg>
+    ),
+  },
+  {
     id: "settings",
-    label: "Cài đặt",
+    label: "C?i d?t",
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -94,11 +106,11 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
 ];
 
 const ORDER_STATUSES: { value: OrderStatus; label: string }[] = [
-  { value: "pending", label: "Chờ xác nhận" },
-  { value: "processing", label: "Đang xử lý" },
-  { value: "shipped", label: "Đã xuất kho" },
-  { value: "in_transit", label: "Đang giao hàng" },
-  { value: "delivered", label: "Đã giao" },
+  { value: "pending", label: "Ch? x?c nh?n" },
+  { value: "processing", label: "?ang x? l?" },
+  { value: "shipped", label: "?? xu?t kho" },
+  { value: "in_transit", label: "?ang giao h?ng" },
+  { value: "delivered", label: "?? giao" },
 ];
 
 export default function AdminDashboard() {
@@ -117,27 +129,27 @@ export default function AdminDashboard() {
   const isLoading = loadingProducts || loadingOrders;
 
   return (
-    <div className="flex min-h-screen bg-charcoal">
+    <div className="flex min-h-screen bg-aurora-bg-deep">
       {/* Sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-gunmetal/40 bg-graphite md:flex">
-        <div className="flex h-16 items-center gap-2 border-b border-gunmetal/40 px-4">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-white/10 bg-graphite/80 backdrop-blur-xl md:flex">
+        <div className="flex h-16 items-center gap-2 border-b border-white/10 px-4">
           <a href="/" className="flex h-8 w-8 items-center justify-center rounded-lg bg-crimson">
             <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </a>
-          <a href="/" className="font-bold text-warmwhite hover:text-sakura transition-colors">CellZone</a>
-          <span className="ml-auto rounded-full bg-crimson/10 px-2 py-0.5 text-xs font-semibold text-crimson">Admin</span>
+          <a href="/" className="font-extrabold aurora-text-gradient">CellZone</a>
+          <span className="ml-auto rounded-full bg-crimson\/10 px-2 py-0.5 text-xs font-semibold text-crimson">Admin</span>
         </div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? "bg-crimson/10 text-crimson"
-                  : "text-steelgray hover:bg-gunmetal/40 hover:text-warmwhite"
+                  ? "aurora-shimmer border border-white/10 text-warmwhite shadow-glow-soft"
+                  : "text-softgray hover:bg-white/5 hover:text-warmwhite"
               }`}
             >
               {tab.icon}
@@ -150,7 +162,7 @@ export default function AdminDashboard() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile top tabs */}
-        <div className="flex gap-1 overflow-x-auto border-b border-gunmetal/40 bg-graphite p-2 md:hidden">
+        <div className="flex gap-1 overflow-x-auto border-b border-white/10 bg-graphite\/80 backdrop-blur-xl/80 p-2 backdrop-blur-xl md:hidden">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -158,7 +170,7 @@ export default function AdminDashboard() {
               className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                 activeTab === tab.id
                   ? "bg-crimson text-white"
-                  : "text-steelgray hover:bg-gunmetal/40"
+                  : "text-softgray hover:bg-white/5"
               }`}
             >
               {tab.icon}
@@ -169,7 +181,7 @@ export default function AdminDashboard() {
 
         <main className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
-            <LoadingSpinner label="Đang tải dashboard..." />
+            <LoadingSpinner label="?ang t?i dashboard..." />
           ) : (
             <>
               {activeTab === "dashboard" && <DashboardTab products={products} orders={orders} />}
@@ -179,6 +191,7 @@ export default function AdminDashboard() {
               {activeTab === "media" && <MediaTab products={products} />}
               {activeTab === "coupons" && <CouponsTab />}
               {activeTab === "spin" && <SpinTab />}
+              {activeTab === "ratings" && <AdminRatings />}
               {activeTab === "settings" && <SettingsTab />}
             </>
           )}
@@ -188,85 +201,127 @@ export default function AdminDashboard() {
   );
 }
 
-// ── Dashboard Tab ────────────────────────────────────────────
+// -- Dashboard Tab --------------------------------------------
 function DashboardTab({ products, orders }: { products: Product[]; orders: Order[] }) {
   const lowStock = products.filter((p) => p.stock < 5);
   const totalRevenue = orders.reduce((s, o) => s + o.items.reduce((acc, item) => acc + item.unit_price * item.quantity, 0), 0);
   const recentOrders = [...orders].sort((a, b) => b.id - a.id).slice(0, 8);
 
+  const totalLikes = products.reduce((s, p) => s + (p.like_count ?? 0), 0);
+  const totalRatings = products.reduce((s, p) => s + (p.rating_count ?? 0), 0);
+  const ratedProducts = products.filter((p) => (p.rating_count ?? 0) > 0);
+  const avgRating =
+    ratedProducts.length === 0
+      ? 0
+      : ratedProducts.reduce((s, p) => s + (p.avg_rating ?? 0), 0) / ratedProducts.length;
+
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-warmwhite">Xin chào, Admin</h1>
-        <p className="mt-1 text-sm text-steelgray">Đây là bảng điều khiển của CellZone</p>
+        <AuroraBadge tone="violet" glow className="mb-2">
+          Aurora UI ? Admin Dashboard
+        </AuroraBadge>
+        <h1 className="aurora-text-gradient text-2xl font-extrabold md:text-3xl">Xin ch?o, Admin</h1>
+        <p className="mt-1 text-sm text-softgray">??y l? b?ng di?u khi?n c?a CellZone</p>
       </div>
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Tổng sản phẩm", value: products.length, icon: "📱", color: "crimson" },
-          { label: "Tổng đơn hàng", value: orders.length, icon: "📋", color: "sakura" },
-          { label: "Tổng doanh thu", value: new Intl.NumberFormat("vi-VN").format(totalRevenue) + " VND", icon: "💰", color: "gold" },
-          { label: "Cảnh báo tồn kho", value: lowStock.length, icon: "⚠️", color: "deeprose" },
-        ].map((stat) => (
-          <div key={stat.label} className="rounded-2xl border border-gunmetal/60 bg-graphite p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm text-steelgray">{stat.label}</p>
-              <span className="text-xl">{stat.icon}</span>
-            </div>
-            <p className="text-2xl font-extrabold text-warmwhite">{stat.value}</p>
-          </div>
-        ))}
+        <KpiTile
+          label="T?ng s?n ph?m"
+          value={String(products.length)}
+          tone="indigo"
+          icon="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+        />
+        <KpiTile
+          label="T?ng don h?ng"
+          value={String(orders.length)}
+          tone="cyan"
+          icon="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+        />
+        <KpiTile
+          label="T?ng doanh thu"
+          value={new Intl.NumberFormat("vi-VN").format(totalRevenue) + " ?"}
+          tone="mint"
+          icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+        <KpiTile
+          label="C?nh b?o t?n kho"
+          value={String(lowStock.length)}
+          tone="rose"
+          icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+        />
+      </div>
+
+      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        <KpiTile
+          label="T?ng lu?t th?ch"
+          value={String(totalLikes)}
+          tone="rose"
+          icon="M12 21s-7.5-4.6-9.7-9.4C.6 7.5 3.4 4 7 4c2 0 3.6 1.1 5 2.8C13.4 5.1 15 4 17 4c3.6 0 6.4 3.5 4.7 7.6C19.5 16.4 12 21 12 21z"
+        />
+        <KpiTile
+          label="T?ng d?nh gi?"
+          value={String(totalRatings)}
+          tone="amber"
+          icon="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+        />
+        <KpiTile
+          label="??nh gi? trung b?nh"
+          value={avgRating.toFixed(2)}
+          tone="violet"
+          icon="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+        />
       </div>
 
       {lowStock.length > 0 && (
-        <div className="mb-8 rounded-2xl border border-deeprose/30 bg-deeprose/10 p-5">
-          <h2 className="mb-3 flex items-center gap-2 font-bold text-deeprose">
-            ⚠️ Cảnh báo tồn kho thấp
+        <GlassCard intensity="med" className="mb-8 border-aurora-pink/30 p-5">
+          <h2 className="mb-3 flex items-center gap-2 font-bold text-aurora-pink">
+            <span className="text-xl">??</span> C?nh b?o t?n kho th?p
           </h2>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {lowStock.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 rounded-lg border border-deeprose/20 bg-charcoal p-3">
+              <div key={p.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
                 <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded-lg object-cover" />
                 <div>
                   <p className="text-sm font-medium text-warmwhite truncate max-w-[150px]">{p.name}</p>
-                  <p className="text-xs text-deeprose">Chỉ còn {p.stock} sản phẩm</p>
+                  <p className="text-xs text-aurora-pink">Ch? c?n {p.stock} s?n ph?m</p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </GlassCard>
       )}
 
-      <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
-        <div className="flex items-center justify-between border-b border-gunmetal/40 px-5 py-4">
-          <h2 className="font-bold text-warmwhite">Đơn hàng gần đây</h2>
-          <span className="text-sm text-steelgray">{orders.length} đơn hàng</span>
+      <GlassCard intensity="med" className="overflow-hidden p-0">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <h2 className="font-bold text-warmwhite">?on h?ng g?n d?y</h2>
+          <span className="text-sm text-softgray">{orders.length} don h?ng</span>
         </div>
         {recentOrders.length === 0 ? (
-          <div className="p-8 text-center text-steelgray">Chưa có đơn hàng nào.</div>
+          <div className="p-8 text-center text-softgray">Chua c? don h?ng n?o.</div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="border-b border-gunmetal/40 bg-charcoal/50">
-              <tr className="text-left text-steelgray">
-                <th className="px-5 py-3">Mã theo dõi</th>
-                <th className="px-5 py-3">Trạng thái</th>
-                <th className="px-5 py-3">Địa chỉ</th>
-                <th className="px-5 py-3">Theo dõi</th>
+            <thead className="border-b border-white/5 bg-white/[0.04]">
+              <tr className="text-left text-softgray">
+                <th className="px-5 py-3">M? theo d?i</th>
+                <th className="px-5 py-3">Tr?ng th?i</th>
+                <th className="px-5 py-3">??a ch?</th>
+                <th className="px-5 py-3">Theo d?i</th>
               </tr>
             </thead>
             <tbody>
               {recentOrders.map((order) => (
-                <tr key={order.id} className="border-t border-gunmetal/40 hover:bg-charcoal/40 transition-colors">
-                  <td className="px-5 py-3 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
+                <tr key={order.id} className="border-t border-white/5 transition-colors hover:bg-white/[0.04]">
+                  <td className="px-5 py-3 font-mono font-medium aurora-text-rainbow">{order.tracking_code}</td>
                   <td className="px-5 py-3">
-                    <span className="rounded-full bg-crimson/10 px-2.5 py-0.5 text-xs font-medium capitalize text-crimson">
+                    <AuroraBadge tone={order.status === "delivered" ? "mint" : order.status === "pending" ? "amber" : "cyan"}>
                       {order.status.replace("_", " ")}
-                    </span>
+                    </AuroraBadge>
                   </td>
-                  <td className="px-5 py-3 max-w-xs truncate text-steelgray">{order.delivery_address}</td>
+                  <td className="px-5 py-3 max-w-xs truncate text-softgray">{order.delivery_address}</td>
                   <td className="px-5 py-3">
-                    <Link to={`/track/${order.tracking_code}`} className="text-sm text-crimson hover:text-sakura transition-colors">
-                      Theo dõi →
+                    <Link to={`/track/${order.tracking_code}`} className="text-sm aurora-text-rainbow hover:text-aurora-cyan transition-colors">
+                      Theo d?i ?
                     </Link>
                   </td>
                 </tr>
@@ -274,12 +329,72 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
             </tbody>
           </table>
         )}
-      </div>
+      </GlassCard>
     </div>
   );
 }
 
-// ── Products Tab ──────────────────────────────────────────
+const KPI_TONE: Record<string, { gradient: string; iconBg: string; text: string }> = {
+  indigo: {
+    gradient: "from-aurora-indigo to-aurora-violet",
+    iconBg: "bg-aurora-indigo/20 text-[#9AA6FF]",
+    text: "text-[#9AA6FF]",
+  },
+  cyan: {
+    gradient: "from-aurora-cyan to-aurora-mint",
+    iconBg: "bg-aurora-cyan/20 text-aurora-cyan",
+    text: "text-aurora-cyan",
+  },
+  mint: {
+    gradient: "from-aurora-mint to-aurora-cyan",
+    iconBg: "bg-aurora-mint/20 text-aurora-mint",
+    text: "text-aurora-mint",
+  },
+  violet: {
+    gradient: "from-aurora-violet to-aurora-indigo",
+    iconBg: "bg-aurora-violet/20 text-aurora-violet",
+    text: "text-aurora-violet",
+  },
+  rose: {
+    gradient: "from-aurora-pink to-crimson",
+    iconBg: "bg-aurora-pink/20 text-aurora-pink",
+    text: "text-aurora-pink",
+  },
+  amber: {
+    gradient: "from-amber-400 to-amber-500",
+    iconBg: "bg-amber-500/20 text-amber-200",
+    text: "text-amber-200",
+  },
+};
+
+function KpiTile({
+  label,
+  value,
+  tone,
+  icon,
+}: {
+  label: string;
+  value: string;
+  tone: keyof typeof KPI_TONE;
+  icon: string;
+}) {
+  const t = KPI_TONE[tone] ?? KPI_TONE.indigo;
+  return (
+    <GlassCard intensity="low" hoverable className="p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-xs uppercase tracking-wider text-softgray">{label}</p>
+        <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${t.gradient} text-white shadow-glow-soft`}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+          </svg>
+        </div>
+      </div>
+      <p className={`text-2xl font-extrabold ${t.text}`}>{value}</p>
+    </GlassCard>
+  );
+}
+
+// -- Products Tab ------------------------------------------
 
 // Phone / general-purpose tag presets
 // Shared chip button used everywhere in the products tab.
@@ -302,7 +417,7 @@ function ChipButton({
       className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${
         selected
           ? "bg-crimson text-white"
-          : "border border-gunmetal/60 bg-graphite text-steelgray hover:border-silvergray hover:text-warmwhite"
+          : "border border-white\/10 bg-graphite\/80 backdrop-blur-xl text-softgray hover:border-silvergray hover:text-warmwhite"
       }`}
     >
       {label ?? tag}
@@ -315,16 +430,16 @@ const PHONE_TAG_PRESETS = [
   "Vivo", "Flagship", "Budget", "5G", "Gaming", "Featured",
 ];
 
-// Accessory category keywords — each maps onto the same keywords that the
+// Accessory category keywords ? each maps onto the same keywords that the
 // Accessories page filters by. Picking any chip also auto-toggles the
 // umbrella "accessory" tag.
 const ACCESSORY_CATEGORY_TAGS: { label: string; chips: string[] }[] = [
-  { label: "Ốp lưng",        chips: ["ốp lưng", "ốp", "case"] },
+  { label: "?p lung",        chips: ["?p lung", "?p", "case"] },
   { label: "Tai nghe",       chips: ["tai nghe", "earphone", "earbud", "airpod"] },
-  { label: "Sạc dự phòng",   chips: ["sạc dự phòng", "power bank", "powerbank"] },
-  { label: "Cáp sạc",        chips: ["cáp sạc", "cáp", "cable", "dây sạc"] },
-  { label: "Miếng dán",      chips: ["miếng dán", "cường lực", "kính"] },
-  { label: "Gậy selfie",     chips: ["gậy selfie", "gậy", "selfie"] },
+  { label: "S?c d? ph?ng",   chips: ["s?c d? ph?ng", "power bank", "powerbank"] },
+  { label: "C?p s?c",        chips: ["c?p s?c", "c?p", "cable", "d?y s?c"] },
+  { label: "Mi?ng d?n",      chips: ["mi?ng d?n", "cu?ng l?c", "k?nh"] },
+  { label: "G?y selfie",     chips: ["g?y selfie", "g?y", "selfie"] },
 ];
 
 // Accessory compatibility tokens the Accessories page filters by.
@@ -333,25 +448,25 @@ const ACCESSORY_COMPAT_TAGS = ["iPhone", "Samsung", "Xiaomi", "OPPO", "Universal
 const ACCESSORY_UMBRELLA = "accessory";
 
 const SPEC_LABELS = [
-  "Hệ điều hành",
+  "H? di?u h?nh",
   "Chipset",
-  "Bộ nhớ trong",
-  "Loại CPU",
+  "B? nh? trong",
+  "Lo?i CPU",
   "GPU",
-  "Kích thước màn hình",
-  "Công nghệ màn hình",
-  "Độ phân giải màn hình",
+  "K?ch thu?c m?n h?nh",
+  "C?ng ngh? m?n h?nh",
+  "?? ph?n gi?i m?n h?nh",
   "Camera Sau",
-  "Camera trước",
-  "Hỗ trợ mạng",
-  "Thẻ SIM",
-  "Công nghệ NFC",
-  "Thời điểm ra mắt",
+  "Camera tru?c",
+  "H? tr? m?ng",
+  "Th? SIM",
+  "C?ng ngh? NFC",
+  "Th?i di?m ra m?t",
   "Pin",
-  "Sạc",
-  "Bảo mật",
+  "S?c",
+  "B?o m?t",
   "RAM",
-  "Thẻ nhớ",
+  "Th? nh?",
 ];
 
 const EMPTY_FORM = {
@@ -366,7 +481,7 @@ const EMPTY_FORM = {
 function ProductsTab({ products }: { products: Product[] }) {
   const queryClient = useQueryClient();
 
-  // ── State ──────────────────────────────────────────────
+  // -- State ----------------------------------------------
   const [formTab, setFormTab] = useState<"quick" | "full">("quick");
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState("");
@@ -384,7 +499,7 @@ function ProductsTab({ products }: { products: Product[] }) {
   const [fullTagChips, setFullTagChips] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
 
-  // ── Spec helpers ───────────────────────────────────────
+  // -- Spec helpers ---------------------------------------
   const buildSpecsStr = (specs: Record<string, string>) =>
     SPEC_LABELS
       .map((l) => {
@@ -403,10 +518,10 @@ function ProductsTab({ products }: { products: Product[] }) {
         const pat = label.toLowerCase();
         if (
           lower.startsWith(pat + ":") ||
-          lower.startsWith(pat + " –") ||
+          lower.startsWith(pat + " ?") ||
           lower.startsWith(pat + " -")
         ) {
-          const parts = line.split(/[:–—]/);
+          const parts = line.split(/[:??]/);
           if (parts.length >= 2) {
             result[label] = parts.slice(1).join(":").trim();
           }
@@ -416,10 +531,10 @@ function ProductsTab({ products }: { products: Product[] }) {
     return result;
   };
 
-  // ── Mutations ───────────────────────────────────────────
+  // -- Mutations -------------------------------------------
   const quickMutation = useMutation({
     mutationFn: async () => {
-      if (!quickImage) throw new Error("Hình ảnh bắt buộc");
+      if (!quickImage) throw new Error("H?nh ?nh b?t bu?c");
       const fd = new FormData();
       fd.append("name", quickForm.name);
       fd.append("price", quickForm.price);
@@ -472,10 +587,10 @@ function ProductsTab({ products }: { products: Product[] }) {
       if (data?.soft_deleted) {
         setInfo(
           data.message ||
-            `Sản phẩm đã được ẩn khỏi cửa hàng (còn ${data.order_items ?? 0} đơn hàng tham chiếu — không thể xóa hoàn toàn để giữ lịch sử).`,
+            `S?n ph?m d? du?c ?n kh?i c?a h?ng (c?n ${data.order_items ?? 0} don h?ng tham chi?u ? kh?ng th? x?a ho?n to?n d? gi? l?ch s?).`,
         );
       } else {
-        setInfo("Đã xóa hoàn toàn sản phẩm khỏi database.");
+        setInfo("?? x?a ho?n to?n s?n ph?m kh?i database.");
       }
       setError("");
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
@@ -485,13 +600,13 @@ function ProductsTab({ products }: { products: Product[] }) {
       const message =
         axios.isAxiosError(err) && err.response?.data?.detail
           ? err.response.data.detail
-          : err.message || "Xóa thất bại";
-      setError(typeof message === "string" ? message : "Xóa thất bại");
+          : err.message || "X?a th?t b?i";
+      setError(typeof message === "string" ? message : "X?a th?t b?i");
       setInfo("");
     },
   });
 
-  // ── Handlers ──────────────────────────────────────────
+  // -- Handlers ------------------------------------------
   // Edit needs the FULL product (description + specifications). The
   // listProducts() endpoint deliberately drops those to keep the table
   // payload small, so we fetch them on demand here.
@@ -551,10 +666,10 @@ function ProductsTab({ products }: { products: Product[] }) {
 
   const handleDelete = async (p: Product) => {
     const ok = window.confirm(
-      `Xóa "${p.name}"?\n\n` +
-        `• Nếu sản phẩm chưa từng được đặt hàng, sẽ bị xóa hoàn toàn khỏi database.\n` +
-        `• Nếu đã có đơn hàng tham chiếu, sản phẩm sẽ được ẨN (giữ lịch sử đơn).\n\n` +
-        `Hành động này KHÔNG THỂ hoàn tác đối với xóa hoàn toàn.`,
+      `X?a "${p.name}"?\n\n` +
+        `? N?u s?n ph?m chua t?ng du?c d?t h?ng, s? b? x?a ho?n to?n kh?i database.\n` +
+        `? N?u d? c? don h?ng tham chi?u, s?n ph?m s? du?c ?N (gi? l?ch s? don).\n\n` +
+        `H?nh d?ng n?y KH?NG TH? ho?n t?c d?i v?i x?a ho?n to?n.`,
     );
     if (!ok) return;
     deleteMutation.mutate(p.id);
@@ -569,7 +684,7 @@ function ProductsTab({ products }: { products: Product[] }) {
       const { data } = await adminApi.importDocx(file);
       setFullForm((prev) => ({ ...prev, description: data.html || prev.description }));
     } catch {
-      setError("Nhập file DOCX thất bại.");
+      setError("Nh?p file DOCX th?t b?i.");
     } finally {
       setImporting(false);
       e.target.value = "";
@@ -620,22 +735,22 @@ function ProductsTab({ products }: { products: Product[] }) {
     <div>
       {/* Header + Search */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-extrabold text-warmwhite">Quản lý sản phẩm</h1>
+        <h1 className="text-2xl font-extrabold text-warmwhite">Qu?n l? s?n ph?m</h1>
         <input
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Tìm sản phẩm..."
+          placeholder="T?m s?n ph?m..."
           className="input-field w-full sm:w-64"
         />
       </div>
 
-      {/* Tag presets — phones + categories + compatibility */}
+      {/* Tag presets ? phones + categories + compatibility */}
       <div className="mb-4 space-y-3">
         {/* Phone / general chips */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="self-center text-xs font-semibold uppercase tracking-wider text-steelgray">
-            Sản phẩm
+          <span className="self-center text-xs font-semibold uppercase tracking-wider text-softgray">
+            S?n ph?m
           </span>
           {PHONE_TAG_PRESETS.map((t) => (
             <ChipButton
@@ -653,7 +768,7 @@ function ProductsTab({ products }: { products: Product[] }) {
         {/* Accessory umbrella chip (toggleable manually too) */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="self-center text-xs font-semibold uppercase tracking-wider text-rose">
-            Phụ kiện
+            Ph? ki?n
           </span>
           <ChipButton
             tag={ACCESSORY_UMBRELLA}
@@ -672,15 +787,15 @@ function ProductsTab({ products }: { products: Product[] }) {
               );
             }}
           />
-          <span className="text-[11px] text-steelgray">
-            (tự động bật khi chọn danh mục / tương thích bên dưới)
+          <span className="text-[11px] text-softgray">
+            (t? d?ng b?t khi ch?n danh m?c / tuong th?ch b?n du?i)
           </span>
         </div>
 
         {/* Accessory categories */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="self-center text-xs font-semibold uppercase tracking-wider text-steelgray">
-            · Danh mục
+          <span className="self-center text-xs font-semibold uppercase tracking-wider text-softgray">
+            ? Danh m?c
           </span>
           {ACCESSORY_CATEGORY_TAGS.flatMap((cat) =>
             cat.chips.map((c) => (
@@ -714,8 +829,8 @@ function ProductsTab({ products }: { products: Product[] }) {
 
         {/* Compatibility */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="self-center text-xs font-semibold uppercase tracking-wider text-steelgray">
-            · Tương thích
+          <span className="self-center text-xs font-semibold uppercase tracking-wider text-softgray">
+            ? Tuong th?ch
           </span>
           {ACCESSORY_COMPAT_TAGS.map((t) => {
             const lc = t.toLowerCase();
@@ -751,36 +866,36 @@ function ProductsTab({ products }: { products: Product[] }) {
       </div>
 
       {/* Form tabs */}
-      <div className="mb-4 flex gap-1 rounded-xl bg-charcoal p-1 border border-gunmetal/40 w-fit">
+      <div className="mb-4 flex gap-1 rounded-xl bg-charcoal p-1 border border-white\/10 w-fit">
         <button
           onClick={() => { setFormTab("quick"); setEditing(null); setError(""); }}
           className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${
-            formTab === "quick" ? "bg-crimson text-white" : "text-steelgray hover:text-warmwhite"
+            formTab === "quick" ? "bg-crimson text-white" : "text-softgray hover:text-warmwhite"
           }`}
         >
-          Thêm nhanh
+          Th?m nhanh
         </button>
         <button
           onClick={() => { setFormTab("full"); setEditing(null); setError(""); }}
           className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${
-            formTab === "full" ? "bg-crimson text-white" : "text-steelgray hover:text-warmwhite"
+            formTab === "full" ? "bg-crimson text-white" : "text-softgray hover:text-warmwhite"
           }`}
         >
-          Thêm đầy đủ
+          Th?m d?y d?
         </button>
       </div>
 
-      {/* ── Quick add form ── */}
+      {/* -- Quick add form -- */}
       {formTab === "quick" && (
         <form
           onSubmit={(e) => { e.preventDefault(); quickMutation.mutate(); }}
-          className="mb-6 space-y-4 rounded-2xl border border-gunmetal/60 bg-graphite p-5"
+          className="mb-6 space-y-4 rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-5"
         >
-          <h3 className="text-base font-bold text-sakura">Thêm sản phẩm nhanh</h3>
+          <h3 className="text-base font-bold text-aurora-cyan">Th?m s?n ph?m nhanh</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <input
               required
-              placeholder="Tên sản phẩm (VD: iPhone 15 Pro)"
+              placeholder="T?n s?n ph?m (VD: iPhone 15 Pro)"
               value={quickForm.name}
               onChange={(e) => setQuickForm({ ...quickForm, name: e.target.value })}
               className="input-field"
@@ -789,64 +904,64 @@ function ProductsTab({ products }: { products: Product[] }) {
               required
               type="number"
               step="1000"
-              placeholder="Giá (VND)"
+              placeholder="Gi? (VND)"
               value={quickForm.price}
               onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })}
               className="input-field"
             />
             <div>
-              <label className="mb-1 block text-xs text-steelgray">Hình ảnh sản phẩm</label>
+              <label className="mb-1 block text-xs text-softgray">H?nh ?nh s?n ph?m</label>
               <input
                 required
                 type="file"
                 accept="image/*"
                 onChange={(e) => setQuickImage(e.target.files?.[0] ?? null)}
-                className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-crimson file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+                className="text-sm text-softgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-crimson file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white"
               />
             </div>
           </div>
           {/* Selected quick tags */}
           <div>
-            <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
+            <label className="mb-1.5 block text-xs text-softgray">Nh?n d? ch?n:</label>
             <div className="flex flex-wrap gap-1.5 min-h-[32px]">
               {quickTagChips.map((t) => (
                 <span key={t} className="tag-badge flex items-center gap-1">
                   {t}
-                  <button type="button" onClick={() => removeQuickTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+                  <button type="button" onClick={() => removeQuickTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">?</button>
                 </span>
               ))}
               {quickTagChips.length === 0 && (
-                <span className="text-xs text-steelgray italic">Nhấn nhãn bên trên để chọn...</span>
+                <span className="text-xs text-softgray italic">Nh?n nh?n b?n tr?n d? ch?n...</span>
               )}
             </div>
           </div>
           {error && <p className="text-sm text-rose">{error}</p>}
           <button type="submit" disabled={quickMutation.isPending} className="btn-primary">
-            {quickMutation.isPending ? "Đang thêm..." : "Thêm sản phẩm"}
+            {quickMutation.isPending ? "?ang th?m..." : "Th?m s?n ph?m"}
           </button>
         </form>
       )}
 
-      {/* ── Full add/edit form ── */}
+      {/* -- Full add/edit form -- */}
       {formTab === "full" && (
         <form
           onSubmit={(e) => { e.preventDefault(); fullMutation.mutate(); }}
-          className="mb-6 space-y-6 rounded-2xl border border-gunmetal/60 bg-graphite p-5"
+          className="mb-6 space-y-6 rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-5"
         >
           <h3 className="text-base font-bold text-warmwhite flex items-center gap-2">
-            {editing ? `Sửa: ${editing.name}` : "Thêm sản phẩm đầy đủ"}
+            {editing ? `S?a: ${editing.name}` : "Th?m s?n ph?m d?y d?"}
             {editing && editQuery.isFetching && (
-              <span className="inline-flex items-center gap-1 text-xs font-normal text-steelgray">
+              <span className="inline-flex items-center gap-1 text-xs font-normal text-softgray">
                 <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                đang tải mô tả + thông số…
+                dang t?i m? t? + th?ng s??
               </span>
             )}
             {editing && editQuery.isError && (
-              <span className="text-xs font-normal text-deeprose">
-                — Không tải được mô tả/thông số. Vẫn có thể lưu.
+              <span className="text-xs font-normal text-aurora-pink">
+                ? Kh?ng t?i du?c m? t?/th?ng s?. V?n c? th? luu.
               </span>
             )}
           </h3>
@@ -855,7 +970,7 @@ function ProductsTab({ products }: { products: Product[] }) {
           <div className="grid gap-4 md:grid-cols-3">
             <input
               required
-              placeholder="Tên sản phẩm"
+              placeholder="T?n s?n ph?m"
               value={fullForm.name}
               onChange={(e) => setFullForm({ ...fullForm, name: e.target.value })}
               className="input-field"
@@ -864,14 +979,14 @@ function ProductsTab({ products }: { products: Product[] }) {
               required
               type="number"
               step="1000"
-              placeholder="Giá (VND)"
+              placeholder="Gi? (VND)"
               value={fullForm.price}
               onChange={(e) => setFullForm({ ...fullForm, price: e.target.value })}
               className="input-field"
             />
             <input
               type="number"
-              placeholder="Số lượng tồn kho"
+              placeholder="S? lu?ng t?n kho"
               value={fullForm.stock}
               onChange={(e) => setFullForm({ ...fullForm, stock: e.target.value })}
               className="input-field"
@@ -880,24 +995,24 @@ function ProductsTab({ products }: { products: Product[] }) {
 
           {/* Selected full tags */}
           <div>
-            <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
+            <label className="mb-1.5 block text-xs text-softgray">Nh?n d? ch?n:</label>
             <div className="flex flex-wrap gap-1.5 min-h-[36px]">
               {fullTagChips.map((t) => (
                 <span key={t} className="tag-badge flex items-center gap-1">
                   {t}
-                  <button type="button" onClick={() => removeFullTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+                  <button type="button" onClick={() => removeFullTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">?</button>
                 </span>
               ))}
               {fullTagChips.length === 0 && (
-                <span className="text-xs text-steelgray italic self-center">Nhấn nhãn bên trên để chọn...</span>
+                <span className="text-xs text-softgray italic self-center">Nh?n nh?n b?n tr?n d? ch?n...</span>
               )}
             </div>
           </div>
 
-          {/* Description — Tiptap + DOCX import */}
+          {/* Description ? Tiptap + DOCX import */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm text-steelgray font-medium">Mô tả sản phẩm (hỗ trợ DOCX)</label>
+              <label className="block text-sm text-softgray font-medium">M? t? s?n ph?m (h? tr? DOCX)</label>
               <label className="btn-secondary cursor-pointer text-xs py-1.5 px-3">
                 <input
                   type="file"
@@ -912,25 +1027,25 @@ function ProductsTab({ products }: { products: Product[] }) {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Đang nhập...
+                    ?ang nh?p...
                   </span>
-                ) : "Nhập từ DOCX"}
+                ) : "Nh?p t? DOCX"}
               </label>
             </div>
             <RichTextEditor
               value={fullForm.description}
               onChange={(html) => setFullForm((prev) => ({ ...prev, description: html }))}
-              placeholder="Nhập mô tả sản phẩm... Hỗ trợ in đậm, in nghiêng, tiêu đề, danh sách, ảnh..."
+              placeholder="Nh?p m? t? s?n ph?m... H? tr? in d?m, in nghi?ng, ti?u d?, danh s?ch, ?nh..."
             />
           </div>
 
           {/* Specifications */}
           <div>
-            <label className="block text-sm text-steelgray font-medium mb-3">Thông số kỹ thuật</label>
+            <label className="block text-sm text-softgray font-medium mb-3">Th?ng s? k? thu?t</label>
             <div className="grid gap-3 md:grid-cols-2">
               {SPEC_LABELS.map((label) => (
                 <div key={label} className="flex items-center gap-2">
-                  <label className="text-sm text-steelgray w-48 shrink-0">{label}</label>
+                  <label className="text-sm text-softgray w-48 shrink-0">{label}</label>
                   <input
                     type="text"
                     value={fullForm.specifications[label] || ""}
@@ -940,7 +1055,7 @@ function ProductsTab({ products }: { products: Product[] }) {
                         specifications: { ...prev.specifications, [label]: e.target.value },
                       }))
                     }
-                    placeholder="—"
+                    placeholder="?"
                     className="input-field flex-1"
                   />
                 </div>
@@ -950,30 +1065,30 @@ function ProductsTab({ products }: { products: Product[] }) {
 
           {/* Image */}
           <div>
-            <label className="mb-1.5 block text-sm text-steelgray">
-              Hình ảnh {editing ? "(bỏ trống để giữ hình cũ)" : ""}
+            <label className="mb-1.5 block text-sm text-softgray">
+              H?nh ?nh {editing ? "(b? tr?ng d? gi? h?nh cu)" : ""}
             </label>
             <input
               type="file"
               accept="image/*"
               onChange={(e) => setFullImage(e.target.files?.[0] ?? null)}
-              className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite"
+              className="text-sm text-softgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite"
             />
           </div>
 
           {error && (
-            <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">
+            <div className="rounded-lg border border-aurora-pink\/30 bg-aurora-pink\/10 p-3 text-sm text-rose">
               {error}
             </div>
           )}
 
           <div className="flex gap-3">
             <button type="submit" disabled={fullMutation.isPending} className="btn-primary">
-              {fullMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm sản phẩm"}
+              {fullMutation.isPending ? "?ang luu..." : editing ? "C?p nh?t" : "Th?m s?n ph?m"}
             </button>
             {editing && (
               <button type="button" onClick={cancelEdit} className="btn-secondary">
-                Hủy
+                H?y
               </button>
             )}
           </div>
@@ -981,42 +1096,42 @@ function ProductsTab({ products }: { products: Product[] }) {
       )}
 
       {/* Products table */}
-      <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
-        <div className="border-b border-gunmetal/40 px-4 py-3">
-          <span className="text-sm text-steelgray">{filtered.length} sản phẩm</span>
+      <div className="rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl overflow-hidden">
+        <div className="border-b border-white\/10 px-4 py-3">
+          <span className="text-sm text-softgray">{filtered.length} s?n ph?m</span>
         </div>
         {(info || deleteMutation.isError || error) && (
           <div
             className={`mx-4 mt-3 rounded-lg border p-3 text-sm ${
               deleteMutation.isError || error
-                ? "border-deeprose/30 bg-deeprose/10 text-rose"
+                ? "border-aurora-pink\/30 bg-aurora-pink\/10 text-rose"
                 : "border-emerald-400/30 bg-emerald-500/10 text-emerald-300"
             }`}
           >
             {deleteMutation.isError || error
-              ? error || "Xóa thất bại"
+              ? error || "X?a th?t b?i"
               : info}
             <button
               type="button"
               onClick={() => { setError(""); setInfo(""); deleteMutation.reset(); }}
               className="ml-3 text-xs underline opacity-70 hover:opacity-100"
             >
-              đóng
+              d?ng
             </button>
           </div>
         )}
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-steelgray">Không có sản phẩm nào.</div>
+          <div className="p-8 text-center text-softgray">Kh?ng c? s?n ph?m n?o.</div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="border-b border-gunmetal/40 bg-charcoal/50">
-              <tr className="text-left text-steelgray">
-                <th className="px-4 py-3">Hình ảnh</th>
-                <th className="px-4 py-3">Tên sản phẩm</th>
-                <th className="px-4 py-3">Giá</th>
-                <th className="px-4 py-3">Nhãn</th>
-                <th className="px-4 py-3">Tồn kho</th>
-                <th className="px-4 py-3">Thao tác</th>
+            <thead className="border-b border-white\/10 bg-charcoal/50">
+              <tr className="text-left text-softgray">
+                <th className="px-4 py-3">H?nh ?nh</th>
+                <th className="px-4 py-3">T?n s?n ph?m</th>
+                <th className="px-4 py-3">Gi?</th>
+                <th className="px-4 py-3">Nh?n</th>
+                <th className="px-4 py-3">T?n kho</th>
+                <th className="px-4 py-3">Thao t?c</th>
               </tr>
             </thead>
             <tbody>
@@ -1027,7 +1142,7 @@ function ProductsTab({ products }: { products: Product[] }) {
                 return (
                   <tr
                     key={p.id}
-                    className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors"
+                    className="border-t border-white\/10 hover:bg-charcoal/30 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
@@ -1043,11 +1158,11 @@ function ProductsTab({ products }: { products: Product[] }) {
                         {tagChips.map((t: string) => (
                           <span key={t} className="tag-badge">{t}</span>
                         ))}
-                        {tagChips.length === 0 && <span className="text-xs text-steelgray">—</span>}
+                        {tagChips.length === 0 && <span className="text-xs text-softgray">?</span>}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={p.stock < 5 ? "text-deeprose font-semibold" : "text-warmwhite"}>
+                      <span className={p.stock < 5 ? "text-aurora-pink font-semibold" : "text-warmwhite"}>
                         {p.stock}
                       </span>
                     </td>
@@ -1055,18 +1170,18 @@ function ProductsTab({ products }: { products: Product[] }) {
                       <div className="flex gap-3">
                         <button
                           onClick={() => startEdit(p)}
-                          className="text-sm text-crimson hover:text-sakura transition-colors"
+                          className="text-sm text-crimson hover:text-aurora-cyan transition-colors"
                         >
-                          Sửa
+                          S?a
                         </button>
                         <button
                           onClick={() => handleDelete(p)}
                           disabled={deleteMutation.isPending}
-                          className="text-sm text-deeprose hover:text-rose transition-colors disabled:opacity-50"
+                          className="text-sm text-aurora-pink hover:text-rose transition-colors disabled:opacity-50"
                         >
                           {deleteMutation.isPending && deleteMutation.variables === p.id
-                            ? "Đang xóa..."
-                            : "Xóa"}
+                            ? "?ang x?a..."
+                            : "X?a"}
                         </button>
                       </div>
                     </td>
@@ -1081,7 +1196,7 @@ function ProductsTab({ products }: { products: Product[] }) {
   );
 }
 
-// ── Orders Tab ─────────────────────────────────────────────
+// -- Orders Tab ---------------------------------------------
 function OrdersTab({ orders }: { orders: Order[] }) {
   const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -1111,27 +1226,27 @@ function OrdersTab({ orders }: { orders: Order[] }) {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold text-warmwhite">Quản lý đơn hàng</h1>
+        <h1 className="text-2xl font-extrabold text-warmwhite">Qu?n l? don h?ng</h1>
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="input-field w-48">
-          <option value="">Tất cả trạng thái</option>
+          <option value="">T?t c? tr?ng th?i</option>
           {ORDER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3 rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
-          <div className="border-b border-gunmetal/40 px-4 py-3">
-            <span className="text-sm text-steelgray">{filtered.length} đơn hàng</span>
+        <div className="lg:col-span-3 rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl overflow-hidden">
+          <div className="border-b border-white\/10 px-4 py-3">
+            <span className="text-sm text-softgray">{filtered.length} don h?ng</span>
           </div>
           {filtered.length === 0 ? (
-            <div className="p-8 text-center text-steelgray">Chưa có đơn hàng nào.</div>
+            <div className="p-8 text-center text-softgray">Chua c? don h?ng n?o.</div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="border-b border-gunmetal/40 bg-charcoal/50">
-                <tr className="text-left text-steelgray">
-                  <th className="px-4 py-3">Mã</th>
-                  <th className="px-4 py-3">Trạng thái</th>
-                  <th className="px-4 py-3">Địa chỉ</th>
+              <thead className="border-b border-white\/10 bg-charcoal/50">
+                <tr className="text-left text-softgray">
+                  <th className="px-4 py-3">M?</th>
+                  <th className="px-4 py-3">Tr?ng th?i</th>
+                  <th className="px-4 py-3">??a ch?</th>
                   <th className="px-4 py-3">Xem</th>
                 </tr>
               </thead>
@@ -1140,22 +1255,22 @@ function OrdersTab({ orders }: { orders: Order[] }) {
                   <tr
                     key={order.id}
                     onClick={() => selectOrder(order)}
-                    className={`cursor-pointer border-t border-gunmetal/40 transition-colors ${
-                      selectedOrder?.id === order.id ? "bg-crimson/10" : "hover:bg-charcoal/40"
+                    className={`cursor-pointer border-t border-white\/10 transition-colors ${
+                      selectedOrder?.id === order.id ? "bg-crimson\/10" : "hover:bg-charcoal/40"
                     }`}
                   >
                     <td className="px-4 py-3 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full bg-crimson/10 px-2.5 py-0.5 text-xs font-medium capitalize text-crimson">
+                      <span className="rounded-full bg-crimson\/10 px-2.5 py-0.5 text-xs font-medium capitalize text-crimson">
                         {order.status.replace("_", " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-3 max-w-xs truncate text-steelgray">{order.delivery_address}</td>
+                    <td className="px-4 py-3 max-w-xs truncate text-softgray">{order.delivery_address}</td>
                     <td className="px-4 py-3">
                       <Link to={`/track/${order.tracking_code}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-crimson hover:text-sakura transition-colors">
-                        Theo dõi →
+                        className="text-sm text-crimson hover:text-aurora-cyan transition-colors">
+                        Theo d?i ?
                       </Link>
                     </td>
                   </tr>
@@ -1165,54 +1280,54 @@ function OrdersTab({ orders }: { orders: Order[] }) {
           )}
         </div>
 
-        <div className="lg:col-span-2 rounded-2xl border border-gunmetal/60 bg-graphite p-5 space-y-4">
-          <h2 className="font-bold text-warmwhite">Cập nhật vị trí giao hàng</h2>
+        <div className="lg:col-span-2 rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-5 space-y-4">
+          <h2 className="font-bold text-warmwhite">C?p nh?t v? tr? giao h?ng</h2>
           {selectedOrder ? (
             <>
-              <div className="rounded-lg border border-gunmetal/40 bg-charcoal p-3 text-sm">
-                <p className="font-medium text-warmwhite">Đơn: {selectedOrder.tracking_code}</p>
-                <p className="text-xs text-steelgray mt-0.5">{selectedOrder.delivery_address}</p>
+              <div className="rounded-lg border border-white\/10 bg-charcoal p-3 text-sm">
+                <p className="font-medium text-warmwhite">?on: {selectedOrder.tracking_code}</p>
+                <p className="text-xs text-softgray mt-0.5">{selectedOrder.delivery_address}</p>
               </div>
               <AdminMapPicker lat={lat} lng={lng} onChange={(l, g) => { setLat(l); setLng(g); }} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs text-steelgray">Vĩ độ</label>
+                  <label className="mb-1 block text-xs text-softgray">Vi d?</label>
                   <input type="number" step="any" value={lat}
                     onChange={(e) => setLat(Number(e.target.value))} className="input-field text-xs" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-steelgray">Kinh độ</label>
+                  <label className="mb-1 block text-xs text-softgray">Kinh d?</label>
                   <input type="number" step="any" value={lng}
                     onChange={(e) => setLng(Number(e.target.value))} className="input-field text-xs" />
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs text-steelgray">Trạng thái</label>
+                <label className="mb-1 block text-xs text-softgray">Tr?ng th?i</label>
                 <select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)} className="input-field">
                   {ORDER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
               {success && (
-                <div className="flex items-center gap-2 rounded-lg border border-crimson/30 bg-crimson/10 p-3 text-sm text-sakura">
+                <div className="flex items-center gap-2 rounded-lg border border-crimson/30 bg-crimson\/10 p-3 text-sm text-aurora-cyan">
                   <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Cập nhật thành công!
+                  C?p nh?t th?nh c?ng!
                 </div>
               )}
               <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
                 className="btn-primary w-full">
-                {updateMutation.isPending ? "Đang cập nhật..." : "Gửi cập nhật vị trí"}
+                {updateMutation.isPending ? "?ang c?p nh?t..." : "G?i c?p nh?t v? tr?"}
               </button>
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gunmetal/40">
-                <svg className="h-7 w-7 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white\/5">
+                <svg className="h-7 w-7 text-softgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                 </svg>
               </div>
-              <p className="text-sm text-steelgray">Chọn một đơn hàng để cập nhật vị trí giao hàng.</p>
+              <p className="text-sm text-softgray">Ch?n m?t don h?ng d? c?p nh?t v? tr? giao h?ng.</p>
             </div>
           )}
         </div>
@@ -1221,7 +1336,7 @@ function OrdersTab({ orders }: { orders: Order[] }) {
   );
 }
 
-// ── Blog Tab ───────────────────────────────────────────────
+// -- Blog Tab -----------------------------------------------
 function BlogTab() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ title: "", content: "", tags: "" });
@@ -1263,8 +1378,8 @@ function BlogTab() {
   });
 
   const handleSubmit = () => {
-    if (!form.title.trim()) { setError("Tiêu đề không được để trống"); return; }
-    if (!form.content.trim() || form.content === "<p></p>") { setError("Nội dung không được để trống"); return; }
+    if (!form.title.trim()) { setError("Ti?u d? kh?ng du?c d? tr?ng"); return; }
+    if (!form.content.trim() || form.content === "<p></p>") { setError("N?i dung kh?ng du?c d? tr?ng"); return; }
     setError(""); saveMutation.mutate();
   };
 
@@ -1284,46 +1399,46 @@ function BlogTab() {
       setForm((prev) => ({ ...prev, title: data.title || prev.title, content: data.html || prev.content }));
       if (data.cover_image_url) setCoverPreview(data.cover_image_url);
     } catch {
-      setError("Nhập file DOCX thất bại.");
+      setError("Nh?p file DOCX th?t b?i.");
     } finally { setImporting(false); e.target.value = ""; }
   };
 
-  if (isLoading) return <LoadingSpinner label="Đang tải blog..." />;
+  if (isLoading) return <LoadingSpinner label="?ang t?i blog..." />;
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold text-warmwhite">Quản lý Blog</h1>
+      <h1 className="mb-6 text-2xl font-extrabold text-warmwhite">Qu?n l? Blog</h1>
 
       {/* Editor */}
-      <div className="mb-6 space-y-4 rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+      <div className="mb-6 space-y-4 rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-5">
         <h2 className="text-base font-bold text-warmwhite">
-          {editing ? `Sửa bài: ${editing.title}` : "Viết bài mới"}
+          {editing ? `S?a b?i: ${editing.title}` : "Vi?t b?i m?i"}
         </h2>
-        <input required placeholder="Tiêu đề bài viết" value={form.title}
+        <input required placeholder="Ti?u d? b?i vi?t" value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           className="input-field text-lg font-semibold" />
 
         {/* Tags chips */}
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-softgray">Nhãn (Tags)</label>
+          <label className="mb-1.5 block text-sm font-medium text-softgray">Nh?n (Tags)</label>
           <div className="mb-2 flex flex-wrap gap-1.5">
             {tagChips.map((t) => (
               <span key={t} className="tag-badge flex items-center gap-1">
                 {t}
-                <button type="button" onClick={() => setTagChips((p) => p.filter((x) => x !== t))} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+                <button type="button" onClick={() => setTagChips((p) => p.filter((x) => x !== t))} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">?</button>
               </span>
             ))}
           </div>
           <div className="flex gap-2">
             <input
               list="blog-tags-datalist"
-              placeholder="Gõ nhãn (VD: tech, review, tips)"
+              placeholder="G? nh?n (VD: tech, review, tips)"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTagChip(tagInput); } }}
               className="input-field flex-1"
             />
-            <button type="button" onClick={() => addTagChip(tagInput)} className="btn-secondary">+ Thêm</button>
+            <button type="button" onClick={() => addTagChip(tagInput)} className="btn-secondary">+ Th?m</button>
             <datalist id="blog-tags-datalist">
               {["tech", "review", "tips", "news", "guide"].map((t) => <option key={t} value={t} />)}
             </datalist>
@@ -1333,62 +1448,62 @@ function BlogTab() {
         <RichTextEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} />
         <div className="flex flex-wrap items-start gap-4">
           <div>
-            <label className="mb-1.5 block text-sm text-steelgray">Nhập từ DOCX</label>
+            <label className="mb-1.5 block text-sm text-softgray">Nh?p t? DOCX</label>
             <label className="btn-secondary cursor-pointer">
               <input type="file" accept=".docx" className="hidden" onChange={handleImportDocx} disabled={importing} />
-              {importing ? "Đang nhập..." : "Chọn file DOCX"}
+              {importing ? "?ang nh?p..." : "Ch?n file DOCX"}
             </label>
           </div>
           <div className="flex-1 min-w-0">
-            <label className="mb-1.5 block text-sm text-steelgray">Ảnh đại diện {editing ? "(bỏ trống để giữ ảnh cũ)" : ""}</label>
+            <label className="mb-1.5 block text-sm text-softgray">?nh d?i di?n {editing ? "(b? tr?ng d? gi? ?nh cu)" : ""}</label>
             <input type="file" accept="image/*"
               onChange={(e) => {
                 const file = e.target.files?.[0] ?? null; setImage(file);
                 if (file) { const r = new FileReader(); r.onload = (ev) => setCoverPreview(ev.target?.result as string); r.readAsDataURL(file); }
                 else setCoverPreview(null);
               }}
-              className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite" />
+              className="text-sm text-softgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite" />
             {(coverPreview || (editing && editing.image_url)) && (
               <img src={coverPreview ?? editing?.image_url ?? ""} alt="" className="mt-2 h-16 w-24 rounded-lg object-cover" />
             )}
           </div>
         </div>
-        {error && <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">{error}</div>}
+        {error && <div className="rounded-lg border border-aurora-pink\/30 bg-aurora-pink\/10 p-3 text-sm text-rose">{error}</div>}
         <div className="flex gap-3">
           <button onClick={handleSubmit} disabled={saveMutation.isPending} className="btn-primary">
-            {saveMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật bài viết" : "Đăng bài viết"}
+            {saveMutation.isPending ? "?ang luu..." : editing ? "C?p nh?t b?i vi?t" : "?ang b?i vi?t"}
           </button>
           {editing && (
             <button onClick={() => { setEditing(null); setForm({ title: "", content: "", tags: "" }); setTagChips([]); setImage(null); setCoverPreview(null); }}
-              className="btn-secondary">Hủy</button>
+              className="btn-secondary">H?y</button>
           )}
         </div>
       </div>
 
       {/* Post list */}
-      <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
-        <div className="border-b border-gunmetal/40 px-4 py-3">
-          <span className="text-sm text-steelgray">{posts.length} bài viết</span>
+      <div className="rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl overflow-hidden">
+        <div className="border-b border-white\/10 px-4 py-3">
+          <span className="text-sm text-softgray">{posts.length} b?i vi?t</span>
         </div>
         {posts.length === 0 ? (
-          <div className="p-8 text-center text-steelgray">Chưa có bài viết nào.</div>
+          <div className="p-8 text-center text-softgray">Chua c? b?i vi?t n?o.</div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="border-b border-gunmetal/40 bg-charcoal/50">
-              <tr className="text-left text-steelgray">
-                <th className="px-4 py-3">Ảnh</th>
-                <th className="px-4 py-3">Tiêu đề</th>
+            <thead className="border-b border-white\/10 bg-charcoal/50">
+              <tr className="text-left text-softgray">
+                <th className="px-4 py-3">?nh</th>
+                <th className="px-4 py-3">Ti?u d?</th>
                 <th className="px-4 py-3">Tags</th>
                 <th className="px-4 py-3">Slug</th>
-                <th className="px-4 py-3">Tác giả</th>
-                <th className="px-4 py-3">Thao tác</th>
+                <th className="px-4 py-3">T?c gi?</th>
+                <th className="px-4 py-3">Thao t?c</th>
               </tr>
             </thead>
             <tbody>
               {posts.map((post) => {
                 const postTags = post.tags ? post.tags.split(",").filter(Boolean) : [];
                 return (
-                  <tr key={post.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors">
+                  <tr key={post.id} className="border-t border-white\/10 hover:bg-charcoal/30 transition-colors">
                     <td className="px-4 py-3">
                       {post.image_url && <img src={post.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />}
                     </td>
@@ -1397,11 +1512,11 @@ function BlogTab() {
                       <div className="flex flex-wrap gap-1">
                         {postTags.length > 0
                           ? postTags.map((t: string) => <span key={t} className="tag-badge">{t}</span>)
-                          : <span className="text-steelgray text-xs">—</span>
+                          : <span className="text-softgray text-xs">?</span>
                         }
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-steelgray">{post.slug}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-softgray">{post.slug}</td>
                     <td className="px-4 py-3 text-softgray">{post.author_name}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-3">
@@ -1411,9 +1526,9 @@ function BlogTab() {
                           setTagChips(postTags);
                           setImage(null); setCoverPreview(null);
                         }}
-                          className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
-                        <button onClick={() => { if (confirm(`Xóa "${post.title}"?`)) deleteMutation.mutate(post.id); }}
-                          className="text-sm text-deeprose hover:text-rose transition-colors">Xóa</button>
+                          className="text-sm text-crimson hover:text-aurora-cyan transition-colors">S?a</button>
+                        <button onClick={() => { if (confirm(`X?a "${post.title}"?`)) deleteMutation.mutate(post.id); }}
+                          className="text-sm text-aurora-pink hover:text-rose transition-colors">X?a</button>
                       </div>
                     </td>
                   </tr>
@@ -1427,7 +1542,7 @@ function BlogTab() {
   );
 }
 
-// ── Settings Tab ────────────────────────────────────────────
+// -- Settings Tab --------------------------------------------
 function SettingsTab() {
   const queryClient = useQueryClient();
   const [newEmail, setNewEmail] = useState("");
@@ -1443,11 +1558,11 @@ function SettingsTab() {
     mutationFn: (email: string) => adminApi.addAdminEmail(email),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-emails"] });
-      setNewEmail(""); setAddSuccess("Đã thêm email thành công."); setAddError("");
+      setNewEmail(""); setAddSuccess("?? th?m email th?nh c?ng."); setAddError("");
       setTimeout(() => setAddSuccess(""), 3000);
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Thêm thất bại.";
+      const msg = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Th?m th?t b?i.";
       setAddError(msg);
       setAddSuccess("");
     },
@@ -1458,29 +1573,29 @@ function SettingsTab() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-emails"] }),
   });
 
-  if (isLoading) return <LoadingSpinner label="Đang tải..." />;
+  if (isLoading) return <LoadingSpinner label="?ang t?i..." />;
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Cài đặt</h1>
-      <p className="mb-6 text-sm text-steelgray">Quản lý email nhận thông báo đơn hàng</p>
+      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">C?i d?t</h1>
+      <p className="mb-6 text-sm text-softgray">Qu?n l? email nh?n th?ng b?o don h?ng</p>
 
-      <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-6">
-        <h2 className="mb-4 text-base font-semibold text-warmwhite">Email nhận thông báo đơn hàng</h2>
+      <div className="rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-6">
+        <h2 className="mb-4 text-base font-semibold text-warmwhite">Email nh?n th?ng b?o don h?ng</h2>
 
         {emails.length === 0 ? (
-          <p className="py-6 text-center text-sm text-steelgray">Chưa có email nào được thêm.</p>
+          <p className="py-6 text-center text-sm text-softgray">Chua c? email n?o du?c th?m.</p>
         ) : (
           <ul className="mb-4 divide-y divide-gunmetal/40">
             {emails.map((e) => (
               <li key={e.id} className="flex items-center justify-between py-3">
                 <div>
                   <span className="text-sm text-warmwhite">{e.email}</span>
-                  <span className="ml-2 text-xs text-steelgray">{new Date(e.created_at).toLocaleDateString("vi-VN")}</span>
+                  <span className="ml-2 text-xs text-softgray">{new Date(e.created_at).toLocaleDateString("vi-VN")}</span>
                 </div>
                 <button onClick={() => deleteMutation.mutate(e.id)}
-                  className="ml-4 flex-shrink-0 rounded-lg px-3 py-1.5 text-xs text-rose hover:bg-deeprose/10 transition-colors">
-                  Xóa
+                  className="ml-4 flex-shrink-0 rounded-lg px-3 py-1.5 text-xs text-rose hover:bg-aurora-pink\/10 transition-colors">
+                  X?a
                 </button>
               </li>
             ))}
@@ -1493,18 +1608,18 @@ function SettingsTab() {
             placeholder="admin@example.com" className="input-field flex-1" />
           <button type="submit" disabled={addMutation.isPending || !newEmail.trim()}
             className="btn-primary whitespace-nowrap disabled:opacity-60">
-            {addMutation.isPending ? "Đang thêm..." : "Thêm email"}
+            {addMutation.isPending ? "?ang th?m..." : "Th?m email"}
           </button>
         </form>
 
         {addError && <p className="mt-2 text-sm text-rose">{addError}</p>}
-        {addSuccess && <p className="mt-2 text-sm text-sakura">{addSuccess}</p>}
+        {addSuccess && <p className="mt-2 text-sm text-aurora-cyan">{addSuccess}</p>}
       </div>
     </div>
   );
 }
 
-// ── Media Tab ──────────────────────────────────────────────
+// -- Media Tab ----------------------------------------------
 function MediaTab({ products }: { products: Product[] }) {
   const [selectedId, setSelectedId] = useState<number | null>(products[0]?.id ?? null);
   const [filter, setFilter] = useState("");
@@ -1517,23 +1632,23 @@ function MediaTab({ products }: { products: Product[] }) {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Hình ảnh & Video sản phẩm</h1>
-      <p className="mb-6 text-sm text-steelgray">
-        Chọn một sản phẩm để xem và quản lý gallery (ảnh + video). Ảnh đầu tiên (cover) sẽ được
-        dùng làm thumbnail sản phẩm trên toàn trang.
+      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">H?nh ?nh & Video s?n ph?m</h1>
+      <p className="mb-6 text-sm text-softgray">
+        Ch?n m?t s?n ph?m d? xem v? qu?n l? gallery (?nh + video). ?nh d?u ti?n (cover) s? du?c
+        d?ng l?m thumbnail s?n ph?m tr?n to?n trang.
       </p>
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-4">
+        <div className="rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-4">
           <input
             type="search"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Tìm sản phẩm..."
+            placeholder="T?m s?n ph?m..."
             className="input-field mb-3"
           />
           <div className="max-h-[64vh] overflow-y-auto space-y-1.5">
             {filtered.length === 0 ? (
-              <p className="py-6 text-center text-xs text-steelgray">Không tìm thấy.</p>
+              <p className="py-6 text-center text-xs text-softgray">Kh?ng t?m th?y.</p>
             ) : (
               filtered.map((p) => (
                 <button
@@ -1541,14 +1656,14 @@ function MediaTab({ products }: { products: Product[] }) {
                   onClick={() => setSelectedId(p.id)}
                   className={`flex w-full items-center gap-2 rounded-lg border p-2 text-left transition-colors ${
                     selectedId === p.id
-                      ? "border-crimson bg-crimson/10"
-                      : "border-gunmetal/40 bg-charcoal hover:border-silvergray/40"
+                      ? "border-crimson bg-crimson\/10"
+                      : "border-white\/10 bg-charcoal hover:border-silvergray/40"
                   }`}
                 >
                   <img src={p.image_url} alt="" className="h-9 w-9 rounded-md object-cover" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-warmwhite">{p.name}</p>
-                    <p className="text-[10px] text-steelgray">#{p.id}</p>
+                    <p className="text-[10px] text-softgray">#{p.id}</p>
                   </div>
                 </button>
               ))
@@ -1560,8 +1675,8 @@ function MediaTab({ products }: { products: Product[] }) {
           {target ? (
             <ProductGalleryEditor product={target} />
           ) : (
-            <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-10 text-center text-steelgray">
-              Chọn một sản phẩm bên trái để bắt đầu.
+            <div className="rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-10 text-center text-softgray">
+              Ch?n m?t s?n ph?m b?n tr?i d? b?t d?u.
             </div>
           )}
         </div>
@@ -1609,19 +1724,19 @@ function ProductGalleryEditor({ product }: { product: Product }) {
     adminApi.updateMedia(m.id, { is_cover: true }).then(invalidate);
 
   const deleteMedia = (m: ProductMediaItem) => {
-    if (!confirm("Xóa hình ảnh/video này?")) return;
+    if (!confirm("X?a h?nh ?nh/video n?y?")) return;
     adminApi.deleteMedia(m.id).then(invalidate);
   };
 
   return (
-    <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+    <div className="rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-warmwhite">{product.name}</h2>
-          <p className="text-xs text-steelgray">Mã sản phẩm: #{product.id}</p>
+          <p className="text-xs text-softgray">M? s?n ph?m: #{product.id}</p>
         </div>
-        <div className="text-xs text-steelgray">
-          {media.length} mục media
+        <div className="text-xs text-softgray">
+          {media.length} m?c media
         </div>
       </div>
 
@@ -1635,15 +1750,15 @@ function ProductGalleryEditor({ product }: { product: Product }) {
             fileInputRef.current?.click();
           }
         }}
-        className="mb-4 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gunmetal/60 bg-charcoal/40 py-6 text-center hover:border-crimson cursor-pointer transition-colors"
+        className="mb-4 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white\/10 bg-charcoal/40 py-6 text-center hover:border-crimson cursor-pointer transition-colors"
       >
         <svg className="h-6 w-6 text-rose" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
         <span className="text-sm font-medium text-warmwhite">
-          {uploading ? "Đang tải lên..." : "Kéo thả hoặc nhấn để chọn ảnh/video"}
+          {uploading ? "?ang t?i l?n..." : "K?o th? ho?c nh?n d? ch?n ?nh/video"}
         </span>
-        <span className="text-[10px] text-steelgray">JPG, PNG, WEBP, MP4, WEBM — tối đa 100MB mỗi file</span>
+        <span className="text-[10px] text-softgray">JPG, PNG, WEBP, MP4, WEBM ? t?i da 100MB m?i file</span>
         <span
           className="mt-2 inline-flex items-center gap-2 text-xs text-softgray"
           onClick={(e) => e.stopPropagation()}
@@ -1655,7 +1770,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
             onChange={(e) => setNextIsCover(e.target.checked)}
             onClick={(e) => e.stopPropagation()}
           />
-          Đặt file tải lên đầu tiên làm ảnh cover
+          ??t file t?i l?n d?u ti?n l?m ?nh cover
         </span>
         <input
           ref={fileInputRef}
@@ -1669,15 +1784,15 @@ function ProductGalleryEditor({ product }: { product: Product }) {
       </div>
 
       {isLoading ? (
-        <LoadingSpinner label="Đang tải gallery..." />
+        <LoadingSpinner label="?ang t?i gallery..." />
       ) : media.length === 0 ? (
-        <div className="rounded-xl border border-gunmetal/60 bg-charcoal p-8 text-center text-sm text-steelgray">
-          Sản phẩm này chưa có ảnh/video trong gallery. Hiện đang dùng ảnh thumbnail mặc định.
+        <div className="rounded-xl border border-white\/10 bg-charcoal p-8 text-center text-sm text-softgray">
+          S?n ph?m n?y chua c? ?nh/video trong gallery. Hi?n dang d?ng ?nh thumbnail m?c d?nh.
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {media.map((m) => (
-            <div key={m.id} className="relative overflow-hidden rounded-xl border border-gunmetal/60 bg-charcoal">
+            <div key={m.id} className="relative overflow-hidden rounded-xl border border-white\/10 bg-charcoal">
               <div className="aspect-square">
                 {m.media_type === "video" ? (
                   <video src={m.url} className="h-full w-full object-cover" muted />
@@ -1701,14 +1816,14 @@ function ProductGalleryEditor({ product }: { product: Product }) {
                     onClick={() => setCover(m)}
                     className="rounded-lg bg-crimson px-2 py-1 text-[10px] font-semibold text-white hover:bg-raspberry"
                   >
-                    Đặt làm cover
+                    ??t l?m cover
                   </button>
                 )}
                 <button
                   onClick={() => deleteMedia(m)}
                   className="ml-auto rounded-lg bg-deeprose px-2 py-1 text-[10px] font-semibold text-white hover:bg-rose"
                 >
-                  Xóa
+                  X?a
                 </button>
               </div>
             </div>
@@ -1719,7 +1834,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
   );
 }
 
-// ── Coupons Tab ──────────────────────────────────────────────
+// -- Coupons Tab ----------------------------------------------
 function CouponsTab() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Coupon | null>(null);
@@ -1762,8 +1877,8 @@ function CouponsTab() {
       setError("");
     },
     onError: (e: unknown) => {
-      const msg = (e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Lỗi tạo coupon";
-      setError(typeof msg === "string" ? msg : "Lỗi tạo coupon");
+      const msg = (e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "L?i t?o coupon";
+      setError(typeof msg === "string" ? msg : "L?i t?o coupon");
     },
   });
 
@@ -1806,14 +1921,14 @@ function CouponsTab() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Quản lý mã giảm giá (Coupon)</h1>
-      <p className="mb-6 text-sm text-steelgray">Tạo và quản lý các mã giảm giá áp dụng ở bước thanh toán.</p>
+      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Qu?n l? m? gi?m gi? (Coupon)</h1>
+      <p className="mb-6 text-sm text-softgray">T?o v? qu?n l? c?c m? gi?m gi? ?p d?ng ? bu?c thanh to?n.</p>
 
-      <div className="mb-6 rounded-2xl border border-gunmetal/60 bg-graphite p-5 space-y-3">
-        <h2 className="text-base font-bold text-warmwhite">{editing ? `Sửa: ${editing.code}` : "Tạo coupon mới"}</h2>
+      <div className="mb-6 rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-5 space-y-3">
+        <h2 className="text-base font-bold text-warmwhite">{editing ? `S?a: ${editing.code}` : "T?o coupon m?i"}</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Mã (CODE)</label>
+            <label className="mb-1 block text-xs text-softgray">M? (CODE)</label>
             <input
               disabled={!!editing}
               value={form.code}
@@ -1823,28 +1938,28 @@ function CouponsTab() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Mô tả</label>
+            <label className="mb-1 block text-xs text-softgray">M? t?</label>
             <input
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="VD: Giảm 10% cho đơn ≥3 triệu"
+              placeholder="VD: Gi?m 10% cho don =3 tri?u"
               className="input-field"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Loại giảm giá</label>
+            <label className="mb-1 block text-xs text-softgray">Lo?i gi?m gi?</label>
             <select
               value={form.discount_type}
               onChange={(e) => setForm({ ...form, discount_type: e.target.value as "percent" | "fixed" })}
               className="input-field"
             >
-              <option value="percent">Phần trăm (%)</option>
-              <option value="fixed">Số tiền cố định (VND)</option>
+              <option value="percent">Ph?n tram (%)</option>
+              <option value="fixed">S? ti?n c? d?nh (VND)</option>
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-steelgray">
-              Giá trị {form.discount_type === "percent" ? "(1–100)" : "(VND)"}
+            <label className="mb-1 block text-xs text-softgray">
+              Gi? tr? {form.discount_type === "percent" ? "(1?100)" : "(VND)"}
             </label>
             <input
               type="number"
@@ -1856,7 +1971,7 @@ function CouponsTab() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Đơn hàng tối thiểu (VND)</label>
+            <label className="mb-1 block text-xs text-softgray">?on h?ng t?i thi?u (VND)</label>
             <input
               type="number"
               min={0}
@@ -1867,7 +1982,7 @@ function CouponsTab() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Giảm tối đa (VND, không bắt buộc)</label>
+            <label className="mb-1 block text-xs text-softgray">Gi?m t?i da (VND, kh?ng b?t bu?c)</label>
             <input
               type="number"
               min={0}
@@ -1878,7 +1993,7 @@ function CouponsTab() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Số lượt tối đa (0 = không giới hạn)</label>
+            <label className="mb-1 block text-xs text-softgray">S? lu?t t?i da (0 = kh?ng gi?i h?n)</label>
             <input
               type="number"
               min={0}
@@ -1888,7 +2003,7 @@ function CouponsTab() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Bắt đầu (tùy chọn)</label>
+            <label className="mb-1 block text-xs text-softgray">B?t d?u (t?y ch?n)</label>
             <input
               type="text"
               value={form.starts_at}
@@ -1898,7 +2013,7 @@ function CouponsTab() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-steelgray">Hết hạn (tùy chọn)</label>
+            <label className="mb-1 block text-xs text-softgray">H?t h?n (t?y ch?n)</label>
             <input
               type="text"
               value={form.expires_at}
@@ -1913,61 +2028,61 @@ function CouponsTab() {
           {editing ? (
             <>
               <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="btn-primary">
-                {updateMutation.isPending ? "Đang lưu..." : "Cập nhật"}
+                {updateMutation.isPending ? "?ang luu..." : "C?p nh?t"}
               </button>
-              <button onClick={() => { setEditing(null); }} className="btn-secondary">Hủy</button>
+              <button onClick={() => { setEditing(null); }} className="btn-secondary">H?y</button>
             </>
           ) : (
             <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.code} className="btn-primary">
-              {createMutation.isPending ? "Đang tạo..." : "Tạo coupon"}
+              {createMutation.isPending ? "?ang t?o..." : "T?o coupon"}
             </button>
           )}
         </div>
       </div>
 
       {isLoading ? (
-        <LoadingSpinner label="Đang tải coupon..." />
+        <LoadingSpinner label="?ang t?i coupon..." />
       ) : coupons.length === 0 ? (
-        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-8 text-center text-sm text-steelgray">
-          Chưa có coupon nào.
+        <div className="rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl p-8 text-center text-sm text-softgray">
+          Chua c? coupon n?o.
         </div>
       ) : (
-        <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
+        <div className="rounded-2xl border border-white\/10 bg-graphite\/80 backdrop-blur-xl overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="border-b border-gunmetal/40 bg-charcoal/50">
-              <tr className="text-left text-steelgray">
-                <th className="px-4 py-3">Mã</th>
-                <th className="px-4 py-3">Mô tả</th>
-                <th className="px-4 py-3">Giảm</th>
-                <th className="px-4 py-3">Tối thiểu</th>
-                <th className="px-4 py-3">Đã dùng / Giới hạn</th>
-                <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3">Thao tác</th>
+            <thead className="border-b border-white\/10 bg-charcoal/50">
+              <tr className="text-left text-softgray">
+                <th className="px-4 py-3">M?</th>
+                <th className="px-4 py-3">M? t?</th>
+                <th className="px-4 py-3">Gi?m</th>
+                <th className="px-4 py-3">T?i thi?u</th>
+                <th className="px-4 py-3">?? d?ng / Gi?i h?n</th>
+                <th className="px-4 py-3">Tr?ng th?i</th>
+                <th className="px-4 py-3">Thao t?c</th>
               </tr>
             </thead>
             <tbody>
               {coupons.map((c) => (
-                <tr key={c.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30">
+                <tr key={c.id} className="border-t border-white\/10 hover:bg-charcoal/30">
                   <td className="px-4 py-3 font-mono font-bold text-warmwhite">{c.code}</td>
-                  <td className="px-4 py-3 text-softgray max-w-[220px] truncate">{c.description || "—"}</td>
+                  <td className="px-4 py-3 text-softgray max-w-[220px] truncate">{c.description || "?"}</td>
                   <td className="px-4 py-3 text-crimson font-semibold">
-                    {c.discount_type === "percent" ? `${c.discount_value}%` : `${new Intl.NumberFormat("vi-VN").format(c.discount_value)}₫`}
+                    {c.discount_type === "percent" ? `${c.discount_value}%` : `${new Intl.NumberFormat("vi-VN").format(c.discount_value)}?`}
                   </td>
-                  <td className="px-4 py-3 text-steelgray">
-                    {c.min_order_total ? `${new Intl.NumberFormat("vi-VN").format(c.min_order_total)}₫` : "—"}
+                  <td className="px-4 py-3 text-softgray">
+                    {c.min_order_total ? `${new Intl.NumberFormat("vi-VN").format(c.min_order_total)}?` : "?"}
                   </td>
-                  <td className="px-4 py-3 text-steelgray">
-                    {c.usage_count}/{c.usage_limit ?? "∞"}
+                  <td className="px-4 py-3 text-softgray">
+                    {c.usage_count}/{c.usage_limit ?? "8"}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.active ? "bg-emerald/15 text-emerald" : "bg-deeprose/15 text-rose"}`}>
-                      {c.active ? "Hoạt động" : "Tắt"}
+                      {c.active ? "Ho?t d?ng" : "T?t"}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <button onClick={() => startEdit(c)} className="text-sm text-crimson hover:text-sakura">Sửa</button>
-                      <button onClick={() => { if (confirm(`Xóa mã ${c.code}?`)) deleteMutation.mutate(c.id); }} className="text-sm text-deeprose hover:text-rose">Xóa</button>
+                      <button onClick={() => startEdit(c)} className="text-sm text-crimson hover:text-aurora-cyan">S?a</button>
+                      <button onClick={() => { if (confirm(`X?a m? ${c.code}?`)) deleteMutation.mutate(c.id); }} className="text-sm text-aurora-pink hover:text-rose">X?a</button>
                     </div>
                   </td>
                 </tr>

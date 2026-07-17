@@ -1,17 +1,23 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { productsApi } from "../api/client";
-import type { Product } from "../types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { productsApi, ratingsApi, likesApi } from "../api/client";
+import type { Product, RatingSummary, LikeStatus } from "../types";
 import LoadingSpinner from "../components/LoadingSpinner";
+import GlassCard from "../components/aurora/GlassCard";
+import GlowButton from "../components/aurora/GlowButton";
+import AuroraBadge from "../components/aurora/AuroraBadge";
+import StarRating from "../components/aurora/StarRating";
+import HeartButton from "../components/aurora/HeartButton";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 const SPEC_LABELS: Record<string, string> = {
   "Hệ điều hành": "os",
-  "Chipset": "chipset",
+  Chipset: "chipset",
   "Bộ nhớ trong": "ram",
   "Loại CPU": "cpu_type",
-  "GPU": "gpu",
+  GPU: "gpu",
   "Kích thước màn hình": "screen_size",
   "Công nghệ màn hình": "screen_tech",
   "Độ phân giải màn hình": "screen_res",
@@ -21,10 +27,10 @@ const SPEC_LABELS: Record<string, string> = {
   "Thẻ SIM": "sim",
   "Công nghệ NFC": "nfc",
   "Thời điểm ra mắt": "launch",
-  "Pin": "pin",
-  "Sạc": "sac",
+  Pin: "pin",
+  Sạc: "sac",
   "Bảo mật": "bao_mat",
-  "RAM": "ram",
+  RAM: "ram",
   "Thẻ nhớ": "the_nho",
 };
 
@@ -33,10 +39,7 @@ function parseSpecValue(specs: string, label: string): string {
   const labelLower = label.toLowerCase();
   for (const line of lines) {
     const lower = line.toLowerCase();
-    if (
-      lower.startsWith(labelLower + ":") ||
-      lower.startsWith(labelLower + " -")
-    ) {
+    if (lower.startsWith(labelLower + ":") || lower.startsWith(labelLower + " -")) {
       const parts = line.split(/[:]/);
       if (parts.length >= 2) {
         return parts.slice(1).join(":").trim();
@@ -47,37 +50,30 @@ function parseSpecValue(specs: string, label: string): string {
 }
 
 type Tab = "mota" | "thongso";
+type GalleryItem = { url: string; media_type: "image" | "video" };
 
-function SpecsTable({ specs }: { specs: string }) {
-  const rows = Object.entries(SPEC_LABELS).map(([label]) => {
-    const value = parseSpecValue(specs, label);
-    return { label, value };
-  }).filter((r) => r.value);
-
-  if (rows.length === 0) return null;
-
-  return (
-    <div className="divide-y divide-gunmetal/50">
-      {rows.map((row) => (
-        <div key={row.label} className="flex items-center justify-between py-3.5">
-          <span className="text-sm text-steelgray">{row.label}</span>
-          <span className="text-sm font-medium text-warmwhite">{row.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-interface GalleryItem {
-  url: string;
-  media_type: "image" | "video";
-  is_cover: boolean;
-  position: number;
+// ── Product Gallery ──────────────────────────────────────────────
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mq.matches);
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+  return reduced;
 }
 
 function ProductGallery({ product }: { product: Product }) {
+  const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [active, setActive] = useState(0);
+  const [lightboxActive, setLightboxActive] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [zoomPos, setZoomPos] = useState<{ x: number; y: number } | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const reducedMotion = usePrefersReducedMotion();
 
   const items = useMemo<GalleryItem[]>(() => {
     const list: GalleryItem[] = [];
@@ -91,76 +87,184 @@ function ProductGallery({ product }: { product: Product }) {
       );
       for (const m of sorted) {
         if (!seen.has(m.url)) {
-          list.push({ url: m.url, media_type: m.media_type, is_cover: m.is_cover, position: m.position });
+          list.push({ url: m.url, media_type: m.media_type });
           seen.add(m.url);
         }
       }
     }
     if (product.image_url && !seen.has(product.image_url)) {
-      list.unshift({ url: product.image_url, media_type: "image", is_cover: true, position: -1 });
+      list.unshift({ url: product.image_url, media_type: "image" });
     }
     return list;
   }, [product]);
 
+  const safeIndex = Math.max(0, Math.min(activeIndex, items.length - 1));
+  const current = items[safeIndex] ?? null;
+
+  // Auto-redirect: advance every 4500ms unless paused.
+  useEffect(() => {
+    if (items.length <= 1) return;
+    if (reducedMotion) return;
+
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      if (lightboxOpen) return;
+      if (isHovered) return;
+      // If the active item is a video, don't skip away from it.
+      const it = items[safeIndex];
+      if (it && it.media_type === "video") return;
+      setActiveIndex((i) => (i + 1) % items.length);
+    };
+
+    timer = setInterval(tick, 4500);
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [items, safeIndex, isHovered, lightboxOpen, reducedMotion]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+      else if (e.key === "ArrowRight")
+        setLightboxActive((i) => (i + 1) % items.length);
+      else if (e.key === "ArrowLeft")
+        setLightboxActive((i) => (i - 1 + items.length) % items.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxOpen, items.length]);
+
+  const onStageMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!stageRef.current || !current || current.media_type !== "image") return;
+    const rect = stageRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPos({ x, y });
+  };
+
+  const handleThumbClick = (i: number) => {
+    setActiveIndex(i);
+    setZoomPos(null);
+  };
+
   if (items.length === 0) {
     return (
-      <div className="flex aspect-square items-center justify-center rounded-2xl bg-graphite border border-gunmetal/40 text-steelgray text-sm">
-        Chưa có hình ảnh
-      </div>
+      <GlassCard className="flex aspect-square items-center justify-center" intensity="med">
+        <p className="text-softgray">Chưa có hình ảnh</p>
+      </GlassCard>
     );
   }
 
-  const current = items[Math.max(0, Math.min(active, items.length - 1))];
-
   return (
-    <>
-      {/* Main image */}
-      <div className="relative group">
-        <button
-          onClick={() => setLightboxOpen(true)}
-          className="relative w-full overflow-hidden rounded-2xl bg-graphite border border-gunmetal/40 aspect-square block cursor-zoom-in"
-        >
-          {current.media_type === "video" ? (
-            <video
-              key={current.url}
-              src={current.url}
-              controls
-              playsInline
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <img
-              key={current.url}
-              src={current.url}
-              alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5">
-            <span className="text-white text-sm font-medium flex items-center gap-2">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-                <path d="M11 8v6" />
-                <path d="M8 11h6" />
-              </svg>
-              Phóng to
+    <div>
+      {/* Main stage */}
+      <div
+        ref={stageRef}
+        className="group relative w-full overflow-hidden rounded-aurora border border-white/10 bg-aurora-bg-mid shadow-glow-soft aspect-square"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          setZoomPos(null);
+        }}
+        onMouseMove={onStageMove}
+        onClick={() => {
+          setLightboxActive(safeIndex);
+          setLightboxOpen(true);
+        }}
+      >
+        {current?.media_type === "video" ? (
+          <video
+            key={current.url}
+            src={current.url}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            disablePictureInPicture
+            controlsList="nodownload nofullscreen noremoteplayback"
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ pointerEvents: "none" }}
+          />
+        ) : (
+          <img
+            key={current?.url}
+            src={current?.url}
+            alt={product.name}
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+          />
+        )}
+
+        {/* Zoom overlay — only when on an image. z-20 keeps it above the video element. */}
+        {current?.media_type === "image" && zoomPos && (
+          <div
+            aria-hidden
+            className="gallery-zoom-layer pointer-events-none absolute inset-0 z-20"
+            style={{
+              backgroundImage: `url(${current.url})`,
+              backgroundSize: "200%",
+              backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
+              backgroundRepeat: "no-repeat",
+              transition: "opacity 200ms ease",
+            }}
+          />
+        )}
+
+        {/* Bottom-center pill for video (click-to-unmute hint, not a native control). */}
+        {current?.media_type === "video" && (
+          <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
+            <span className="rounded-full border border-white/20 bg-charcoal/70 px-3 py-1 text-[11px] font-medium text-warmwhite backdrop-blur-md">
+              ▶ Click để xem toàn màn hình
             </span>
           </div>
-          {current.media_type === "video" && (
-            <div className="absolute top-4 left-4 z-10 rounded-full bg-crimson/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white shadow-lg flex items-center gap-1.5">
-              <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+        )}
+
+        {/* Image-mode hint */}
+        {current?.media_type === "image" && (
+          <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <span className="rounded-full border border-white/20 bg-charcoal/70 px-3 py-1 text-[11px] font-medium text-warmwhite backdrop-blur-md">
+              🔍 Hover để phóng to · Click để xem toàn màn hình
+            </span>
+          </div>
+        )}
+
+        {current?.media_type === "video" && (
+          <div className="absolute left-4 top-4 z-30">
+            <AuroraBadge tone="rose" glow>
               Video
-            </div>
-          )}
-          {product.tags && (
-            <div className="absolute top-4 right-4 z-10">
-              <span className="product-tag">{product.tags}</span>
-            </div>
-          )}
-        </button>
+            </AuroraBadge>
+          </div>
+        )}
+
+        {product.tags && (
+          <div className="absolute right-4 top-4 z-30">
+            <AuroraBadge tone="violet" glow>
+              {product.tags}
+            </AuroraBadge>
+          </div>
+        )}
+
+        {/* Dots pagination */}
+        {items.length > 1 && (
+          <div className="absolute inset-x-0 bottom-2 z-30 flex justify-center gap-1.5">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                aria-label={`Slide ${i + 1}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleThumbClick(i);
+                }}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === safeIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/70"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Thumbnails */}
@@ -170,25 +274,23 @@ function ProductGallery({ product }: { product: Product }) {
             <button
               key={it.url + i}
               type="button"
-              onClick={() => setActive(i)}
-              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all duration-200 ${
-                i === active
-                  ? "border-crimson shadow-lg shadow-crimson/30"
-                  : "border-gunmetal/40 hover:border-silvergray/60"
+              onClick={() => handleThumbClick(i)}
+              aria-label={`Xem ${it.media_type === "video" ? "video" : "ảnh"} ${i + 1}`}
+              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border transition-all duration-200 ${
+                i === safeIndex
+                  ? "border-aurora-cyan shadow-[0_0_0_1px_rgba(34,211,238,0.4),0_10px_24px_-10px_rgba(34,211,238,0.5)]"
+                  : "border-white/10 hover:border-white/30"
               }`}
             >
               {it.media_type === "video" ? (
-                <div className="flex h-full w-full flex-col items-center justify-center bg-charcoal gap-1">
-                  <svg className="h-5 w-5 text-steelgray" fill="currentColor" viewBox="0 0 24 24">
+                <div className="flex h-full w-full flex-col items-center justify-center bg-aurora-bg-mid gap-1">
+                  <svg className="h-5 w-5 text-aurora-cyan" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                   </svg>
-                  <span className="text-[9px] text-steelgray">Video</span>
+                  <span className="text-[9px] text-softgray">Video</span>
                 </div>
               ) : (
                 <img src={it.url} alt="" className="h-full w-full object-cover" />
-              )}
-              {i === active && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-crimson" />
               )}
             </button>
           ))}
@@ -196,60 +298,253 @@ function ProductGallery({ product }: { product: Product }) {
       )}
 
       {/* Lightbox */}
-      {lightboxOpen && (
+      {lightboxOpen && items[lightboxActive] && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/90 backdrop-blur-md"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-aurora-bg-deep/90 backdrop-blur-2xl"
           onClick={() => setLightboxOpen(false)}
         >
           <button
             onClick={() => setLightboxOpen(false)}
-            className="absolute top-5 right-5 flex h-12 w-12 items-center justify-center rounded-full bg-graphite/80 border border-gunmetal/60 text-steelgray hover:text-warmwhite transition-colors"
+            aria-label="Đóng"
+            className="absolute right-5 top-5 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-warmwhite transition hover:bg-white/20"
           >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
           {items.length > 1 && (
             <>
               <button
-                onClick={(e) => { e.stopPropagation(); setActive((prev) => (prev - 1 + items.length) % items.length); }}
-                className="absolute left-5 flex h-12 w-12 items-center justify-center rounded-full bg-graphite/80 border border-gunmetal/60 text-steelgray hover:text-warmwhite transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxActive((i) => (i - 1 + items.length) % items.length);
+                }}
+                aria-label="Ảnh trước"
+                className="absolute left-5 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-warmwhite transition hover:bg-white/20"
               >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setActive((prev) => (prev + 1) % items.length); }}
-                className="absolute right-5 flex h-12 w-12 items-center justify-center rounded-full bg-graphite/80 border border-gunmetal/60 text-steelgray hover:text-warmwhite transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxActive((i) => (i + 1) % items.length);
+                }}
+                aria-label="Ảnh sau"
+                className="absolute right-5 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-warmwhite transition hover:bg-white/20"
               >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </>
           )}
-          <img
-            src={items[active].url}
-            alt={product.name}
-            className="max-h-[85vh] max-w-[90vw] rounded-2xl object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+          {items[lightboxActive].media_type === "video" ? (
+            <video
+              key={items[lightboxActive].url}
+              src={items[lightboxActive].url}
+              autoPlay
+              muted
+              loop
+              playsInline
+              disablePictureInPicture
+              controlsList="nodownload nofullscreen noremoteplayback"
+              className="max-h-[85vh] max-w-[90vw] rounded-aurora object-contain"
+              style={{ pointerEvents: "none" }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={items[lightboxActive].url}
+              alt={product.name}
+              className="max-h-[85vh] max-w-[90vw] rounded-aurora object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+          <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2">
             {items.map((_, i) => (
               <button
                 key={i}
-                onClick={(e) => { e.stopPropagation(); setActive(i); }}
-                className={`h-2 rounded-full transition-all ${i === active ? "w-6 bg-crimson" : "w-2 bg-steelgray/50"}`}
+                aria-label={`Slide ${i + 1}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxActive(i);
+                }}
+                className={`h-2 rounded-full transition-all ${
+                  i === lightboxActive ? "w-6 bg-aurora-cyan" : "w-2 bg-white/40 hover:bg-white/70"
+                }`}
               />
             ))}
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
+// ── Rating + Like panel ───────────────────────────────────────────
+function RatingAndLike({ product }: { product: Product }) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [toast, setToast] = useState<string | null>(null);
+
+  const ratingQuery = useQuery({
+    queryKey: ["product-rating", product.id],
+    queryFn: async () => {
+      const { data } = await ratingsApi.get(product.id);
+      return data as RatingSummary;
+    },
+  });
+
+  const likeQuery = useQuery({
+    queryKey: ["product-like", product.id],
+    queryFn: async () => {
+      const { data } = await likesApi.get(product.id);
+      return data as LikeStatus;
+    },
+  });
+
+  const ratingMutation = useMutation({
+    mutationFn: (stars: number) => ratingsApi.upsert(product.id, { stars }),
+    onSuccess: (res) => {
+      queryClient.setQueryData(["product-rating", product.id], res.data);
+      queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+      setToast("Đã lưu đánh giá của bạn");
+      setTimeout(() => setToast(null), 2200);
+    },
+  });
+
+  const likeMutation = useMutation({
+    mutationFn: () => likesApi.toggle(product.id),
+    onMutate: async () => {
+      const prev = queryClient.getQueryData<LikeStatus>(["product-like", product.id]);
+      if (prev) {
+        const next: LikeStatus = {
+          liked: !prev.liked,
+          count: prev.count + (prev.liked ? -1 : 1),
+        };
+        queryClient.setQueryData(["product-like", product.id], next);
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["product-like", product.id], ctx.prev);
+    },
+    onSuccess: (res) => {
+      queryClient.setQueryData(["product-like", product.id], res.data);
+      queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+    },
+  });
+
+  const handleRate = (stars: number) => {
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+    ratingMutation.mutate(stars);
+  };
+
+  const handleLike = () => {
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+    likeMutation.mutate();
+  };
+
+  const summary = ratingQuery.data;
+  const likeStatus = likeQuery.data;
+
+  return (
+    <GlassCard intensity="med" className="space-y-4 p-5">
+      <div>
+        <div className="flex items-center gap-2">
+          <StarRating
+            value={summary?.avg ?? product.avg_rating ?? 0}
+            readonly
+            size="md"
+          />
+          <span className="text-sm text-softgray">
+            {(summary?.avg ?? product.avg_rating ?? 0).toFixed(1)} ·{" "}
+            {summary?.count ?? product.rating_count ?? 0} đánh giá
+          </span>
+        </div>
+      </div>
+
+      <div className="aurora-divider" />
+
+      <div>
+        <p className="mb-2 text-xs uppercase tracking-wide text-softgray">
+          Đánh giá của bạn
+        </p>
+        {user ? (
+          <StarRating
+            value={summary?.my_rating ?? 0}
+            onChange={handleRate}
+            size="lg"
+          />
+        ) : (
+          <button
+            onClick={() => (window.location.href = "/login")}
+            className="text-sm aurora-text-rainbow underline-offset-2 hover:underline"
+          >
+            Đăng nhập để đánh giá
+          </button>
+        )}
+      </div>
+
+      <div className="aurora-divider" />
+
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-warmwhite">Yêu thích</p>
+          <p className="text-xs text-softgray">
+            Lưu sản phẩm để mua sau
+          </p>
+        </div>
+        <HeartButton
+          liked={likeStatus?.liked ?? false}
+          count={likeStatus?.count ?? product.like_count ?? 0}
+          loading={likeMutation.isPending}
+          onToggle={handleLike}
+          size="lg"
+          showLabel
+        />
+      </div>
+
+      {toast && (
+        <div className="rounded-xl border border-aurora-mint/30 bg-aurora-mint/10 px-3 py-2 text-sm text-aurora-mint">
+          {toast}
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
+// ── Specs table ───────────────────────────────────────────────────
+function SpecsTable({ specs }: { specs: string }) {
+  const rows = Object.entries(SPEC_LABELS)
+    .map(([label]) => ({ label, value: parseSpecValue(specs, label) }))
+    .filter((r) => r.value);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="divide-y divide-white/5">
+      {rows.map((row) => (
+        <div key={row.label} className="flex items-center justify-between py-3.5">
+          <span className="text-sm text-softgray">{row.label}</span>
+          <span className="max-w-[60%] text-right text-sm font-medium text-warmwhite">
+            {row.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -273,18 +568,24 @@ export default function ProductDetail() {
   if (error || !product) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-24 text-center">
-        <div className="mb-6 flex justify-center">
-          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-graphite border border-gunmetal/40">
-            <svg className="h-12 w-12 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+        <GlassCard intensity="high" className="mx-auto max-w-md p-12" glow>
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-aurora-bg-mid">
+              <svg className="h-12 w-12 text-softgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
-        </div>
-        <h2 className="text-2xl font-bold text-warmwhite mb-2">Sản phẩm không tồn tại</h2>
-        <p className="text-steelgray mb-8">Sản phẩm này có thể đã bị xóa hoặc không còn bán.</p>
-        <button onClick={() => navigate("/")} className="btn-primary">
-          Quay lại trang chủ
-        </button>
+          <h2 className="aurora-text-gradient mb-2 text-2xl font-extrabold">
+            Sản phẩm không tồn tại
+          </h2>
+          <p className="mb-8 text-softgray">
+            Sản phẩm này có thể đã bị xóa hoặc không còn bán.
+          </p>
+          <GlowButton variant="primary" onClick={() => navigate("/")}>
+            Quay lại trang chủ
+          </GlowButton>
+        </GlassCard>
       </div>
     );
   }
@@ -295,306 +596,214 @@ export default function ProductDetail() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-sm text-steelgray mb-8">
-        <button onClick={() => navigate("/")} className="hover:text-crimson transition-colors flex items-center gap-1.5">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <nav className="mb-8 flex items-center gap-2 text-sm text-softgray">
+        <button onClick={() => navigate("/")} className="flex items-center gap-1.5 transition-colors hover:text-aurora-cyan">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
           Trang chủ
         </button>
-        <svg className="h-4 w-4 text-gunmetal" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <svg className="h-4 w-4 text-softgray/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        <button onClick={() => navigate("/")} className="hover:text-crimson transition-colors capitalize">
+        <button onClick={() => navigate("/")} className="capitalize transition-colors hover:text-aurora-cyan">
           {product.tags}
         </button>
-        <svg className="h-4 w-4 text-gunmetal" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <svg className="h-4 w-4 text-softgray/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        <span className="text-softgray font-medium truncate max-w-[200px]">{product.name}</span>
+        <span className="max-w-[200px] truncate font-medium text-softgray">{product.name}</span>
       </nav>
 
       {/* Hero Section */}
-      <div className="grid gap-10 lg:grid-cols-[1fr_480px] items-start mb-16">
+      <div className="mb-16 grid items-start gap-10 lg:grid-cols-[1fr_480px]">
         {/* Left: Gallery */}
         <div>
           <ProductGallery product={product} />
         </div>
 
-        {/* Right: Product Info — sticky on desktop */}
-        <div className="lg:sticky lg:top-24 space-y-6">
+        {/* Right: Product Info */}
+        <div className="space-y-6 lg:sticky lg:top-24">
           {/* Header */}
           <div>
             {product.tags && (
-              <div className="flex items-center gap-2 mb-3">
-                <span className="tag-badge">{product.tags}</span>
-                <span className="text-xs text-steelgray">/ Mã: #{product.id.toString().padStart(4, "0")}</span>
+              <div className="mb-3 flex items-center gap-2">
+                <AuroraBadge tone="violet" glow>{product.tags}</AuroraBadge>
+                <span className="text-xs text-softgray">
+                  / Mã: #{product.id.toString().padStart(4, "0")}
+                </span>
               </div>
             )}
-            <h1 className="text-3xl lg:text-4xl font-extrabold text-warmwhite leading-tight mb-5">
+            <h1 className="aurora-text-gradient mb-5 text-3xl font-extrabold leading-tight lg:text-4xl">
               {product.name}
             </h1>
 
-            {/* Rating */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <svg key={s} className="h-4 w-4 text-gold" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <span className="text-sm text-steelgray">5.0 · 0 đánh giá</span>
+            <div className="mb-6 flex items-center gap-3">
+              <StarRating value={product.avg_rating ?? 0} readonly size="sm" />
+              <span className="text-sm text-softgray">
+                {(product.avg_rating ?? 0).toFixed(1)} ·{" "}
+                {product.rating_count ?? 0} đánh giá
+              </span>
             </div>
 
             {/* Price */}
-            <div className="bg-graphite/60 rounded-2xl border border-gunmetal/40 p-5 mb-5">
+            <GlassCard intensity="med" className="mb-5 p-5">
               <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-black text-crimson">
+                <span className="aurora-text-rainbow text-4xl font-black">
                   {new Intl.NumberFormat("vi-VN").format(product.price)}
                 </span>
-                <span className="text-base text-steelgray font-medium">VND</span>
+                <span className="text-base font-medium text-softgray">VND</span>
               </div>
-              <div className="mt-2 flex items-center gap-2 text-sm text-steelgray">
-                <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <div className="mt-2 flex items-center gap-2 text-sm text-softgray">
+                <svg className="h-4 w-4 text-aurora-mint" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
                 Đã bao gồm VAT
               </div>
-            </div>
+            </GlassCard>
 
             {/* Stock */}
-            <div className="bg-graphite/40 rounded-xl border border-gunmetal/40 p-4 mb-5">
-              <div className="flex items-center justify-between mb-2">
+            <GlassCard intensity="low" className="mb-5 p-4">
+              <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${inStock ? "bg-emerald-400 animate-pulse" : "bg-deeprose"}`} />
-                  <span className={`text-sm font-semibold ${inStock ? "text-emerald-400" : "text-deeprose"}`}>
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      inStock ? "bg-aurora-mint animate-pulse-glow" : "bg-aurora-pink"
+                    }`}
+                  />
+                  <span
+                    className={`text-sm font-semibold ${
+                      inStock ? "text-aurora-mint" : "text-aurora-pink"
+                    }`}
+                  >
                     {inStock ? "Còn hàng" : "Hết hàng"}
                   </span>
                 </div>
-                <span className="text-sm text-steelgray">{product.stock} sản phẩm</span>
+                <span className="text-sm text-softgray">{product.stock} sản phẩm</span>
               </div>
               {inStock && (
-                <div className="w-full bg-charcoal rounded-full h-1.5">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-aurora-bg-deep">
                   <div
-                    className="h-1.5 rounded-full transition-all duration-500 bg-gradient-to-r from-crimson to-rose"
+                    className="h-1.5 rounded-full bg-gradient-to-r from-aurora-pink to-aurora-violet transition-all duration-500"
                     style={{ width: `${stockPercent}%` }}
                   />
                 </div>
               )}
-            </div>
+            </GlassCard>
           </div>
 
+          {/* Rating + Like */}
+          <RatingAndLike product={product} />
+
           {/* Quantity + Add to Cart */}
-          <div className="bg-graphite/60 rounded-2xl border border-gunmetal/40 p-5 space-y-4">
+          <GlassCard intensity="med" className="space-y-4 p-5">
             <div>
-              <label className="block text-sm font-medium text-softgray mb-2">Số lượng</label>
+              <label className="mb-2 block text-sm font-medium text-softgray">Số lượng</label>
               <div className="flex items-center gap-3">
-                <div className="flex items-center border border-gunmetal/60 bg-charcoal rounded-xl overflow-hidden">
+                <div className="flex items-center overflow-hidden rounded-aurora border border-white/10 bg-aurora-bg-deep">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="h-11 w-11 flex items-center justify-center text-warmwhite hover:bg-gunmetal transition-colors text-lg font-light"
+                    className="flex h-11 w-11 items-center justify-center text-lg font-light text-warmwhite transition-colors hover:bg-white/10"
                   >
                     -
                   </button>
-                  <span className="h-11 w-14 flex items-center justify-center text-base font-semibold text-warmwhite border-x border-gunmetal/40">
+                  <span className="w-12 text-center text-base font-semibold text-warmwhite">
                     {quantity}
                   </span>
                   <button
                     onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
-                    className="h-11 w-11 flex items-center justify-center text-warmwhite hover:bg-gunmetal transition-colors text-lg font-light"
+                    className="flex h-11 w-11 items-center justify-center text-lg font-light text-warmwhite transition-colors hover:bg-white/10"
                   >
                     +
                   </button>
                 </div>
-                <span className="text-xs text-steelgray">
-                  Còn {product.stock} sản phẩm
+                <span className="text-sm text-softgray">
+                  Tổng:{" "}
+                  <span className="aurora-text-rainbow font-semibold">
+                    {new Intl.NumberFormat("vi-VN").format(product.price * quantity)}
+                  </span>{" "}
+                  ₫
                 </span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                onClick={() => addItem(product.id, quantity)}
-                disabled={!inStock}
-                className="btn-primary flex-1 py-3.5 text-base disabled:opacity-50 shadow-lg shadow-crimson/20 hover:shadow-crimson/40 transition-shadow"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <GlowButton
+              variant="primary"
+              size="lg"
+              className="w-full"
+              disabled={!inStock}
+              onClick={() => {
+                addItem(product.id, quantity);
+                navigate("/cart");
+              }}
+              leftIcon={
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                {inStock ? "Thêm vào giỏ hàng" : "Hết hàng"}
-              </button>
-              <button
-                onClick={() => navigate("/checkout")}
-                disabled={!inStock}
-                className="btn-primary flex-1 py-3.5 text-base disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg, #D94A63 0%, #A82F49 100%)" }}
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Mua ngay
-              </button>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 pt-1">
-              <button className="flex items-center gap-1.5 text-sm text-steelgray hover:text-sakura transition-colors">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                Yêu thích
-              </button>
-              <div className="h-4 w-px bg-gunmetal/60" />
-              <button className="flex items-center gap-1.5 text-sm text-steelgray hover:text-sakura transition-colors">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-                Chia sẻ
-              </button>
-            </div>
-          </div>
-
-          {/* Trust Badges */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { icon: "12T", text: "Bảo hành 12 tháng" },
-              { icon: "7N", text: "Đổi trả 7 ngày" },
-              { icon: "FT", text: "Giao hàng miễn phí" },
-              { icon: "0%", text: "Trả góp 0%" },
-            ].map((b) => (
-              <div key={b.text} className="flex items-center gap-2.5 rounded-xl border border-gunmetal/40 bg-graphite/40 px-3.5 py-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-crimson/10 text-xs font-bold text-crimson">
-                  {b.icon}
-                </span>
-                <span className="text-xs text-softgray font-medium">{b.text}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Delivery Info */}
-          <div className="rounded-2xl border border-gunmetal/40 bg-graphite/40 p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-warmwhite mb-1">Thông tin giao hàng</h3>
-            <div className="space-y-2.5">
-              <div className="flex items-start gap-3">
-                <svg className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <div>
-                  <p className="text-sm text-warmwhite">Giao hàng toàn quốc</p>
-                  <p className="text-xs text-steelgray">2-5 ngày làm việc</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="h-4 w-4 text-gold mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                <div>
-                  <p className="text-sm text-warmwhite">Cam kết chính hãng 100%</p>
-                  <p className="text-xs text-steelgray">Hàng mới, nguyên seal</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <svg className="h-4 w-4 text-crimson mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <div>
-                  <p className="text-sm text-warmwhite">Giao nhanh 2h trong nội thành</p>
-                  <p className="text-xs text-steelgray">Áp dụng TP.HCM, Hà Nội</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs: Description / Specs */}
-      <div className="border-t border-gunmetal/40 pt-8 mb-8">
-        <div className="flex gap-1 bg-graphite/60 rounded-xl p-1 border border-gunmetal/40 w-fit mb-8">
-          {[
-            { key: "mota", label: "Mô tả sản phẩm" },
-            { key: "thongso", label: "Thông số kỹ thuật" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as Tab)}
-              className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                activeTab === tab.key
-                  ? "bg-crimson text-white shadow-lg shadow-crimson/30"
-                  : "text-steelgray hover:text-warmwhite hover:bg-gunmetal/40"
-              }`}
+              }
             >
-              {tab.label}
-            </button>
-          ))}
+              {inStock ? "Thêm vào giỏ hàng" : "Hết hàng"}
+            </GlowButton>
+
+            <div className="grid grid-cols-2 gap-2 text-xs text-softgray">
+              <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2">
+                <svg className="h-4 w-4 text-aurora-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0 0h-3.75m3.75 0h3.75M16.5 18.75V9M3.375 14.25h.007m12.993 0h.007" />
+                </svg>
+                Giao hàng nhanh
+              </div>
+              <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2">
+                <svg className="h-4 w-4 text-aurora-mint" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                </svg>
+                Bảo hành chính hãng
+              </div>
+            </div>
+          </GlassCard>
         </div>
-
-        {activeTab === "mota" && product.description && (
-          <div className="max-w-4xl">
-            <div
-              className="prose-product"
-              dangerouslySetInnerHTML={{ __html: product.description }}
-            />
-          </div>
-        )}
-
-        {activeTab === "thongso" && (
-          <div className="max-w-3xl">
-            <SpecsTable specs={product.specifications || ""} />
-          </div>
-        )}
-
-        {activeTab === "mota" && !product.description && (
-          <p className="text-steelgray text-sm">Sản phẩm này chưa có mô tả.</p>
-        )}
       </div>
 
-      <style>{`
-        .prose-product h2 { font-size: 1.5rem; font-weight: 700; color: #F4EFEC; margin: 1.5em 0 0.75em; }
-        .prose-product h3 { font-size: 1.2rem; font-weight: 600; color: #F4EFEC; margin: 1.25em 0 0.5em; }
-        .prose-product p { color: #C9C4C6; margin: 1em 0; line-height: 1.75; }
-        .prose-product ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; color: #C9C4C6; }
-        .prose-product ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; color: #C9C4C6; }
-        .prose-product li { margin: 0.4em 0; }
-        .prose-product blockquote {
-          border-left: 4px solid #D94A63;
-          padding-left: 1em;
-          color: #C9C4C6;
-          margin: 1.5em 0;
-          font-style: italic;
-        }
-        .prose-product code {
-          background: #3A2F33;
-          padding: 0.15em 0.4em;
-          border-radius: 4px;
-          font-size: 0.875em;
-          font-family: monospace;
-          color: #F28CA6;
-        }
-        .prose-product pre {
-          background: #3A2F33;
-          padding: 1.25em;
-          border-radius: 8px;
-          overflow-x: auto;
-          margin: 1.5em 0;
-        }
-        .prose-product pre code { background: none; padding: 0; color: #C9C4C6; }
-        .prose-product img {
-          max-width: 100%;
-          border-radius: 12px;
-          margin: 1.5em auto;
-          display: block;
-        }
-        .prose-product video {
-          max-width: 100%;
-          border-radius: 12px;
-          margin: 1.5em auto;
-          display: block;
-        }
-        .scrollbar-thin::-webkit-scrollbar { height: 4px; }
-        .scrollbar-thin::-webkit-scrollbar-track { background: #2A2024; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: #8A858A; border-radius: 2px; }
-      `}</style>
+      {/* Tabs */}
+      <GlassCard intensity="med" className="overflow-hidden p-0">
+        <div className="flex border-b border-white/10">
+          <button
+            onClick={() => setActiveTab("mota")}
+            className={`relative flex-1 px-6 py-4 text-sm font-semibold transition-colors sm:flex-none sm:px-8 ${
+              activeTab === "mota" ? "text-warmwhite" : "text-softgray hover:text-warmwhite"
+            }`}
+          >
+            Mô tả sản phẩm
+            {activeTab === "mota" && (
+              <span className="aurora-shimmer absolute inset-x-0 bottom-0 h-0.5 rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("thongso")}
+            className={`relative flex-1 px-6 py-4 text-sm font-semibold transition-colors sm:flex-none sm:px-8 ${
+              activeTab === "thongso" ? "text-warmwhite" : "text-softgray hover:text-warmwhite"
+            }`}
+          >
+            Thông số kỹ thuật
+            {activeTab === "thongso" && (
+              <span className="aurora-shimmer absolute inset-x-0 bottom-0 h-0.5 rounded-full" />
+            )}
+          </button>
+        </div>
+        <div className="p-6 sm:p-8">
+          {activeTab === "mota" ? (
+            product.description ? (
+              <div
+                className="prose-aurora"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
+            ) : (
+              <p className="text-softgray">Chưa có mô tả chi tiết.</p>
+            )
+          ) : (
+            <SpecsTable specs={product.specifications ?? ""} />
+          )}
+        </div>
+      </GlassCard>
     </div>
   );
 }
