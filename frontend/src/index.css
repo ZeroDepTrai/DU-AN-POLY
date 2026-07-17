@@ -12,8 +12,8 @@
     margin: 0;
     min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: #1E1E1E;
-    color: #F4EFEC;
+    background-color: #181417;
+    color: #EEE7E8;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -26,7 +26,7 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #1E1E1E;
+    background: #181417;
   }
   ::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #D94A63 0%, #A82F49 100%);
@@ -89,14 +89,14 @@
   }
   .aurora-text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #F4EFEC 0%, #C9C4C6 35%, #F28CA6 70%, #D94A63 100%);
+    background-image: linear-gradient(135deg, #EEE7E8 0%, #C9C4C6 35%, #F28CA6 70%, #D94A63 100%);
   }
   .aurora-text-rainbow {
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(120deg, #5B6CFF 0%, #8B5CF6 25%, #22D3EE 55%, #34D399 80%, #F472B6 100%);
   }
   .aurora-divider {
-    background-image: linear-gradient(90deg, transparent, rgba(91,108,255,0.6), rgba(34,211,238,0.6), transparent);
+    background-image: linear-gradient(90deg, transparent, rgba(217,74,99,0.6), rgba(242,140,166,0.5), transparent);
     height: 1px;
   }
   .aurora-input {
@@ -161,14 +161,14 @@
 }
 
 .leaflet-popup-content-wrapper {
-  background: #2A2024 !important;
-  color: #F4EFEC !important;
+  background: #232028 !important;
+  color: #EEE7E8 !important;
   border-radius: 8px !important;
   border: 1px solid rgba(217,74,99,0.4) !important;
 }
 
 .leaflet-popup-tip {
-  background: #2A2024 !important;
+  background: #232028 !important;
 }
 
 /* Smooth out gallery zoom transitions (used by ProductDetail) */

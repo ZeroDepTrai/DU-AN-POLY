@@ -4,45 +4,44 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Surface scale (page → card → nested) — Figma "Aurora" reference
-        charcoal: "#1E1E1E",      // page background
-        graphite: "#2A2024",      // raised surface (slightly warmer)
+        // Surface scale (page → card → nested) — CellZone brand palette
+        charcoal: "#181417",      // page background (Charcoal Black)
+        graphite: "#232028",      // raised surface
         gunmetal: "#3A2F33",      // border / divider
-        // Accent ramp (rose)
+        // Accent ramp
         lightpink: "#F4A2B7",
-        sakura: "#F28CA6",
+        sakura: "#F28CA6",        // Sakura Pink
         rose: "#E36A86",
-        crimson: "#D94A63",       // primary CTA
-        raspberry: "#C63D59",     // hover
-        deeprose: "#A82F49",      // pressed / danger
+        crimson: "#D94A63",       // Crimson primary CTA
+        raspberry: "#C63D59",
+        deeprose: "#A82F49",
         winered: "#7D2438",
         burgundy: "#58202D",
         // Text scale
-        warmwhite: "#F4EFEC",
+        warmwhite: "#EEE7E8",     // Warm White
         softgray: "#C9C4C6",
         steelgray: "#8A858A",
         silvergray: "#BDB7BC",
         // Decorative
-        gold: "#B88B52",
+        gold: "#B88B52",          // Antique Gold
         bronze: "#8D683E",
-        // Card surface tint extracted from Figma (0x40 0x2A 0x34)
+        // Card surface tint
         cardtint: "#402A34",
         // Hero / accent gradient stops
         accentFrom: "#D94A63",
         accentTo: "#A82F49",
-        // Aurora UI palette — remapped to the rose brand so existing
-        // utility classes (bg-aurora-cyan, text-aurora-violet, etc.) all
-        // resolve to the original rose accent while we keep aurora tinted
-        // surfaces for distinction. Bg-deep/mid stay charcoal-neutral.
+        // Aurora UI palette — re-mapped to brand so existing utility
+        // classes (bg-aurora-cyan, text-aurora-violet, …) all resolve
+        // to the rose/sakura accents.
         aurora: {
-          "bg-deep": "#1E1E1E",     // charcoal (page surface)
-          "bg-mid": "#2A2024",      // graphite (raised surface)
+          "bg-deep": "#181417",     // Charcoal Black
+          "bg-mid": "#232028",      // graphite
           "bg-glass": "rgba(255,255,255,0.04)",
-          indigo: "#D94A63",        // crimson → primary accent
-          violet: "#E36A86",        // rose
-          cyan: "#F28CA6",          // sakura → links / focus
+          indigo: "#D94A63",        // Crimson
+          violet: "#E36A86",        // Rose
+          cyan: "#F28CA6",          // Sakura (links / focus)
           mint: "#34D399",          // keep mint (status ok)
-          pink: "#F472B6",          // keep (heart likes)
+          pink: "#F28CA6",          // Sakura (heart/likes)
         },
       },
       fontFamily: {
@@ -111,7 +110,7 @@ export default {
         "rose-gradient":
           "linear-gradient(135deg, #D94A63 0%, #A82F49 100%)",
         "text-gradient-aurora":
-          "linear-gradient(135deg, #F4EFEC 0%, #C9C4C6 50%, #F28CA6 100%)",
+          "linear-gradient(135deg, #EEE7E8 0%, #C9C4C6 50%, #F28CA6 100%)",
         "text-gradient-rose":
           "linear-gradient(135deg, #F28CA6 0%, #D94A63 60%, #A82F49 100%)",
       },
