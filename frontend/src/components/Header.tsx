@@ -71,6 +71,7 @@ export default function Header() {
 
             <Link
               to="/cart"
+              data-cart-icon
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-softgray transition-all hover:border-sakura/40 hover:text-warmwhite"
               aria-label="Giỏ hàng"
             >

@@ -14,7 +14,7 @@ interface GlowButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClass: Record<Variant, string> = {
   primary:
-    "rose-glow-btn text-white",
+    "aurora-glow-btn text-white",
   aurora:
     "aurora-glow-btn text-white",
   ghost:

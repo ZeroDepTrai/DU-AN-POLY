@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { memo } from "react";
 import { useCart } from "../context/CartContext";
+import { useCartFly } from "../context/CartFlyContext";
 import type { Product } from "../types";
 import GlassCard from "./aurora/GlassCard";
 import StarRating from "./aurora/StarRating";
@@ -12,10 +13,15 @@ interface ProductCardProps {
 
 function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
   const { addItem } = useCart();
+  const { flyToCart } = useCartFly();
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    // Launch the flying icon from the button the user clicked so the
+    // animation feels attached to the action (rather than spawning from
+    // the card center).
+    flyToCart(e.currentTarget, product.image_url);
     addItem(product.id, 1);
   };
 

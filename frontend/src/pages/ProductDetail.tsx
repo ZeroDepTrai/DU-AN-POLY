@@ -10,6 +10,7 @@ import AuroraBadge from "../components/aurora/AuroraBadge";
 import StarRating from "../components/aurora/StarRating";
 import HeartButton from "../components/aurora/HeartButton";
 import { useCart } from "../context/CartContext";
+import { useCartFly } from "../context/CartFlyContext";
 import { useAuth } from "../context/AuthContext";
 
 const SPEC_LABELS: Record<string, string> = {
@@ -549,8 +550,10 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { flyToCart } = useCartFly();
   const [activeTab, setActiveTab] = useState<Tab>("mota");
   const [quantity, setQuantity] = useState(1);
+  const addToCartBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ["product", id],
@@ -728,11 +731,17 @@ export default function ProductDetail() {
             </div>
 
             <GlowButton
+              ref={addToCartBtnRef}
               variant="primary"
               size="lg"
               className="w-full"
               disabled={!inStock}
               onClick={() => {
+                // Launch the flying icon BEFORE navigating so the source
+                // rect (the button) is still mounted and the animation
+                // has somewhere to start from. The flight portal lives
+                // at document.body so it survives the route change.
+                flyToCart(addToCartBtnRef.current, product.image_url);
                 addItem(product.id, quantity);
                 navigate("/cart");
               }}

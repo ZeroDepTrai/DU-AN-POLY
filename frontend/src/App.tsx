@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { CartFlyProvider } from "./context/CartFlyContext";
 
 // Eager: tiny pages used above the fold on landing
 import Home from "./pages/Home";
@@ -37,70 +38,72 @@ export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <BrowserRouter>
-          <Suspense fallback={<PageFallback />}>
-            <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/products/:id" element={<ProductDetail />} />
-                <Route path="/accessories" element={<Accessories />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route
-                  path="/checkout"
-                  element={
-                    <ProtectedRoute>
-                      <Checkout />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/blog/:slug" element={<BlogDetail />} />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/spin"
-                  element={
-                    <ProtectedRoute>
-                      <Spin />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/spin/history"
-                  element={
-                    <ProtectedRoute>
-                      <SpinHistory />
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
+        <CartFlyProvider>
+          <BrowserRouter>
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/products/:id" element={<ProductDetail />} />
+                  <Route path="/accessories" element={<Accessories />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route
+                    path="/checkout"
+                    element={
+                      <ProtectedRoute>
+                        <Checkout />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:slug" element={<BlogDetail />} />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/spin"
+                    element={
+                      <ProtectedRoute>
+                        <Spin />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/spin/history"
+                    element={
+                      <ProtectedRoute>
+                        <SpinHistory />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Route>
 
-              <Route path="/orders/:trackingCode" element={<OrderConfirmation />} />
-              <Route path="/track/:trackingCode" element={<TrackOrder />} />
+                <Route path="/orders/:trackingCode" element={<OrderConfirmation />} />
+                <Route path="/track/:trackingCode" element={<TrackOrder />} />
 
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute adminOnly>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute adminOnly>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route path="/404" element={<NotFound />} />
-              <Route path="*" element={<Navigate to="/404" replace />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
+                <Route path="/404" element={<NotFound />} />
+                <Route path="*" element={<Navigate to="/404" replace />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </CartFlyProvider>
       </CartProvider>
     </AuthProvider>
   );
