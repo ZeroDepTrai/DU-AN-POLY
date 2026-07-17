@@ -12,7 +12,7 @@
     margin: 0;
     min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: #0B1020;
+    background-color: #1E1E1E;
     color: #F4EFEC;
     -webkit-font-smoothing: antialiased;
   }
@@ -26,14 +26,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0B1020;
+    background: #1E1E1E;
   }
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #5B6CFF 0%, #22D3EE 100%);
+    background: linear-gradient(180deg, #D94A63 0%, #A82F49 100%);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #8B5CF6 0%, #34D399 100%);
+    background: linear-gradient(180deg, #E36A86 0%, #A82F49 100%);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -100,28 +100,28 @@
     height: 1px;
   }
   .aurora-input {
-    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-warmwhite placeholder:text-steelgray backdrop-blur-xl transition-all;
+    @apply w-full rounded-xl border border-gunmetal bg-graphite px-4 py-2.5 text-sm text-warmwhite placeholder:text-steelgray backdrop-blur-xl transition-all;
   }
   .aurora-input:focus {
-    @apply border-aurora-cyan/60 outline-none ring-2 ring-aurora-indigo/40;
+    @apply border-crimson outline-none ring-2 ring-crimson/30;
   }
   .aurora-chip {
     @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-warmwhite backdrop-blur-xl;
   }
   .aurora-chip-active {
-    background-image: linear-gradient(135deg, #5B6CFF 0%, #8B5CF6 50%, #22D3EE 100%);
+    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
     color: white;
     border-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 6px 20px -8px rgba(91, 108, 255, 0.7);
+    box-shadow: 0 6px 20px -8px rgba(217, 74, 99, 0.7);
   }
   .aurora-glow-btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-semibold text-white transition-all;
-    background-image: linear-gradient(135deg, #5B6CFF 0%, #8B5CF6 50%, #22D3EE 100%);
-    box-shadow: 0 10px 30px -10px rgba(91, 108, 255, 0.7), inset 0 1px 0 rgba(255,255,255,0.2);
+    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
+    box-shadow: 0 10px 30px -10px rgba(217, 74, 99, 0.75), inset 0 1px 0 rgba(255,255,255,0.2);
   }
   .aurora-glow-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 14px 36px -10px rgba(139, 92, 246, 0.8), inset 0 1px 0 rgba(255,255,255,0.3);
+    box-shadow: 0 14px 36px -10px rgba(217, 74, 99, 0.85), inset 0 1px 0 rgba(255,255,255,0.3);
   }
   .aurora-glow-btn:active {
     transform: translateY(0);
@@ -136,12 +136,12 @@
     box-shadow: 0 14px 36px -10px rgba(217, 74, 99, 0.85), inset 0 1px 0 rgba(255,255,255,0.3);
   }
   .aurora-shimmer {
-    background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+    background-image: linear-gradient(90deg, transparent, rgba(217,74,99,0.20), transparent);
     background-size: 200% 100%;
     animation: shimmer 2.4s linear infinite;
   }
   .focus-aurora:focus-visible {
-    @apply outline-none ring-2 ring-aurora-cyan/60 ring-offset-2 ring-offset-aurora-bg-deep;
+    @apply outline-none ring-2 ring-crimson/60 ring-offset-2 ring-offset-charcoal;
   }
 }
 
@@ -161,14 +161,14 @@
 }
 
 .leaflet-popup-content-wrapper {
-  background: #131A33 !important;
+  background: #2A2024 !important;
   color: #F4EFEC !important;
   border-radius: 8px !important;
-  border: 1px solid rgba(91,108,255,0.4) !important;
+  border: 1px solid rgba(217,74,99,0.4) !important;
 }
 
 .leaflet-popup-tip {
-  background: #131A33 !important;
+  background: #2A2024 !important;
 }
 
 /* Smooth out gallery zoom transitions (used by ProductDetail) */

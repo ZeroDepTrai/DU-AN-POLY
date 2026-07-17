@@ -30,16 +30,19 @@ export default {
         // Hero / accent gradient stops
         accentFrom: "#D94A63",
         accentTo: "#A82F49",
-        // Aurora UI palette
+        // Aurora UI palette — remapped to the rose brand so existing
+        // utility classes (bg-aurora-cyan, text-aurora-violet, etc.) all
+        // resolve to the original rose accent while we keep aurora tinted
+        // surfaces for distinction. Bg-deep/mid stay charcoal-neutral.
         aurora: {
-          "bg-deep": "#0B1020",
-          "bg-mid": "#131A33",
+          "bg-deep": "#1E1E1E",     // charcoal (page surface)
+          "bg-mid": "#2A2024",      // graphite (raised surface)
           "bg-glass": "rgba(255,255,255,0.04)",
-          indigo: "#5B6CFF",
-          violet: "#8B5CF6",
-          cyan: "#22D3EE",
-          mint: "#34D399",
-          pink: "#F472B6",
+          indigo: "#D94A63",        // crimson → primary accent
+          violet: "#E36A86",        // rose
+          cyan: "#F28CA6",          // sakura → links / focus
+          mint: "#34D399",          // keep mint (status ok)
+          pink: "#F472B6",          // keep (heart likes)
         },
       },
       fontFamily: {
@@ -98,13 +101,13 @@ export default {
       },
       backgroundImage: {
         "aurora-radial":
-          "radial-gradient(ellipse at top, rgba(91,108,255,0.25), transparent 60%), radial-gradient(ellipse at bottom right, rgba(34,211,238,0.18), transparent 55%), radial-gradient(ellipse at bottom left, rgba(244,114,182,0.18), transparent 55%)",
+          "radial-gradient(ellipse at top, rgba(217,74,99,0.25), transparent 60%), radial-gradient(ellipse at bottom right, rgba(217,74,99,0.18), transparent 55%), radial-gradient(ellipse at bottom left, rgba(242,140,166,0.18), transparent 55%)",
         "aurora-conic":
-          "conic-gradient(from 180deg at 50% 50%, #5B6CFF 0deg, #8B5CF6 90deg, #22D3EE 180deg, #34D399 270deg, #5B6CFF 360deg)",
+          "conic-gradient(from 180deg at 50% 50%, #D94A63 0deg, #A82F49 90deg, #F28CA6 180deg, #E36A86 270deg, #D94A63 360deg)",
         "aurora-mesh":
-          "radial-gradient(at 20% 20%, rgba(91,108,255,0.30) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(139,92,246,0.30) 0px, transparent 50%), radial-gradient(at 0% 80%, rgba(34,211,238,0.25) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(244,114,182,0.25) 0px, transparent 50%)",
+          "radial-gradient(at 20% 20%, rgba(217,74,99,0.30) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(242,140,166,0.30) 0px, transparent 50%), radial-gradient(at 0% 80%, rgba(168,47,73,0.25) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(217,74,99,0.25) 0px, transparent 50%)",
         "aurora-gradient":
-          "linear-gradient(135deg, #5B6CFF 0%, #8B5CF6 35%, #22D3EE 70%, #34D399 100%)",
+          "linear-gradient(135deg, #D94A63 0%, #A82F49 50%, #58202D 100%)",
         "rose-gradient":
           "linear-gradient(135deg, #D94A63 0%, #A82F49 100%)",
         "text-gradient-aurora":
