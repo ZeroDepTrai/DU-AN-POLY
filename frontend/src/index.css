@@ -12,7 +12,7 @@
     margin: 0;
     min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: #0D0B0C;
+    background-color: #181417;
     color: #EEE7E8;
     -webkit-font-smoothing: antialiased;
   }
@@ -26,14 +26,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0D0B0C;
+    background: #262127;
   }
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #D94A70 0%, #A6415C 100%);
+    background: #8A858A;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #DFBFC3 0%, #A6415C 100%);
+    background: #C9C4C6;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -47,7 +47,7 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-crimson px-5 py-2.5 font-semibold text-white transition-all hover:bg-blush active:bg-blush disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-crimson px-5 py-2.5 font-semibold text-white transition-all hover:bg-raspberry active:bg-deeprose disabled:opacity-50;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gunmetal bg-graphite px-5 py-2.5 font-semibold text-warmwhite transition-colors hover:border-silvergray hover:bg-gunmetal disabled:opacity-50;
@@ -56,22 +56,22 @@
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-softgray transition-colors hover:bg-gunmetal hover:text-warmwhite;
   }
   .card {
-    @apply rounded-xl border border-blush/20 bg-cardtint;
+    @apply rounded-xl border border-gunmetal/60 bg-graphite;
   }
   .input-field {
-    @apply w-full rounded-lg border border-gunmetal bg-charcoal px-3.5 py-2.5 text-sm text-warmwhite placeholder-steelgray transition-colors focus:border-crimson focus:outline-none focus:ring-1 focus:ring-crimson;
+    @apply w-full rounded-lg border border-gunmetal/60 bg-charcoal px-3.5 py-2.5 text-sm text-warmwhite placeholder-steelgray transition-colors focus:border-rose focus:outline-none focus:ring-1 focus:ring-rose;
   }
   .section-title {
     @apply text-xl font-bold text-warmwhite;
   }
   .tag-badge {
-    @apply inline-block rounded-sm bg-blush/20 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-blushlight;
+    @apply inline-block rounded-sm bg-rose/15 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-rose;
   }
   .product-tag {
     @apply inline-block rounded-full bg-crimson/10 px-3 py-1 text-xs font-medium text-crimson;
   }
   .glass-card {
-    @apply rounded-2xl border border-blush/20 bg-cardtint/60 backdrop-blur-sm;
+    @apply rounded-2xl border border-rose/20 bg-cardtint/60 backdrop-blur-sm;
   }
   .section-padding {
     @apply py-12 md:py-16 lg:py-20;
@@ -83,50 +83,50 @@
   /* Title gradient — clean, high-contrast (no rainbow) */
   .title-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #D94A70 0%, #A6415C 50%, #DFBFC3 100%);
+    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 50%, #F28CA6 100%);
   }
   .subtitle-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #EEE7E8 0%, #C9C4C6 50%, #DFBFC3 100%);
+    background-image: linear-gradient(135deg, #EEE7E8 0%, #C9C4C6 50%, #F28CA6 100%);
   }
   .divider-gradient {
-    background-image: linear-gradient(90deg, transparent, rgba(217,74,112,0.6), rgba(223,191,195,0.5), transparent);
+    background-image: linear-gradient(90deg, transparent, rgba(217,74,99,0.6), rgba(242,140,166,0.5), transparent);
     height: 1px;
   }
   .input-clean {
     @apply w-full rounded-xl border border-gunmetal bg-graphite px-4 py-2.5 text-sm text-warmwhite placeholder:text-steelgray backdrop-blur-xl transition-all;
   }
   .input-clean:focus {
-    @apply border-crimson outline-none ring-2 ring-crimson/30;
+    @apply border-rose outline-none ring-2 ring-rose/30;
   }
   .pill-chip {
-    @apply inline-flex items-center gap-1 rounded-full border border-gunmetal/50 bg-cardoverlay backdrop-blur-xl px-3 py-1 text-xs font-medium text-warmwhite;
+    @apply inline-flex items-center gap-1 rounded-full border border-gunmetal/50 bg-graphite/60 backdrop-blur-xl px-3 py-1 text-xs font-medium text-warmwhite;
   }
   .pill-chip-active {
-    background-image: linear-gradient(135deg, #D94A70 0%, #A6415C 100%);
+    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
     color: white;
     border-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 6px 20px -8px rgba(217, 74, 112, 0.7);
+    box-shadow: 0 6px 20px -8px rgba(217, 74, 99, 0.7);
   }
   .glow-btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-semibold text-white transition-all;
-    background-image: linear-gradient(135deg, #D94A70 0%, #A6415C 100%);
-    box-shadow: 0 10px 30px -10px rgba(217, 74, 112, 0.75), inset 0 1px 0 rgba(255,255,255,0.2);
+    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
+    box-shadow: 0 10px 30px -10px rgba(217, 74, 99, 0.75), inset 0 1px 0 rgba(255,255,255,0.2);
   }
   .glow-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 14px 36px -10px rgba(217, 74, 112, 0.85), inset 0 1px 0 rgba(255,255,255,0.3);
+    box-shadow: 0 14px 36px -10px rgba(217, 74, 99, 0.85), inset 0 1px 0 rgba(255,255,255,0.3);
   }
   .glow-btn:active {
     transform: translateY(0);
   }
   .shimmer-line {
-    background-image: linear-gradient(90deg, transparent, rgba(217,74,112,0.20), transparent);
+    background-image: linear-gradient(90deg, transparent, rgba(217,74,99,0.20), transparent);
     background-size: 200% 100%;
     animation: shimmer 2.4s linear infinite;
   }
   .focus-rose:focus-visible {
-    @apply outline-none ring-2 ring-crimson/60 ring-offset-2 ring-offset-charcoal;
+    @apply outline-none ring-2 ring-rose/60 ring-offset-2 ring-offset-charcoal;
   }
 
   /* ── Admin Dashboard specific ────────────────────────────────────────── */
@@ -137,19 +137,19 @@
     @apply flex h-16 items-center gap-2 border-b border-gunmetal/30 px-4;
   }
   .admin-sidebar-logo {
-    @apply flex h-10 w-10 items-center justify-center rounded-xl bg-rose-button shadow-lg;
+    @apply flex h-10 w-10 items-center justify-center rounded-xl bg-rose-gradient shadow-lg;
   }
   .admin-nav-item {
     @apply flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all;
   }
   .admin-nav-item-active {
-    @apply bg-rose-button text-white shadow-md;
+    @apply bg-rose-gradient text-white shadow-md;
   }
   .admin-nav-item-inactive {
     @apply text-softgray hover:bg-gunmetal/50 hover:text-warmwhite;
   }
   .admin-kpi-card {
-    @apply rounded-xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-5 transition-all hover:border-crimson/40 hover:shadow-card-glow;
+    @apply rounded-xl border border-gunmetal/30 bg-graphite backdrop-blur-xl p-5 transition-all hover:border-rose/40 hover:shadow-card-hover;
   }
   .admin-table {
     @apply w-full text-sm;
@@ -173,10 +173,10 @@
     @apply bg-crimson/20 text-crimson;
   }
   .admin-badge-danger {
-    @apply bg-blush/20 text-blushlight;
+    @apply bg-rose/20 text-rose;
   }
   .admin-form-card {
-    @apply rounded-2xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-5;
+    @apply rounded-2xl border border-gunmetal/30 bg-graphite backdrop-blur-xl p-5;
   }
   .admin-heading {
     @apply text-2xl font-extrabold text-warmwhite;
@@ -188,10 +188,10 @@
     @apply text-sm text-softgray;
   }
   .admin-link {
-    @apply text-sm text-crimson hover:text-blushlight transition-colors;
+    @apply text-sm text-crimson hover:text-rose transition-colors;
   }
   .admin-link-danger {
-    @apply text-sm text-blushlight hover:text-blush transition-colors;
+    @apply text-sm text-rose hover:text-raspberry transition-colors;
   }
 }
 
@@ -211,14 +211,14 @@
 }
 
 .leaflet-popup-content-wrapper {
-  background: #100E0F !important;
+  background: #262127 !important;
   color: #EEE7E8 !important;
   border-radius: 8px !important;
-  border: 1px solid rgba(166,65,92,0.4) !important;
+  border: 1px solid #353039 !important;
 }
 
 .leaflet-popup-tip {
-  background: #100E0F !important;
+  background: #262127 !important;
 }
 
 .gallery-zoom-layer {
