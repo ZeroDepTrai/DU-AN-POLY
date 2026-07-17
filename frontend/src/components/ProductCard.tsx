@@ -35,9 +35,9 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
   // ── Bento: tall hero card ─────────────────────────────────────────────
   if (variant === "bento") {
     return (
-      <Link to={`/products/${product.id}`} className="group block h-full">
-        <GlassCard intensity="low" hoverable glow className="flex h-full flex-col overflow-hidden p-0">
-          <div className="relative flex-1 overflow-hidden bg-aurora-bg-mid">
+      <Link to={`/products/${product.id}`} className="group block mx-auto w-full max-w-3xl">
+        <GlassCard intensity="low" hoverable glow className="flex flex-col overflow-hidden p-0 md:flex-row">
+          <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-aurora-bg-mid md:w-1/2">
             <div className="absolute inset-0 bg-aurora-mesh opacity-60" />
             <div className="absolute inset-0 bg-gradient-to-br from-crimson/15 via-transparent to-lightpink/15" />
             {product.image_url && (

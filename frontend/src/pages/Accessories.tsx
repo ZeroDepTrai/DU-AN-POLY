@@ -244,7 +244,7 @@ export default function Accessories() {
             ) : (
               <>
                 {bentoProduct && (
-                  <div className="mb-5 h-[560px]">
+                  <div className="mb-5">
                     <ProductCard product={bentoProduct} variant="bento" />
                   </div>
                 )}

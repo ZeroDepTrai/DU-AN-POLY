@@ -122,6 +122,22 @@ export const ratingsApi = {
     api.get<RatingSummary>(`/api/products/${productId}/ratings`),
   upsert: (productId: number, payload: { stars: number; review?: string }) =>
     api.post<RatingSummary>(`/api/products/${productId}/ratings`, payload),
+  // Admin: full list of ratings on a single product (paginated, newest first).
+  list: (productId: number, params?: { page?: number; limit?: number }) =>
+    api.get<{
+      items: Array<{
+        id: number;
+        product_id: number;
+        user_id: number;
+        user_name: string;
+        stars: number;
+        review: string;
+        created_at: string;
+      }>;
+      total: number;
+      page: number;
+      limit: number;
+    }>(`/api/products/${productId}/ratings/list`, { params }),
 };
 
 export const likesApi = {

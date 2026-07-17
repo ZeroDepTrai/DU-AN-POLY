@@ -208,7 +208,7 @@ export default function Products() {
           ) : (
             <>
               {bentoProduct && (
-                <div className="mb-5 h-[560px]">
+                <div className="mb-5">
                   <ProductCard product={bentoProduct} variant="bento" />
                 </div>
               )}
