@@ -125,6 +125,34 @@
     background-size: 200% 100%;
     animation: shimmer 2.4s linear infinite;
   }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  @keyframes spin-slow {
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin-slow {
+    animation: spin-slow 1.4s linear infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.06); }
+  }
+  .animate-pulse-glow {
+    animation: pulse-glow 1.8s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { transform: scale(0.85); opacity: 0.65; }
+    50% { transform: scale(1.1); opacity: 1; }
+  }
+  .animate-pulse-dot {
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
   .focus-rose:focus-visible {
     @apply outline-none ring-2 ring-rose/60 ring-offset-2 ring-offset-charcoal;
   }
