@@ -16,7 +16,7 @@ const ORBS: Orb[] = [
       width: "55vw",
       height: "55vw",
       backgroundImage:
-        "radial-gradient(circle at 30% 30%, rgba(91,108,255,0.55), transparent 65%)",
+        "radial-gradient(circle at 30% 30%, rgba(217,74,99,0.55), transparent 65%)",
       filter: "blur(70px)",
     },
   },
@@ -29,7 +29,7 @@ const ORBS: Orb[] = [
       width: "50vw",
       height: "50vw",
       backgroundImage:
-        "radial-gradient(circle at 60% 40%, rgba(34,211,238,0.45), transparent 65%)",
+        "radial-gradient(circle at 60% 40%, rgba(242,140,166,0.45), transparent 65%)",
       filter: "blur(80px)",
     },
   },
@@ -42,7 +42,7 @@ const ORBS: Orb[] = [
       width: "60vw",
       height: "60vw",
       backgroundImage:
-        "radial-gradient(circle at 50% 50%, rgba(244,114,182,0.40), transparent 65%)",
+        "radial-gradient(circle at 50% 50%, rgba(228,106,134,0.40), transparent 65%)",
       filter: "blur(90px)",
       animationDelay: "-8s",
     },
@@ -56,7 +56,7 @@ const ORBS: Orb[] = [
       width: "40vw",
       height: "40vw",
       backgroundImage:
-        "radial-gradient(circle at 50% 50%, rgba(139,92,246,0.40), transparent 65%)",
+        "radial-gradient(circle at 50% 50%, rgba(168,47,73,0.40), transparent 65%)",
       filter: "blur(80px)",
       animationDelay: "-4s",
     },

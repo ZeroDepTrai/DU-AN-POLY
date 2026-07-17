@@ -108,7 +108,7 @@ export default function Products() {
             </h3>
 
             <div className="mb-6">
-              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-sakura">
                 Hãng
               </p>
               <div className="space-y-2">
@@ -117,8 +117,8 @@ export default function Products() {
                     <span
                       className={`flex h-5 w-5 items-center justify-center rounded-md border transition-all ${
                         brand === f.value
-                          ? "border-aurora-cyan bg-aurora-cyan/20"
-                          : "border-white/15 bg-white/[0.04] group-hover:border-aurora-cyan/60"
+                          ? "border-sakura bg-sakura/20"
+                          : "border-white/15 bg-white/[0.04] group-hover:border-sakura/60"
                       }`}
                     >
                       <input
@@ -128,7 +128,7 @@ export default function Products() {
                         className="sr-only"
                       />
                       {brand === f.value && (
-                        <svg className="h-3 w-3 text-aurora-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <svg className="h-3 w-3 text-sakura" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                       )}
@@ -142,7 +142,7 @@ export default function Products() {
             </div>
 
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-sakura">
                 Khoảng giá
               </p>
               <div className="space-y-1">
@@ -165,7 +165,7 @@ export default function Products() {
                       }}
                       className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-all ${
                         isActive
-                          ? "border border-aurora-cyan/50 bg-aurora-cyan/15 text-aurora-cyan"
+                          ? "border border-sakura/50 bg-sakura/15 text-sakura"
                           : "border border-transparent text-softgray hover:bg-white/5 hover:text-warmwhite"
                       }`}
                     >

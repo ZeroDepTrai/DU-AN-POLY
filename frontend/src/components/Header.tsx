@@ -59,10 +59,10 @@ export default function Header() {
             {user && (
               <Link
                 to="/profile"
-                className="hidden items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-softgray transition-all hover:border-aurora-pink/40 hover:bg-aurora-pink/10 hover:text-warmwhite md:inline-flex"
+                className="hidden items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-softgray transition-all hover:border-lightpink/40 hover:bg-lightpink/10 hover:text-warmwhite md:inline-flex"
                 aria-label="Yêu thích của tôi"
               >
-                <svg className="h-4 w-4 text-aurora-pink" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 text-lightpink" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 21s-7.5-4.6-9.7-9.4C.6 7.5 3.4 4 7 4c2 0 3.6 1.1 5 2.8C13.4 5.1 15 4 17 4c3.6 0 6.4 3.5 4.7 7.6C19.5 16.4 12 21 12 21z" />
                 </svg>
                 Yêu thích
@@ -71,7 +71,7 @@ export default function Header() {
 
             <Link
               to="/cart"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-softgray transition-all hover:border-aurora-cyan/40 hover:text-warmwhite"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-softgray transition-all hover:border-sakura/40 hover:text-warmwhite"
               aria-label="Giỏ hàng"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -85,7 +85,7 @@ export default function Header() {
             </Link>
 
             {isAdmin && (
-              <Link to="/admin" className="hidden items-center gap-1.5 rounded-full border border-aurora-violet/40 bg-aurora-violet/10 px-3 py-2 text-sm font-medium text-aurora-violet transition-all hover:bg-aurora-violet/20 md:inline-flex">
+              <Link to="/admin" className="hidden items-center gap-1.5 rounded-full border border-rose/40 bg-rose/10 px-3 py-2 text-sm font-medium text-rose transition-all hover:bg-rose/20 md:inline-flex">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
@@ -110,7 +110,7 @@ export default function Header() {
                 </Link>
                 <button
                   onClick={logout}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-steelgray transition-all hover:border-aurora-pink/40 hover:text-aurora-pink"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-steelgray transition-all hover:border-lightpink/40 hover:text-lightpink"
                   aria-label="Đăng xuất"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -177,7 +177,7 @@ export default function Header() {
                 <Link
                   to="/profile"
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-lg px-4 py-3 text-sm font-medium text-aurora-pink transition-colors hover:bg-aurora-pink/10"
+                  className="rounded-lg px-4 py-3 text-sm font-medium text-lightpink transition-colors hover:bg-lightpink/10"
                 >
                   Yêu thích của tôi
                 </Link>
@@ -186,7 +186,7 @@ export default function Header() {
                 <Link
                   to="/admin"
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-lg px-4 py-3 text-sm font-medium text-aurora-violet transition-colors hover:bg-aurora-violet/10"
+                  className="rounded-lg px-4 py-3 text-sm font-medium text-rose transition-colors hover:bg-rose/10"
                 >
                   Dashboard
                 </Link>

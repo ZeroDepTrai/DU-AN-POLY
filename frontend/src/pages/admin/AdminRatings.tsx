@@ -131,7 +131,7 @@ export default function AdminRatings() {
             <button
               type="button"
               onClick={() => setFilterStars(0)}
-              className="mt-2 text-xs text-aurora-cyan underline-offset-2 hover:underline"
+              className="mt-2 text-xs text-sakura underline-offset-2 hover:underline"
             >
               Xóa bộ lọc {filterStars}★
             </button>
@@ -171,7 +171,7 @@ export default function AdminRatings() {
                 <tr key={p.id} className="border-t border-white/5 transition-colors hover:bg-white/[0.04]">
                   <td className="px-5 py-3 font-medium text-warmwhite">{p.name}</td>
                   <td className="px-5 py-3 text-softgray">{p.rating_count ?? 0} lượt</td>
-                  <td className="px-5 py-3 text-aurora-pink">
+                  <td className="px-5 py-3 text-lightpink">
                     ♥ {p.like_count ?? 0}
                   </td>
                   <td className="px-5 py-3">

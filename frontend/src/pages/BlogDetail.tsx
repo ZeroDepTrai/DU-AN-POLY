@@ -35,7 +35,7 @@ export default function BlogDetail() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex items-center gap-2 text-sm text-steelgray">
-        <Link to="/blog" className="hover:text-aurora-cyan transition-colors">Blog</Link>
+        <Link to="/blog" className="hover:text-sakura transition-colors">Blog</Link>
         <span>/</span>
         <span className="truncate max-w-xs text-warmwhite">{post.title}</span>
       </div>
@@ -81,39 +81,39 @@ export default function BlogDetail() {
           </GlowButton>
           <div className="flex items-center gap-2">
             <span className="text-sm text-steelgray">Chia sẻ:</span>
-            <AuroraBadge tone="violet" glow>CellZone</AuroraBadge>
+            <AuroraBadge tone="rose" glow>CellZone</AuroraBadge>
           </div>
         </div>
       </article>
 
       <style>{`
-        .prose-aurora h2 { font-size: 1.5rem; font-weight: 700; color: #F4EFEC; margin: 1.5em 0 0.75em; }
-        .prose-aurora h3 { font-size: 1.2rem; font-weight: 600; color: #F4EFEC; margin: 1.25em 0 0.5em; }
+        .prose-aurora h2 { font-size: 1.5rem; font-weight: 700; color: #EEE7E8; margin: 1.5em 0 0.75em; }
+        .prose-aurora h3 { font-size: 1.2rem; font-weight: 600; color: #EEE7E8; margin: 1.25em 0 0.5em; }
         .prose-aurora p { color: #C9C4C6; margin: 1em 0; line-height: 1.75; }
         .prose-aurora ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; color: #C9C4C6; }
         .prose-aurora ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; color: #C9C4C6; }
         .prose-aurora li { margin: 0.4em 0; }
         .prose-aurora blockquote {
-          border-left: 4px solid #22D3EE;
+          border-left: 4px solid #F28CA6;
           padding-left: 1em;
           color: #C9C4C6;
           margin: 1.5em 0;
           font-style: italic;
-          background: rgba(34,211,238,0.05);
+          background: rgba(242,140,166,0.05);
           padding: 1em 1.25em;
           border-radius: 0 12px 12px 0;
         }
         .prose-aurora code {
-          background: rgba(91,108,255,0.15);
+          background: rgba(217,74,99,0.15);
           padding: 0.15em 0.4em;
           border-radius: 4px;
           font-size: 0.875em;
           font-family: monospace;
-          color: #9AA6FF;
+          color: #D94A63;
         }
         .prose-aurora pre {
-          background: rgba(11,16,32,0.6);
-          border: 1px solid rgba(91,108,255,0.2);
+          background: rgba(24,20,23,0.6);
+          border: 1px solid rgba(217,74,99,0.2);
           padding: 1.25em;
           border-radius: 12px;
           overflow-x: auto;
@@ -127,11 +127,11 @@ export default function BlogDetail() {
           display: block;
         }
         .prose-aurora a {
-          color: #22D3EE;
+          color: #F28CA6;
           text-decoration: none;
-          border-bottom: 1px dotted #22D3EE66;
+          border-bottom: 1px dotted #F28CA666;
         }
-        .prose-aurora a:hover { color: #34D399; }
+        .prose-aurora a:hover { color: #E36A86; }
       `}</style>
     </div>
   );

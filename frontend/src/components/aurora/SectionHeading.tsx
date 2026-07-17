@@ -25,8 +25,8 @@ export default function SectionHeading({
       <div className={isCenter ? "max-w-2xl" : ""}>
         {eyebrow && (
           <div className={`mb-3 flex items-center gap-2 ${isCenter ? "justify-center" : ""}`}>
-            <span className="h-px w-10 bg-aurora-indigo/70" />
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-aurora-cyan">
+            <span className="h-px w-10 bg-crimson/70" />
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-sakura">
               {eyebrow}
             </span>
           </div>

@@ -65,12 +65,12 @@ export default function CartPage() {
                   <div>
                     <Link
                       to={`/products/${item.product_id}`}
-                      className="font-semibold text-warmwhite hover:text-aurora-cyan transition-colors"
+                      className="font-semibold text-warmwhite hover:text-sakura transition-colors"
                     >
                       {item.product_name}
                     </Link>
                     <span className="ml-2 align-middle">
-                      <AuroraBadge tone="cyan">{item.product_tags}</AuroraBadge>
+                      <AuroraBadge tone="sakura">{item.product_tags}</AuroraBadge>
                     </span>
                     {isFree && (
                       <span className="ml-2 align-middle">
@@ -105,7 +105,7 @@ export default function CartPage() {
                     )}
                     <button
                       onClick={() => removeItem(item.id)}
-                      className="flex items-center gap-1 text-sm text-steelgray hover:text-aurora-pink transition-colors"
+                      className="flex items-center gap-1 text-sm text-steelgray hover:text-lightpink transition-colors"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

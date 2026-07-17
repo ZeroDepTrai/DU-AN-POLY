@@ -32,7 +32,7 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
             />
             {tagList[0] && (
               <div className="absolute left-3 top-3">
-                <AuroraBadge tone="violet" glow>{tagList[0]}</AuroraBadge>
+                <AuroraBadge tone="rose" glow>{tagList[0]}</AuroraBadge>
               </div>
             )}
           </div>
@@ -41,12 +41,12 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
           {tagList.length > 1 && (
             <div className="mb-2 flex flex-wrap gap-1">
               {tagList.slice(1).map((t: string) => (
-                <AuroraBadge key={t} tone="cyan">{t}</AuroraBadge>
+                <AuroraBadge key={t} tone="sakura">{t}</AuroraBadge>
               ))}
             </div>
           )}
           <p className="text-xs font-medium text-steelgray">{formattedDate}</p>
-          <h3 className="mt-1 flex-1 text-lg font-bold text-warmwhite group-hover:text-aurora-cyan transition-colors line-clamp-3">
+          <h3 className="mt-1 flex-1 text-lg font-bold text-warmwhite group-hover:text-sakura transition-colors line-clamp-3">
             {post.title}
           </h3>
           <div className="mt-4 flex items-center gap-1 text-sm font-medium aurora-text-rainbow transition-colors">

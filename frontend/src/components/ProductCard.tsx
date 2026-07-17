@@ -39,7 +39,7 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
         <GlassCard intensity="low" hoverable glow className="flex h-full flex-col overflow-hidden p-0">
           <div className="relative flex-1 overflow-hidden bg-aurora-bg-mid">
             <div className="absolute inset-0 bg-aurora-mesh opacity-60" />
-            <div className="absolute inset-0 bg-gradient-to-br from-aurora-indigo/15 via-transparent to-aurora-pink/15" />
+            <div className="absolute inset-0 bg-gradient-to-br from-crimson/15 via-transparent to-lightpink/15" />
             {product.image_url && (
               <img
                 src={product.image_url}
@@ -52,7 +52,7 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
             )}
             {tags[0] && (
               <div className="absolute left-5 top-5 z-20">
-                <span className="inline-flex items-center gap-1 rounded-full border border-aurora-violet/40 bg-aurora-violet/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#C2A8FF] backdrop-blur-xl">
+                <span className="inline-flex items-center gap-1 rounded-full border border-rose/40 bg-rose/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-rose backdrop-blur-xl">
                   {tags[0]}
                 </span>
               </div>
@@ -65,7 +65,7 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
                   </span>
                 )}
                 {likeCount > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-aurora-pink/40 bg-black/40 px-2.5 py-1 text-[11px] font-semibold text-aurora-pink backdrop-blur-xl">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-lightpink/40 bg-black/40 px-2.5 py-1 text-[11px] font-semibold text-lightpink backdrop-blur-xl">
                     ♥ {likeCount}
                   </span>
                 )}
@@ -74,7 +74,7 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
           </div>
           <div className="flex flex-col gap-3 border-t border-white/10 p-6">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="line-clamp-2 text-2xl font-bold text-warmwhite group-hover:text-aurora-cyan transition-colors">
+              <h3 className="line-clamp-2 text-2xl font-bold text-warmwhite group-hover:text-sakura transition-colors">
                 {product.name}
               </h3>
               <p className="shrink-0 aurora-text-rainbow text-2xl font-extrabold">{formattedPrice}₫</p>
@@ -108,7 +108,7 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
       <Link to={`/products/${product.id}`} className="group block">
         <GlassCard intensity="low" hoverable className="flex flex-col overflow-hidden p-0">
           <div className="relative aspect-[4/3] overflow-hidden bg-aurora-bg-mid">
-            <div className="absolute inset-0 bg-gradient-to-br from-aurora-indigo/15 via-transparent to-aurora-pink/15" />
+            <div className="absolute inset-0 bg-gradient-to-br from-crimson/15 via-transparent to-lightpink/15" />
             {product.image_url && (
               <img
                 src={product.image_url}
@@ -121,14 +121,14 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
             )}
             {tags[0] && (
               <div className="absolute left-4 top-4 z-20">
-                <span className="inline-flex items-center gap-1 rounded-full border border-aurora-violet/40 bg-aurora-violet/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#C2A8FF] backdrop-blur-xl">
+                <span className="inline-flex items-center gap-1 rounded-full border border-rose/40 bg-rose/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-rose backdrop-blur-xl">
                   {tags[0]}
                 </span>
               </div>
             )}
           </div>
           <div className="flex flex-1 flex-col gap-2 p-5">
-            <h3 className="line-clamp-2 text-xl font-bold text-warmwhite group-hover:text-aurora-cyan transition-colors">
+            <h3 className="line-clamp-2 text-xl font-bold text-warmwhite group-hover:text-sakura transition-colors">
               {product.name}
             </h3>
             {ratingCount > 0 && (
@@ -160,7 +160,7 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
     <Link to={`/products/${product.id}`} className="group block">
       <GlassCard intensity="low" hoverable className="flex flex-col overflow-hidden p-0">
         <div className="relative aspect-square overflow-hidden bg-aurora-bg-mid">
-          <div className="absolute inset-0 bg-gradient-to-br from-aurora-indigo/15 via-transparent to-aurora-pink/15" />
+          <div className="absolute inset-0 bg-gradient-to-br from-crimson/15 via-transparent to-lightpink/15" />
           {product.image_url && (
             <img
               src={product.image_url}
@@ -173,14 +173,14 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
           )}
           {tags[0] && (
             <div className="absolute left-3 top-3 z-20">
-              <span className="inline-flex items-center gap-1 rounded-full border border-aurora-violet/40 bg-aurora-violet/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#C2A8FF] backdrop-blur-xl">
+              <span className="inline-flex items-center gap-1 rounded-full border border-rose/40 bg-rose/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-rose backdrop-blur-xl">
                 {tags[0]}
               </span>
             </div>
           )}
         </div>
         <div className="flex flex-col gap-2 p-4">
-          <h3 className="line-clamp-2 text-base font-bold text-warmwhite group-hover:text-aurora-cyan transition-colors">
+          <h3 className="line-clamp-2 text-base font-bold text-warmwhite group-hover:text-sakura transition-colors">
             {product.name}
           </h3>
           {ratingCount > 0 ? (
@@ -191,7 +191,7 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
           <div className="flex items-baseline justify-between">
             <p className="aurora-text-rainbow text-lg font-bold">{formattedPrice}₫</p>
             {likeCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs text-aurora-pink">
+              <span className="inline-flex items-center gap-1 text-xs text-lightpink">
                 ♥ {likeCount}
               </span>
             )}

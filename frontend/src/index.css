@@ -26,7 +26,7 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #262127;
+    background: #232028;
   }
   ::-webkit-scrollbar-thumb {
     background: #8A858A;
@@ -211,14 +211,14 @@
 }
 
 .leaflet-popup-content-wrapper {
-  background: #262127 !important;
+  background: #232028 !important;
   color: #EEE7E8 !important;
   border-radius: 8px !important;
   border: 1px solid #353039 !important;
 }
 
 .leaflet-popup-tip {
-  background: #262127 !important;
+  background: #232028 !important;
 }
 
 .gallery-zoom-layer {

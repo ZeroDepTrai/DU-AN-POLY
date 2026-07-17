@@ -102,7 +102,7 @@ export default function Accessories() {
               if (selectedCategories.includes(f)) toggleCategory(f);
               else toggleCompat(f);
             }}
-            className="rounded-full border border-aurora-cyan/40 bg-aurora-cyan/10 px-3 py-1 text-aurora-cyan hover:bg-aurora-cyan/20 transition-colors"
+            className="rounded-full border border-sakura/40 bg-sakura/10 px-3 py-1 text-sakura hover:bg-sakura/20 transition-colors"
           >
             {f} ×
           </button>
@@ -120,7 +120,7 @@ export default function Accessories() {
   const Sidebar = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-sakura">
           Danh mục
         </h3>
         <div className="space-y-2">
@@ -130,7 +130,7 @@ export default function Accessories() {
                 type="checkbox"
                 checked={selectedCategories.includes(cat.label)}
                 onChange={() => toggleCategory(cat.label)}
-                className="h-4 w-4 accent-aurora-cyan"
+                className="h-4 w-4 accent-sakura"
               />
               <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
                 {cat.label}
@@ -141,7 +141,7 @@ export default function Accessories() {
       </div>
 
       <div>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-sakura">
           Tương thích
         </h3>
         <div className="space-y-2">
@@ -151,7 +151,7 @@ export default function Accessories() {
                 type="checkbox"
                 checked={selectedCompatibility.includes(c)}
                 onChange={() => toggleCompat(c)}
-                className="h-4 w-4 accent-aurora-cyan"
+                className="h-4 w-4 accent-sakura"
               />
               <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
                 {c}
@@ -162,7 +162,7 @@ export default function Accessories() {
       </div>
 
       <div>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-aurora-cyan">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-sakura">
           Khoảng giá
         </h3>
         <div className="space-y-1">
@@ -172,7 +172,7 @@ export default function Accessories() {
               onClick={() => setSelectedPrice(p)}
               className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-all ${
                 selectedPrice.label === p.label
-                  ? "border border-aurora-cyan/50 bg-aurora-cyan/15 text-aurora-cyan"
+                  ? "border border-sakura/50 bg-sakura/15 text-sakura"
                   : "border border-transparent text-softgray hover:bg-white/5 hover:text-warmwhite"
               }`}
             >

@@ -241,7 +241,7 @@ function ProductGallery({ product }: { product: Product }) {
 
         {product.tags && (
           <div className="absolute right-4 top-4 z-30">
-            <AuroraBadge tone="violet" glow>
+            <AuroraBadge tone="rose" glow>
               {product.tags}
             </AuroraBadge>
           </div>
@@ -278,13 +278,13 @@ function ProductGallery({ product }: { product: Product }) {
               aria-label={`Xem ${it.media_type === "video" ? "video" : "ảnh"} ${i + 1}`}
               className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border transition-all duration-200 ${
                 i === safeIndex
-                  ? "border-aurora-cyan shadow-[0_0_0_1px_rgba(34,211,238,0.4),0_10px_24px_-10px_rgba(34,211,238,0.5)]"
+                  ? "border-sakura shadow-[0_0_0_1px_rgba(34,211,238,0.4),0_10px_24px_-10px_rgba(34,211,238,0.5)]"
                   : "border-white/10 hover:border-white/30"
               }`}
             >
               {it.media_type === "video" ? (
                 <div className="flex h-full w-full flex-col items-center justify-center bg-aurora-bg-mid gap-1">
-                  <svg className="h-5 w-5 text-aurora-cyan" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-5 w-5 text-sakura" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                   </svg>
                   <span className="text-[9px] text-softgray">Video</span>
@@ -372,7 +372,7 @@ function ProductGallery({ product }: { product: Product }) {
                   setLightboxActive(i);
                 }}
                 className={`h-2 rounded-full transition-all ${
-                  i === lightboxActive ? "w-6 bg-aurora-cyan" : "w-2 bg-white/40 hover:bg-white/70"
+                  i === lightboxActive ? "w-6 bg-sakura" : "w-2 bg-white/40 hover:bg-white/70"
                 }`}
               />
             ))}
@@ -597,7 +597,7 @@ export default function ProductDetail() {
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       {/* Breadcrumbs */}
       <nav className="mb-8 flex items-center gap-2 text-sm text-softgray">
-        <button onClick={() => navigate("/")} className="flex items-center gap-1.5 transition-colors hover:text-aurora-cyan">
+        <button onClick={() => navigate("/")} className="flex items-center gap-1.5 transition-colors hover:text-sakura">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
@@ -606,7 +606,7 @@ export default function ProductDetail() {
         <svg className="h-4 w-4 text-softgray/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        <button onClick={() => navigate("/")} className="capitalize transition-colors hover:text-aurora-cyan">
+        <button onClick={() => navigate("/")} className="capitalize transition-colors hover:text-sakura">
           {product.tags}
         </button>
         <svg className="h-4 w-4 text-softgray/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -628,7 +628,7 @@ export default function ProductDetail() {
           <div>
             {product.tags && (
               <div className="mb-3 flex items-center gap-2">
-                <AuroraBadge tone="violet" glow>{product.tags}</AuroraBadge>
+                <AuroraBadge tone="rose" glow>{product.tags}</AuroraBadge>
                 <span className="text-xs text-softgray">
                   / Mã: #{product.id.toString().padStart(4, "0")}
                 </span>
@@ -668,12 +668,12 @@ export default function ProductDetail() {
                 <div className="flex items-center gap-2">
                   <div
                     className={`h-2 w-2 rounded-full ${
-                      inStock ? "bg-aurora-mint animate-pulse-glow" : "bg-aurora-pink"
+                      inStock ? "bg-aurora-mint animate-pulse-glow" : "bg-lightpink"
                     }`}
                   />
                   <span
                     className={`text-sm font-semibold ${
-                      inStock ? "text-aurora-mint" : "text-aurora-pink"
+                      inStock ? "text-aurora-mint" : "text-lightpink"
                     }`}
                   >
                     {inStock ? "Còn hàng" : "Hết hàng"}
@@ -684,7 +684,7 @@ export default function ProductDetail() {
               {inStock && (
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-aurora-bg-deep">
                   <div
-                    className="h-1.5 rounded-full bg-gradient-to-r from-aurora-pink to-aurora-violet transition-all duration-500"
+                    className="h-1.5 rounded-full bg-gradient-to-r from-lightpink to-rose transition-all duration-500"
                     style={{ width: `${stockPercent}%` }}
                   />
                 </div>
@@ -747,7 +747,7 @@ export default function ProductDetail() {
 
             <div className="grid grid-cols-2 gap-2 text-xs text-softgray">
               <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2">
-                <svg className="h-4 w-4 text-aurora-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="h-4 w-4 text-sakura" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0 0h-3.75m3.75 0h3.75M16.5 18.75V9M3.375 14.25h.007m12.993 0h.007" />
                 </svg>
                 Giao hàng nhanh

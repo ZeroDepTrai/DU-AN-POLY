@@ -168,7 +168,7 @@ export default function Checkout() {
                   key={m.id}
                   className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
                     payment === m.id
-                      ? "border-aurora-cyan/60 bg-aurora-cyan/10 shadow-glow-cyan"
+                      ? "border-sakura/60 bg-sakura/10 shadow-glow-cyan"
                       : "border-white/10 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
                   }`}
                 >
@@ -180,7 +180,7 @@ export default function Checkout() {
                     onChange={() => setPayment(m.id)}
                     className="sr-only"
                   />
-                  <span className={`flex h-5 w-5 items-center justify-center rounded-full border ${payment === m.id ? "border-aurora-cyan bg-aurora-cyan" : "border-white/30"}`}>
+                  <span className={`flex h-5 w-5 items-center justify-center rounded-full border ${payment === m.id ? "border-sakura bg-sakura" : "border-white/30"}`}>
                     {payment === m.id && <span className="h-2 w-2 rounded-full bg-white" />}
                   </span>
                   <span className="text-warmwhite">{m.icon}</span>
@@ -247,7 +247,7 @@ export default function Checkout() {
                 <div className="flex justify-between text-sm text-emerald-400">
                   <span className="flex items-center gap-1">
                     Coupon {appliedCoupon.coupon.code}
-                    <button onClick={removeCoupon} className="ml-1 text-[10px] text-aurora-pink hover:underline">bỏ</button>
+                    <button onClick={removeCoupon} className="ml-1 text-[10px] text-lightpink hover:underline">bỏ</button>
                   </span>
                   <span>-{new Intl.NumberFormat("vi-VN").format(discount)} VND</span>
                 </div>
@@ -261,7 +261,7 @@ export default function Checkout() {
             </div>
 
             <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-              <p className="mb-1.5 text-xs text-aurora-cyan">Mã giảm giá</p>
+              <p className="mb-1.5 text-xs text-sakura">Mã giảm giá</p>
               <div className="flex gap-2">
                 <input
                   value={couponCode}
@@ -285,11 +285,11 @@ export default function Checkout() {
                 )}
               </div>
               {couponMessage && <p className="mt-2 text-xs text-emerald-400">{couponMessage}</p>}
-              {couponError && <p className="mt-2 text-xs text-aurora-pink">{couponError}</p>}
+              {couponError && <p className="mt-2 text-xs text-lightpink">{couponError}</p>}
             </div>
 
             <div className="mt-4 flex items-center gap-2 text-xs text-softgray">
-              <svg className="h-4 w-4 text-aurora-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="h-4 w-4 text-sakura" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               Thanh toán an toàn & bảo mật

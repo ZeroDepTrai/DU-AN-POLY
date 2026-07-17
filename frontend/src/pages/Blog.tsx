@@ -78,7 +78,7 @@ export default function Blog() {
     <div>
       <div className="container-padding py-10">
         <div className="mb-4 flex items-center gap-2 text-sm text-steelgray">
-          <Link to="/" className="hover:text-aurora-cyan transition-colors">Trang chủ</Link>
+          <Link to="/" className="hover:text-sakura transition-colors">Trang chủ</Link>
           <span>/</span>
           <span className="text-warmwhite">Blog</span>
         </div>
@@ -100,27 +100,27 @@ export default function Blog() {
                   className="aspect-video h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 lg:aspect-auto"
                 />
                 <div className="absolute left-4 top-4">
-                  <AuroraBadge tone="violet" glow>Nổi bật</AuroraBadge>
+                  <AuroraBadge tone="rose" glow>Nổi bật</AuroraBadge>
                 </div>
               </div>
               <div className="flex flex-col justify-center p-8 lg:w-1/2">
                 {featuredTags.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-1.5">
                     {featuredTags.map((t: string) => (
-                      <AuroraBadge key={t} tone="cyan">{t}</AuroraBadge>
+                      <AuroraBadge key={t} tone="sakura">{t}</AuroraBadge>
                     ))}
                   </div>
                 )}
                 <p className="mb-3 text-xs font-medium text-steelgray">
                   {formattedDate(featuredPost.created_at)}
                 </p>
-                <h2 className="mb-4 line-clamp-3 text-2xl font-extrabold text-warmwhite group-hover:text-aurora-cyan transition-colors lg:text-3xl">
+                <h2 className="mb-4 line-clamp-3 text-2xl font-extrabold text-warmwhite group-hover:text-sakura transition-colors lg:text-3xl">
                   {featuredPost.title}
                 </h2>
                 <p className="mb-6 line-clamp-2 text-sm leading-relaxed text-steelgray">
                   Khám phá những tin tức công nghệ mới nhất, đánh giá chi tiết sản phẩm và những mẹo hay dành cho bạn.
                 </p>
-                <div className="flex items-center gap-1 text-sm font-semibold aurora-text-rainbow group-hover:text-aurora-cyan transition-colors">
+                <div className="flex items-center gap-1 text-sm font-semibold aurora-text-rainbow group-hover:text-sakura transition-colors">
                   Đọc ngay
                   <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />

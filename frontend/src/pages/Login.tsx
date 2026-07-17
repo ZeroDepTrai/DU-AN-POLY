@@ -32,7 +32,7 @@ export default function Login() {
     <div className="container-padding section-padding">
       <div className="mx-auto grid max-w-5xl items-center gap-12 lg:grid-cols-2">
         <div className="hidden lg:block">
-          <AuroraBadge tone="violet" glow className="mb-4">
+          <AuroraBadge tone="rose" glow className="mb-4">
             Aurora UI · CellZone
           </AuroraBadge>
           <h1 className="mb-4 text-5xl font-extrabold leading-tight text-balance">
@@ -89,16 +89,16 @@ export default function Login() {
 
             <div className="flex items-center justify-between text-xs">
               <label className="flex items-center gap-2 text-softgray">
-                <input type="checkbox" className="h-4 w-4 rounded accent-aurora-cyan" />
+                <input type="checkbox" className="h-4 w-4 rounded accent-sakura" />
                 Ghi nhớ tôi
               </label>
-              <a href="#" className="aurora-text-rainbow hover:text-aurora-cyan transition-colors">
+              <a href="#" className="aurora-text-rainbow hover:text-sakura transition-colors">
                 Quên mật khẩu?
               </a>
             </div>
 
             {loginError && (
-              <div className="rounded-xl border border-deeprose/40 bg-deeprose/10 p-3 text-sm text-aurora-pink">
+              <div className="rounded-xl border border-deeprose/40 bg-deeprose/10 p-3 text-sm text-lightpink">
                 {loginError}
               </div>
             )}
@@ -128,7 +128,7 @@ export default function Login() {
 
           <p className="mt-5 text-center text-sm text-softgray">
             Chưa có tài khoản?{" "}
-            <Link to="/register" className="aurora-text-rainbow font-medium hover:text-aurora-cyan transition-colors">
+            <Link to="/register" className="aurora-text-rainbow font-medium hover:text-sakura transition-colors">
               Đăng ký ngay
             </Link>
           </p>

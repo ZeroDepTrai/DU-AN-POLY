@@ -50,7 +50,7 @@ export default function Register() {
     <div className="container-padding section-padding">
       <div className="mx-auto grid max-w-5xl items-center gap-12 lg:grid-cols-2">
         <div className="hidden lg:block">
-          <AuroraBadge tone="cyan" glow className="mb-4">
+          <AuroraBadge tone="sakura" glow className="mb-4">
             Aurora UI · CellZone
           </AuroraBadge>
           <h1 className="mb-4 text-5xl font-extrabold leading-tight text-balance">
@@ -119,7 +119,7 @@ export default function Register() {
                 placeholder="Ít nhất 6 ký tự"
               />
               {error && (
-                <div className="rounded-xl border border-deeprose/40 bg-deeprose/10 p-3 text-sm text-aurora-pink">
+                <div className="rounded-xl border border-deeprose/40 bg-deeprose/10 p-3 text-sm text-lightpink">
                   {error}
                 </div>
               )}
@@ -142,7 +142,7 @@ export default function Register() {
                 className="text-center text-2xl tracking-[12px] font-mono"
               />
               {error && (
-                <div className="rounded-xl border border-deeprose/40 bg-deeprose/10 p-3 text-sm text-aurora-pink">
+                <div className="rounded-xl border border-deeprose/40 bg-deeprose/10 p-3 text-sm text-lightpink">
                   {error}
                 </div>
               )}
@@ -161,7 +161,7 @@ export default function Register() {
 
           <p className="mt-5 text-center text-sm text-softgray">
             Đã có tài khoản?{" "}
-            <Link to="/login" className="aurora-text-rainbow font-medium hover:text-aurora-cyan transition-colors">
+            <Link to="/login" className="aurora-text-rainbow font-medium hover:text-sakura transition-colors">
               Đăng nhập
             </Link>
           </p>

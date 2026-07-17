@@ -24,19 +24,19 @@ const VALUES = [
   {
     title: "Tiên phong",
     body: "Mang đến những sản phẩm công nghệ đột phá, kiến tạo chuẩn mực mới cho cuộc sống hiện đại.",
-    gradient: "from-aurora-indigo via-aurora-violet to-aurora-cyan",
+    gradient: "from-crimson via-rose to-sakura",
     icon: "M13 10V3L4 14h7v7l9-11h-7z",
   },
   {
     title: "Đẳng cấp",
     body: "Biểu tượng của sự tiên phong và đẳng cấp trong lĩnh vực bán lẻ thiết bị thông minh cao cấp.",
-    gradient: "from-aurora-pink via-aurora-violet to-aurora-indigo",
+    gradient: "from-lightpink via-rose to-crimson",
     icon: "M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   },
   {
     title: "Cam kết",
     body: "Cam kết tuyệt đối về độ hoàn thiện, dịch vụ hậu mãi chuyên nghiệp và sự hài lòng tối đa.",
-    gradient: "from-aurora-mint via-aurora-cyan to-aurora-indigo",
+    gradient: "from-aurora-mint via-sakura to-crimson",
     icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
   },
 ];
@@ -76,8 +76,8 @@ export default function Home() {
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div className="relative z-10">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur-xl">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-aurora-cyan shadow-glow-cyan" />
-                <span className="text-xs font-semibold uppercase tracking-[0.25em] text-aurora-cyan">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-sakura shadow-glow-cyan" />
+                <span className="text-xs font-semibold uppercase tracking-[0.25em] text-sakura">
                   CellZone · Aurora UI
                 </span>
               </div>
@@ -182,7 +182,7 @@ export default function Home() {
           rightSlot={
             <Link
               to="/products"
-              className="inline-flex items-center gap-1 rounded-full border border-aurora-cyan/40 bg-aurora-cyan/10 px-4 py-2 text-sm font-semibold text-aurora-cyan transition-all hover:bg-aurora-cyan/20"
+              className="inline-flex items-center gap-1 rounded-full border border-sakura/40 bg-sakura/10 px-4 py-2 text-sm font-semibold text-sakura transition-all hover:bg-sakura/20"
             >
               Xem tất cả
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -253,7 +253,7 @@ export default function Home() {
             </div>
           </GlassCard>
           <GlassCard intensity="med" hoverable className="flex items-start gap-5 p-7">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-aurora-mint to-aurora-cyan shadow-glow-cyan">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-aurora-mint to-sakura shadow-glow-cyan">
               <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -290,12 +290,12 @@ export default function Home() {
                 loading="lazy"
               />
               <div className="border-t border-white/10 p-6">
-                <AuroraBadge tone="indigo" glow className="mb-3">
+                <AuroraBadge tone="crimson" glow className="mb-3">
                   Trụ sở chính
                 </AuroraBadge>
                 <h3 className="mb-2 text-xl font-bold text-warmwhite">123 Đường Công Nghệ</h3>
                 <p className="flex items-center gap-2 text-sm text-softgray">
-                  <svg className="h-4 w-4 shrink-0 text-aurora-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="h-4 w-4 shrink-0 text-sakura" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
@@ -306,7 +306,7 @@ export default function Home() {
 
             <GlassCard intensity="med" className="p-8">
               <div className="mb-4 flex items-center gap-2">
-                <AuroraBadge tone="cyan">Aurora · Liên hệ</AuroraBadge>
+                <AuroraBadge tone="sakura">Aurora · Liên hệ</AuroraBadge>
               </div>
               <h3 className="mb-2 text-2xl font-bold text-warmwhite">Gửi thông điệp</h3>
               <p className="mb-6 text-sm text-softgray">

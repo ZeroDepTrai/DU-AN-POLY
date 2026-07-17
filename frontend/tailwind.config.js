@@ -60,7 +60,7 @@ export default {
       boxShadow: {
         "card-hover": "0 12px 36px -12px rgba(217, 74, 99, 0.35)",
         glow: "0 0 80px 20px rgba(217, 74, 99, 0.25)",
-        "glow-violet": "0 0 60px 10px rgba(139, 92, 246, 0.35)",
+        "glow-violet": "0 0 60px 10px rgba(217, 74, 99, 0.35)",
         "glow-cyan": "0 0 60px 10px rgba(34, 211, 238, 0.30)",
         "glow-soft": "0 8px 32px -8px rgba(91, 108, 255, 0.25)",
         "aurora-card": "0 20px 60px -20px rgba(91, 108, 255, 0.35), inset 0 1px 0 rgba(255,255,255,0.05)",

@@ -6,7 +6,7 @@ export default function LoadingSpinner({ label = "Đang tải..." }: { label?: s
           className="absolute inset-0 rounded-full"
           style={{
             backgroundImage:
-              "conic-gradient(from 0deg, #5B6CFF, #8B5CF6, #22D3EE, #34D399, #5B6CFF)",
+              "conic-gradient(from 0deg, #D94A63, #A82F49, #F28CA6, #E36A86, #D94A63)",
             maskImage: "radial-gradient(circle, transparent 50%, black 51%)",
             WebkitMaskImage: "radial-gradient(circle, transparent 50%, black 51%)",
           }}

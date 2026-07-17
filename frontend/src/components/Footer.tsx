@@ -4,7 +4,7 @@ import GlassCard from "./aurora/GlassCard";
 export default function Footer() {
   return (
     <footer className="relative mt-16 border-t border-white/10 bg-aurora-bg-deep/40 backdrop-blur-xl">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-aurora-indigo/50 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-crimson/50 to-transparent" />
       <div className="container-padding py-12 lg:py-16">
         <div className="grid gap-10 lg:grid-cols-4">
           <div className="space-y-4">
@@ -27,7 +27,7 @@ export default function Footer() {
                 <a
                   key={s}
                   href="#"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-softgray transition-all hover:border-aurora-cyan/40 hover:text-aurora-cyan"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-softgray transition-all hover:border-sakura/40 hover:text-sakura"
                   aria-label={s}
                 >
                   <span className="text-[10px] font-bold uppercase">{s.slice(0, 2)}</span>
@@ -46,7 +46,7 @@ export default function Footer() {
                 { to: "/spin", label: "Vòng quay may mắn" },
               ].map((l) => (
                 <li key={l.to}>
-                  <Link to={l.to} className="transition-colors hover:text-aurora-cyan">
+                  <Link to={l.to} className="transition-colors hover:text-sakura">
                     {l.label}
                   </Link>
                 </li>
@@ -64,7 +64,7 @@ export default function Footer() {
                 "Trả góp 0%",
               ].map((l) => (
                 <li key={l}>
-                  <a href="#" className="transition-colors hover:text-aurora-cyan">
+                  <a href="#" className="transition-colors hover:text-sakura">
                     {l}
                   </a>
                 </li>

@@ -110,19 +110,19 @@ export default function Profile() {
                 <p className="mt-2 text-4xl font-bold text-warmwhite">{ordersLoading ? "..." : orders.length}</p>
                 <button
                   onClick={() => setTab("orders")}
-                  className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-aurora-cyan"
+                  className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-sakura"
                 >
                   Xem đơn →
                 </button>
               </GlassCard>
               <GlassCard intensity="med" glow className="p-5">
-                <p className="text-xs uppercase tracking-wider text-aurora-pink">Yêu thích của bạn</p>
+                <p className="text-xs uppercase tracking-wider text-lightpink">Yêu thích của bạn</p>
                 <p className="mt-2 text-4xl font-bold aurora-text-rainbow">
                   ♥ {favoritesLoading ? "..." : favorites.length}
                 </p>
                 <button
                   onClick={() => setTab("favorites")}
-                  className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-aurora-cyan"
+                  className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-sakura"
                 >
                   Xem →
                 </button>
@@ -136,15 +136,15 @@ export default function Profile() {
                 <p className="mt-1 text-xs text-softgray">
                   Cứ mỗi {new Intl.NumberFormat("vi-VN").format(spendPerSpin)} VND đã mua bạn được cộng 1 lượt.
                 </p>
-                <Link to="/spin" className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-aurora-cyan">
+                <Link to="/spin" className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-sakura">
                   Quay ngay →
                 </Link>
               </GlassCard>
               <GlassCard intensity="low" hoverable className="p-5">
-                <AuroraBadge tone="cyan" className="mb-2">📜 Lịch sử</AuroraBadge>
+                <AuroraBadge tone="sakura" className="mb-2">📜 Lịch sử</AuroraBadge>
                 <p className="text-lg font-bold text-warmwhite">Lịch sử vòng quay</p>
                 <p className="mt-1 text-xs text-softgray">Xem tất cả giải thưởng bạn từng trúng và mã giảm giá nhận được.</p>
-                <Link to="/spin/history" className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-aurora-cyan">
+                <Link to="/spin/history" className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-sakura">
                   Xem →
                 </Link>
               </GlassCard>
@@ -167,7 +167,7 @@ export default function Profile() {
                       <p className="text-xs text-softgray">{o.items.length} sản phẩm · {o.delivery_address}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <AuroraBadge tone={o.status === "delivered" ? "mint" : o.status === "pending" ? "amber" : "cyan"}>
+                      <AuroraBadge tone={o.status === "delivered" ? "mint" : o.status === "pending" ? "amber" : "sakura"}>
                         {o.status.replace("_", " ")}
                       </AuroraBadge>
                       <Link

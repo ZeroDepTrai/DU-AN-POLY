@@ -61,7 +61,7 @@ export default function TrackOrder() {
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <Link to="/" className="mb-2 inline-flex items-center gap-1 text-sm text-steelgray hover:text-aurora-cyan transition-colors">
+          <Link to="/" className="mb-2 inline-flex items-center gap-1 text-sm text-steelgray hover:text-sakura transition-colors">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
@@ -93,7 +93,7 @@ export default function TrackOrder() {
               <div
                 className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-bold transition-all ${
                   i <= statusIndex
-                    ? "border-aurora-violet bg-aurora-gradient text-white shadow-glow-violet"
+                    ? "border-rose bg-aurora-gradient text-white shadow-glow-violet"
                     : "border-white/15 bg-white/[0.04] text-steelgray"
                 }`}
               >
@@ -116,7 +116,7 @@ export default function TrackOrder() {
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <GlassCard intensity="med" className="p-4">
           <div className="mb-2 flex items-center gap-2">
-            <svg className="h-4 w-4 text-aurora-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-4 w-4 text-sakura" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -126,7 +126,7 @@ export default function TrackOrder() {
         </GlassCard>
         <GlassCard intensity="med" className="p-4">
           <div className="mb-2 flex items-center gap-2">
-            <svg className="h-4 w-4 text-aurora-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-4 w-4 text-sakura" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
             <span className="text-sm font-medium text-softgray">Số điện thoại</span>

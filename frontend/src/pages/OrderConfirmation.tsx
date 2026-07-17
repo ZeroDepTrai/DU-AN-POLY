@@ -48,7 +48,7 @@ export default function OrderConfirmation() {
       <GlassCard intensity="med" className="mb-6 p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-bold text-warmwhite">Thông tin đơn hàng</h2>
-          <AuroraBadge tone="cyan">{order.status.replace("_", " ")}</AuroraBadge>
+          <AuroraBadge tone="sakura">{order.status.replace("_", " ")}</AuroraBadge>
         </div>
         <div className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
