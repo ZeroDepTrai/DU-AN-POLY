@@ -5,7 +5,8 @@ export type OrderStatus =
   | "processing"
   | "shipped"
   | "in_transit"
-  | "delivered";
+  | "delivered"
+  | "cancelled";
 
 export interface User {
   id: number;

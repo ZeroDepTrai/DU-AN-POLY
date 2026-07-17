@@ -3,6 +3,8 @@ name: Deploy Frontend to Vercel
 on:
   push:
     branches:
+      - main
+      - master
       - fix/railway-healthcheck
   workflow_dispatch:
 
