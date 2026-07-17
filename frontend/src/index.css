@@ -12,7 +12,7 @@
     margin: 0;
     min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: #181417;
+    background-color: #0D0B0C;
     color: #EEE7E8;
     -webkit-font-smoothing: antialiased;
   }
@@ -26,14 +26,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #181417;
+    background: #0D0B0C;
   }
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #D94A63 0%, #A82F49 100%);
+    background: linear-gradient(180deg, #D94A70 0%, #A6415C 100%);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #E36A86 0%, #A82F49 100%);
+    background: linear-gradient(180deg, #E36A86 0%, #A6415C 100%);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -47,7 +47,7 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-crimson px-5 py-2.5 font-semibold text-white transition-all hover:bg-raspberry active:bg-deeprose disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-crimson px-5 py-2.5 font-semibold text-white transition-all hover:bg-blush active:bg-rose disabled:opacity-50;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gunmetal bg-graphite px-5 py-2.5 font-semibold text-warmwhite transition-colors hover:border-silvergray hover:bg-gunmetal disabled:opacity-50;
@@ -59,13 +59,13 @@
     @apply rounded-xl border border-rose/20 bg-cardtint;
   }
   .input-field {
-    @apply w-full rounded-lg border border-gunmetal bg-charcoal px-3.5 py-2.5 text-sm text-warmwhite placeholder-steelgray transition-colors focus:border-rose focus:outline-none focus:ring-1 focus:ring-rose;
+    @apply w-full rounded-lg border border-gunmetal bg-charcoal px-3.5 py-2.5 text-sm text-warmwhite placeholder-steelgray transition-colors focus:border-crimson focus:outline-none focus:ring-1 focus:ring-crimson;
   }
   .section-title {
     @apply text-xl font-bold text-warmwhite;
   }
   .tag-badge {
-    @apply inline-block rounded-sm bg-rose/15 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-rose;
+    @apply inline-block rounded-sm bg-rose/15 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-blushlight;
   }
   .product-tag {
     @apply inline-block rounded-full bg-crimson/10 px-3 py-1 text-xs font-medium text-crimson;
@@ -85,18 +85,18 @@
     @apply relative overflow-hidden rounded-aurora border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-aurora-card;
   }
   .aurora-surface-hover {
-    @apply transition-all hover:border-white/20 hover:shadow-glow-soft hover:-translate-y-0.5;
+    @apply transition-all hover:border-white/20 hover:shadow-card-glow hover:-translate-y-0.5;
   }
   .aurora-text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #EEE7E8 0%, #C9C4C6 35%, #F28CA6 70%, #D94A63 100%);
+    background-image: linear-gradient(135deg, #EEE7E8 0%, #C9C4C6 35%, #DFBFC3 70%, #D94A70 100%);
   }
   .aurora-text-rainbow {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(120deg, #5B6CFF 0%, #8B5CF6 25%, #22D3EE 55%, #34D399 80%, #F472B6 100%);
+    background-image: linear-gradient(120deg, #D94A70 0%, #A6415C 25%, #DFBFC3 55%, #B88B52 80%, #D94A70 100%);
   }
   .aurora-divider {
-    background-image: linear-gradient(90deg, transparent, rgba(217,74,99,0.6), rgba(242,140,166,0.5), transparent);
+    background-image: linear-gradient(90deg, transparent, rgba(217,74,112,0.6), rgba(223,191,195,0.5), transparent);
     height: 1px;
   }
   .aurora-input {
@@ -109,39 +109,86 @@
     @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-warmwhite backdrop-blur-xl;
   }
   .aurora-chip-active {
-    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
+    background-image: linear-gradient(135deg, #D94A70 0%, #A6415C 100%);
     color: white;
     border-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 6px 20px -8px rgba(217, 74, 99, 0.7);
+    box-shadow: 0 6px 20px -8px rgba(217, 74, 112, 0.7);
   }
   .aurora-glow-btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-semibold text-white transition-all;
-    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
-    box-shadow: 0 10px 30px -10px rgba(217, 74, 99, 0.75), inset 0 1px 0 rgba(255,255,255,0.2);
+    background-image: linear-gradient(135deg, #D94A70 0%, #A6415C 100%);
+    box-shadow: 0 10px 30px -10px rgba(217, 74, 112, 0.75), inset 0 1px 0 rgba(255,255,255,0.2);
   }
   .aurora-glow-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 14px 36px -10px rgba(217, 74, 99, 0.85), inset 0 1px 0 rgba(255,255,255,0.3);
+    box-shadow: 0 14px 36px -10px rgba(217, 74, 112, 0.85), inset 0 1px 0 rgba(255,255,255,0.3);
   }
   .aurora-glow-btn:active {
     transform: translateY(0);
   }
   .rose-glow-btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-semibold text-white transition-all;
-    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
-    box-shadow: 0 10px 30px -10px rgba(217, 74, 99, 0.75), inset 0 1px 0 rgba(255,255,255,0.2);
+    background-image: linear-gradient(135deg, #D94A70 0%, #A6415C 100%);
+    box-shadow: 0 10px 30px -10px rgba(217, 74, 112, 0.75), inset 0 1px 0 rgba(255,255,255,0.2);
   }
   .rose-glow-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 14px 36px -10px rgba(217, 74, 99, 0.85), inset 0 1px 0 rgba(255,255,255,0.3);
+    box-shadow: 0 14px 36px -10px rgba(217, 74, 112, 0.85), inset 0 1px 0 rgba(255,255,255,0.3);
   }
   .aurora-shimmer {
-    background-image: linear-gradient(90deg, transparent, rgba(217,74,99,0.20), transparent);
+    background-image: linear-gradient(90deg, transparent, rgba(217,74,112,0.20), transparent);
     background-size: 200% 100%;
     animation: shimmer 2.4s linear infinite;
   }
   .focus-aurora:focus-visible {
     @apply outline-none ring-2 ring-crimson/60 ring-offset-2 ring-offset-charcoal;
+  }
+
+  /* ── Admin Dashboard specific ────────────────────────────────────────── */
+  .admin-sidebar {
+    @apply hidden w-64 shrink-0 flex-col border-r border-gunmetal/50 bg-charcoal/80 backdrop-blur-xl md:flex;
+  }
+  .admin-sidebar-header {
+    @apply flex h-16 items-center gap-2 border-b border-gunmetal/30 px-4;
+  }
+  .admin-sidebar-logo {
+    @apply flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-crimson to-blush shadow-lg;
+  }
+  .admin-nav-item {
+    @apply flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all;
+  }
+  .admin-nav-item-active {
+    @apply bg-gradient-to-r from-crimson/20 to-blush/10 border border-crimson/30 text-warmwhite;
+  }
+  .admin-nav-item-inactive {
+    @apply text-softgray hover:bg-gunmetal/50 hover:text-warmwhite;
+  }
+  .admin-kpi-card {
+    @apply rounded-xl border border-gunmetal/30 bg-cardoverlay backdrop-blur-xl p-5 transition-all hover:border-crimson/30 hover:shadow-card-glow;
+  }
+  .admin-table {
+    @apply w-full text-sm;
+  }
+  .admin-table-header {
+    @apply border-b border-gunmetal/30 bg-gunmetal/20 text-softgray text-left;
+  }
+  .admin-table-row {
+    @apply border-t border-gunmetal/20 transition-colors hover:bg-gunmetal/20;
+  }
+  .admin-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .admin-badge-success {
+    @apply bg-emerald/20 text-emerald;
+  }
+  .admin-badge-warning {
+    @apply bg-amber-500/20 text-amber-400;
+  }
+  .admin-badge-info {
+    @apply bg-crimson/20 text-crimson;
+  }
+  .admin-badge-danger {
+    @apply bg-rose/20 text-blushlight;
   }
 }
 
@@ -161,14 +208,14 @@
 }
 
 .leaflet-popup-content-wrapper {
-  background: #232028 !important;
+  background: #100E0F !important;
   color: #EEE7E8 !important;
   border-radius: 8px !important;
-  border: 1px solid rgba(217,74,99,0.4) !important;
+  border: 1px solid rgba(166,65,92,0.4) !important;
 }
 
 .leaflet-popup-tip {
-  background: #232028 !important;
+  background: #100E0F !important;
 }
 
 /* Smooth out gallery zoom transitions (used by ProductDetail) */
