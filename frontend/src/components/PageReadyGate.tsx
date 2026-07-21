@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 
 const MEDIA_WAIT_TIMEOUT_MS = 12_000;
+const PREPARING_SCREEN_DELAY_MS = 180;
 
 function nextPaint() {
   return new Promise<void>((resolve) => {
@@ -89,43 +90,62 @@ export function PageFallback() {
 export default function PageReadyGate({ children }: { children: ReactNode }) {
   const location = useLocation();
   const contentRef = useRef<HTMLDivElement>(null);
+  const revealedRouteRef = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [showPreparingScreen, setShowPreparingScreen] = useState(false);
   const { loading: authLoading } = useAuth();
   const { loading: cartLoading } = useCart();
   const initialFetches = useIsFetching({
     predicate: (query) => query.state.data === undefined,
   });
   const blocked = authLoading || cartLoading || initialFetches > 0;
-  const routeKey = `${location.pathname}${location.search}`;
+  // Query-string changes are normally filters/sorts within the current page,
+  // not a new page transition, so they must never trigger the full-screen gate.
+  const routeKey = location.pathname;
 
   useLayoutEffect(() => {
     setReady(false);
+    setShowPreparingScreen(false);
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [routeKey]);
 
-  useLayoutEffect(() => {
-    if (blocked) setReady(false);
-  }, [blocked]);
+  useEffect(() => {
+    if (ready) {
+      setShowPreparingScreen(false);
+      return;
+    }
+
+    // Cached/instant routes usually finish before this timer, avoiding a
+    // distracting CellZone flash during fast navigation.
+    const timer = window.setTimeout(() => setShowPreparingScreen(true), PREPARING_SCREEN_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [ready, routeKey]);
 
   useEffect(() => {
+    // Once a route has been revealed, background refetches and queries mounted
+    // later on the page are never allowed to cover the UI again.
+    if (revealedRouteRef.current === routeKey) return;
     if (blocked || !contentRef.current) return;
 
     const controller = new AbortController();
     const root = contentRef.current;
 
     void waitForImportantImages(root, controller.signal).then(() => {
-      if (!controller.signal.aborted) setReady(true);
+      if (!controller.signal.aborted) {
+        revealedRouteRef.current = routeKey;
+        setReady(true);
+      }
     });
 
     return () => controller.abort();
   }, [blocked, routeKey]);
 
   return (
-    <div aria-busy={!ready}>
+    <div className="min-h-screen bg-aurora-bg-deep" aria-busy={!ready}>
       <div ref={contentRef} className={ready ? "" : "invisible"} aria-hidden={!ready}>
         {children}
       </div>
-      {!ready && <PagePreparingScreen />}
+      {!ready && showPreparingScreen && <PagePreparingScreen />}
     </div>
   );
 }
