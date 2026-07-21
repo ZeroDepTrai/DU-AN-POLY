@@ -12,6 +12,7 @@
     "restartPolicyMaxRetries": 10
   },
   "variables": {
+    "PORT": "8000",
     "UPLOAD_DIR": "/data/uploads"
   },
   "volumes": [
