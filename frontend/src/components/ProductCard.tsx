@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { memo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { productsApi } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useCartFly } from "../context/CartFlyContext";
@@ -20,6 +22,20 @@ function ProductCardBase({ product, variant = "small", requireAuth = false }: Pr
   const { flyToCart } = useCartFly();
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const prepareProductDetail = () => {
+    const productId = String(product.id);
+    queryClient.setQueryData(["product-preview", productId], product);
+    void queryClient.prefetchQuery({
+      queryKey: ["product", productId],
+      queryFn: async () => {
+        const { data } = await productsApi.get(product.id);
+        return data;
+      },
+      staleTime: 5 * 60_000,
+    });
+  };
 
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -53,7 +69,14 @@ function ProductCardBase({ product, variant = "small", requireAuth = false }: Pr
   // ── Bento: tall hero card ─────────────────────────────────────────────
   if (variant === "bento") {
     return (
-      <Link to={`/products/${product.id}`} className="group block mx-auto w-full max-w-3xl">
+      <Link
+        to={`/products/${product.id}`}
+        className="group block mx-auto w-full max-w-3xl"
+        onPointerEnter={prepareProductDetail}
+        onFocus={prepareProductDetail}
+        onTouchStart={prepareProductDetail}
+        onClick={prepareProductDetail}
+      >
         <GlassCard intensity="low" hoverable glow className="flex flex-col overflow-hidden p-0 md:flex-row">
           <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-aurora-bg-mid md:w-1/2">
             <div className="absolute inset-0 bg-aurora-mesh opacity-60" />
@@ -126,7 +149,14 @@ function ProductCardBase({ product, variant = "small", requireAuth = false }: Pr
   // ── Featured: wider showcase card ─────────────────────────────────────
   if (variant === "featured") {
     return (
-      <Link to={`/products/${product.id}`} className="group block h-full">
+      <Link
+        to={`/products/${product.id}`}
+        className="group block h-full"
+        onPointerEnter={prepareProductDetail}
+        onFocus={prepareProductDetail}
+        onTouchStart={prepareProductDetail}
+        onClick={prepareProductDetail}
+      >
         <GlassCard intensity="low" hoverable className="flex h-full flex-col overflow-hidden p-0">
           <div className="relative aspect-[4/3] overflow-hidden bg-aurora-bg-mid">
             <div className="absolute inset-0 bg-gradient-to-br from-crimson/15 via-transparent to-lightpink/15" />
@@ -177,7 +207,14 @@ function ProductCardBase({ product, variant = "small", requireAuth = false }: Pr
 
   // ── Small: standard grid card ─────────────────────────────────────────
   return (
-    <Link to={`/products/${product.id}`} className="group block h-full">
+    <Link
+      to={`/products/${product.id}`}
+      className="group block h-full"
+      onPointerEnter={prepareProductDetail}
+      onFocus={prepareProductDetail}
+      onTouchStart={prepareProductDetail}
+      onClick={prepareProductDetail}
+    >
       <GlassCard intensity="low" hoverable className="flex h-full flex-col overflow-hidden p-0">
         <div className="relative aspect-square overflow-hidden bg-aurora-bg-mid">
           <div className="absolute inset-0 bg-gradient-to-br from-crimson/15 via-transparent to-lightpink/15" />

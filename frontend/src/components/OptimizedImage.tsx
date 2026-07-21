@@ -5,40 +5,13 @@ type OptimizedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   priority?: boolean;
 };
 
-export function responsiveSrcSet(src: string): string | undefined {
+function responsiveSrcSet(src: string): string | undefined {
   const match = src.match(/^(.*\/uploads\/)([a-f0-9]{32})\.webp(?:\?.*)?$/i);
   if (!match) return undefined;
   const [, prefix, stem] = match;
   return [320, 640, 1200]
     .map((width) => `${prefix}${stem}-${width}.webp ${width}w`)
     .join(", ");
-}
-
-export function preloadOptimizedImage(src: string, sizes = "100vw"): Promise<void> {
-  return new Promise((resolve) => {
-    if (!src) {
-      resolve();
-      return;
-    }
-
-    const image = new Image();
-    const srcSet = responsiveSrcSet(src);
-    if (srcSet) {
-      image.srcset = srcSet;
-      image.sizes = sizes;
-    }
-
-    const finish = () => resolve();
-    image.onload = () => {
-      if (typeof image.decode === "function") {
-        image.decode().catch(() => undefined).finally(finish);
-      } else {
-        finish();
-      }
-    };
-    image.onerror = finish;
-    image.src = src;
-  });
 }
 
 export default function OptimizedImage({

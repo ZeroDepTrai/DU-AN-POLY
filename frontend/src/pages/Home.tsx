@@ -8,7 +8,7 @@ import GlowButton from "../components/aurora/GlowButton";
 import { AuroraInput, AuroraTextarea } from "../components/aurora/AuroraInput";
 import AuroraBadge from "../components/aurora/AuroraBadge";
 import SectionHeading from "../components/aurora/SectionHeading";
-import OptimizedImage, { preloadOptimizedImage } from "../components/OptimizedImage";
+import OptimizedImage from "../components/OptimizedImage";
 
 const HERO_GLOW =
   "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=1200&q=85&auto=format&fit=crop";
@@ -46,22 +46,21 @@ export default function Home() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
   const [contactSent, setContactSent] = useState(false);
 
-  const { data: showcase = [], isLoading } = useQuery({
+  const {
+    data: showcase = [],
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: ["home-showcase"],
     queryFn: async () => {
       const { data } = await productsApi.search({ tag: "featured", page: 1, limit: 3 });
-      await Promise.all([
-        preloadOptimizedImage(HERO_GLOW, "(max-width: 1024px) 100vw, 50vw"),
-        ...data.products.map((product) =>
-          preloadOptimizedImage(
-            product.image_url,
-            "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
-          ),
-        ),
-      ]);
       return data.products;
     },
     staleTime: 10 * 60_000,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 
   const handleContact = (e: FormEvent) => {
@@ -69,20 +68,6 @@ export default function Home() {
     setContactSent(true);
     setContactForm({ name: "", email: "", message: "" });
   };
-
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-aurora-bg-deep">
-        <div className="relative flex h-24 w-24 items-center justify-center">
-          <div className="absolute inset-0 animate-ping rounded-full bg-sakura/15" />
-          <div className="absolute inset-3 animate-pulse rounded-full bg-aurora-gradient blur-lg" />
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.06] text-2xl font-black text-white shadow-glow-violet backdrop-blur-xl">
-            C
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -213,7 +198,33 @@ export default function Home() {
         />
 
         <div className="mt-10">
-          {showcase.length === 0 ? (
+          {isLoading ? (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
+              {[0, 1, 2].map((item) => (
+                <GlassCard key={item} intensity="low" className="overflow-hidden p-0">
+                  <div className="aspect-[4/3] animate-pulse bg-gradient-to-br from-white/[0.04] via-sakura/[0.08] to-crimson/[0.08]" />
+                  <div className="space-y-3 p-5">
+                    <div className="h-5 w-3/4 animate-pulse rounded-full bg-white/10" />
+                    <div className="h-4 w-1/2 animate-pulse rounded-full bg-white/[0.06]" />
+                    <div className="h-10 animate-pulse rounded-xl bg-white/[0.06]" />
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          ) : isError ? (
+            <GlassCard intensity="med" className="p-12 text-center">
+              <p className="text-warmwhite">Không thể tải sản phẩm nổi bật.</p>
+              <p className="mt-2 text-sm text-softgray">Máy chủ đang tạm thời không phản hồi.</p>
+              <button
+                type="button"
+                className="mt-5 rounded-xl border border-sakura/40 bg-sakura/10 px-5 py-2.5 text-sm font-semibold text-sakura transition-all hover:bg-sakura/20 disabled:cursor-wait disabled:opacity-60"
+                disabled={isFetching}
+                onClick={() => void refetch()}
+              >
+                {isFetching ? "Đang thử lại..." : "Thử lại"}
+              </button>
+            </GlassCard>
+          ) : showcase.length === 0 ? (
             <GlassCard intensity="med" className="p-16 text-center">
               <p className="text-softgray">Chưa có sản phẩm nổi bật.</p>
             </GlassCard>

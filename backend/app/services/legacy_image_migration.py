@@ -57,3 +57,10 @@ def optimize_legacy_images() -> None:
         print(f"[IMAGE MIGRATION] skipped ({type(exc).__name__}: {exc})")
     finally:
         db.close()
+
+
+if __name__ == "__main__":
+    # Run explicitly with: python -m app.services.legacy_image_migration
+    # This intentionally stays outside the web-service startup path so a large
+    # upload volume cannot prevent the API from binding its port.
+    optimize_legacy_images()

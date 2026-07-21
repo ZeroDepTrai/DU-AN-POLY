@@ -554,6 +554,7 @@ function SpecsTable({ specs }: { specs: string }) {
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { addItem } = useCart();
   const { flyToCart } = useCartFly();
   const [activeTab, setActiveTab] = useState<Tab>("mota");
@@ -567,6 +568,8 @@ export default function ProductDetail() {
       return data;
     },
     enabled: Boolean(id),
+    placeholderData: () => queryClient.getQueryData<Product>(["product-preview", id]),
+    staleTime: 5 * 60_000,
   });
 
   if (isLoading) {

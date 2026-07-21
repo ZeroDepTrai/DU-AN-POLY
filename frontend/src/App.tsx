@@ -10,6 +10,7 @@ import { CartFlyProvider } from "./context/CartFlyContext";
 // Eager: tiny pages used above the fold on landing
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
+import ProductDetail from "./pages/ProductDetail";
 
 // Lazy: anything below-the-fold on Home. Each becomes its own JS chunk so
 // Home's first paint no longer ships the Tiptap editor, Leaflet map,
@@ -17,7 +18,6 @@ import NotFound from "./pages/NotFound";
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const Products = lazy(() => import("./pages/Products"));
-const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const Accessories = lazy(() => import("./pages/Accessories"));
 const CartPage = lazy(() => import("./pages/Cart"));
 const Checkout = lazy(() => import("./pages/Checkout"));
