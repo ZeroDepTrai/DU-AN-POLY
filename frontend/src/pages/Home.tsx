@@ -2,14 +2,13 @@ import { useRef, FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { productsApi } from "../api/client";
-import LoadingSpinner from "../components/LoadingSpinner";
 import ProductCard from "../components/ProductCard";
 import GlassCard from "../components/aurora/GlassCard";
 import GlowButton from "../components/aurora/GlowButton";
 import { AuroraInput, AuroraTextarea } from "../components/aurora/AuroraInput";
 import AuroraBadge from "../components/aurora/AuroraBadge";
 import SectionHeading from "../components/aurora/SectionHeading";
-import OptimizedImage from "../components/OptimizedImage";
+import OptimizedImage, { preloadOptimizedImage } from "../components/OptimizedImage";
 
 const HERO_GLOW =
   "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=1200&q=85&auto=format&fit=crop";
@@ -51,8 +50,18 @@ export default function Home() {
     queryKey: ["home-showcase"],
     queryFn: async () => {
       const { data } = await productsApi.search({ tag: "featured", page: 1, limit: 3 });
+      await Promise.all([
+        preloadOptimizedImage(HERO_GLOW, "(max-width: 1024px) 100vw, 50vw"),
+        ...data.products.map((product) =>
+          preloadOptimizedImage(
+            product.image_url,
+            "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
+          ),
+        ),
+      ]);
       return data.products;
     },
+    staleTime: 10 * 60_000,
   });
 
   const handleContact = (e: FormEvent) => {
@@ -60,6 +69,20 @@ export default function Home() {
     setContactSent(true);
     setContactForm({ name: "", email: "", message: "" });
   };
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-aurora-bg-deep">
+        <div className="relative flex h-24 w-24 items-center justify-center">
+          <div className="absolute inset-0 animate-ping rounded-full bg-sakura/15" />
+          <div className="absolute inset-3 animate-pulse rounded-full bg-aurora-gradient blur-lg" />
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.06] text-2xl font-black text-white shadow-glow-violet backdrop-blur-xl">
+            C
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -190,9 +213,7 @@ export default function Home() {
         />
 
         <div className="mt-10">
-          {isLoading ? (
-            <LoadingSpinner label="Đang tải sản phẩm..." />
-          ) : showcase.length === 0 ? (
+          {showcase.length === 0 ? (
             <GlassCard intensity="med" className="p-16 text-center">
               <p className="text-softgray">Chưa có sản phẩm nổi bật.</p>
             </GlassCard>
