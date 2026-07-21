@@ -324,6 +324,7 @@ function ChipButton({
 const PHONE_TAG_PRESETS = [
   "iPhone", "Apple", "Android", "Samsung", "Xiaomi", "OPPO",
   "Vivo", "Flagship", "Budget", "5G", "Gaming", "Featured",
+  "Sony", "Realme", "Huawei", "Nokia",
 ];
 
 // Accessory category keywords — each maps onto the same keywords that the
@@ -339,7 +340,7 @@ const ACCESSORY_CATEGORY_TAGS: { label: string; chips: string[] }[] = [
 ];
 
 // Accessory compatibility tokens the Accessories page filters by.
-const ACCESSORY_COMPAT_TAGS = ["iPhone", "Samsung", "Xiaomi", "OPPO", "Universal","Apple","VIVO"];
+const ACCESSORY_COMPAT_TAGS = ["iPhone", "Samsung", "Xiaomi", "OPPO", "Universal","Apple","VIVO","Sony","Realme","Huawei","Nokia"];
 
 const ACCESSORY_UMBRELLA = "accessory";
 
