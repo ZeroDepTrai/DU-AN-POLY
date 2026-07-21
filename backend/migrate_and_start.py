@@ -284,5 +284,10 @@ if __name__ == "__main__":
     apply_schema_changes()
     run_migrations()
 
+    # Idempotent: only legacy file names and inline base64 images are changed.
+    # Original files are kept so rollback remains safe.
+    from app.services.legacy_image_migration import optimize_legacy_images
+    optimize_legacy_images()
+
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000)

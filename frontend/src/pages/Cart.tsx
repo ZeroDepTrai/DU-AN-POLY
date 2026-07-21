@@ -5,6 +5,7 @@ import GlowButton from "../components/aurora/GlowButton";
 import AuroraBadge from "../components/aurora/AuroraBadge";
 import SectionHeading from "../components/aurora/SectionHeading";
 import LoadingSpinner from "../components/LoadingSpinner";
+import OptimizedImage from "../components/OptimizedImage";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, totalPrice, loading } = useCart();
@@ -54,10 +55,13 @@ export default function CartPage() {
             const isFree = item.source === "free";
             return (
               <GlassCard intensity="med" key={item.id} className="flex items-center gap-4 p-4">
-                <Link to={`/products/${item.product_id}`} className="shrink-0">
-                  <img
+                <Link to={`/products/${item.product_id}`} className="relative shrink-0 overflow-hidden rounded-xl">
+                  <OptimizedImage
                     src={item.product_image_url}
                     alt={item.product_name}
+                    sizes="96px"
+                    width={96}
+                    height={96}
                     className="h-24 w-24 rounded-xl object-cover"
                   />
                 </Link>

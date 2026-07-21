@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from lxml import etree
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, load_only
 
 from app.config import settings
 from app.database import get_db
@@ -22,8 +22,9 @@ from app.schemas import (
     ProductResponse,
 )
 from app.services.orders import order_to_response
+from app.services.images import InvalidImageError, persist_inline_data_images, save_optimized_image
 from app.websocket import manager
-from app.routers.products import _attach_media, _attach_rating_like
+from app.routers.products import PRODUCT_LIST_COLUMNS, _attach_media, _attach_rating_like
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -55,7 +56,19 @@ def save_upload(file: UploadFile, allowed_exts: set, max_size: int) -> str:
 
 
 def save_image(file: UploadFile) -> str:
-    return save_upload(file, ALLOWED_IMAGE_EXTENSIONS, IMAGE_MAX_SIZE)
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in ALLOWED_IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))}",
+        )
+    content = file.file.read()
+    if len(content) > IMAGE_MAX_SIZE:
+        raise HTTPException(status_code=400, detail="Image must be under 5 MB.")
+    try:
+        return save_optimized_image(content, UPLOAD_DIR)
+    except InvalidImageError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def save_video(file: UploadFile) -> str:
@@ -92,7 +105,12 @@ def admin_list_products(db: Session = Depends(get_db), _: User = Depends(require
     """Lightweight list — drops `description`/`specifications` columns from
     the response so the admin Products tab doesn't ship multi-MB text
     payloads for fields the table never displays."""
-    rows = db.query(Product).order_by(Product.id.desc()).all()
+    rows = (
+        db.query(Product)
+        .options(load_only(*PRODUCT_LIST_COLUMNS))
+        .order_by(Product.id.desc())
+        .all()
+    )
     _attach_rating_like(rows, db, None)
     return rows
 
@@ -158,8 +176,8 @@ def create_product(
         name=name,
         price=price,
         tags=tags,
-        description=description,
-        specifications=specifications,
+        description=persist_inline_data_images(description, UPLOAD_DIR),
+        specifications=persist_inline_data_images(specifications, UPLOAD_DIR),
         stock=stock,
         image_url=image_url,
     )
@@ -189,8 +207,8 @@ def update_product(
     product.name = name
     product.price = price
     product.tags = tags
-    product.description = description
-    product.specifications = specifications
+    product.description = persist_inline_data_images(description, UPLOAD_DIR)
+    product.specifications = persist_inline_data_images(specifications, UPLOAD_DIR)
     product.stock = stock
     if image is not None and image.filename:
         product.image_url = save_image(image)
@@ -481,10 +499,10 @@ def _extract_product_docx_images(docx_bytes: bytes) -> dict[str, str]:
                     ext = Path(name).suffix.lower()
                     if ext not in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
                         ext = ".png"
-                    filename = f"{uuid.uuid4().hex}{ext}"
-                    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-                    (UPLOAD_DIR / filename).write_bytes(img_data)
-                    url = f"/uploads/{filename}"
+                    try:
+                        url = save_optimized_image(img_data, UPLOAD_DIR)
+                    except InvalidImageError:
+                        continue
                     media_basename = name.split("/")[-1]
                     image_map[f"embed:{media_basename}"] = url
                     for rid, media_name in rel_map.items():

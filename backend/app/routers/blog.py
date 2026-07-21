@@ -1,6 +1,5 @@
 import io
 import re
-import uuid
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -8,13 +7,14 @@ from pathlib import Path
 from docx import Document
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from lxml import etree
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from app.database import get_db
 from app.deps import require_admin
 from app.models import BlogPost, User
 from app.schemas import BlogPostCreate, BlogPostListResponse, BlogPostResponse
 from app.config import settings
+from app.services.images import InvalidImageError, persist_inline_data_images, save_optimized_image
 
 router = APIRouter(prefix="/api", tags=["blog"])
 
@@ -32,11 +32,10 @@ def save_upload(file: UploadFile) -> str:
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="Image must be under 5 MB.")
 
-    filename = f"{uuid.uuid4().hex}{suffix}"
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    target = UPLOAD_DIR / filename
-    target.write_bytes(content)
-    return f"/uploads/{filename}"
+    try:
+        return save_optimized_image(content, UPLOAD_DIR)
+    except InvalidImageError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def _extract_docx_images(docx_bytes: bytes) -> dict[str, str]:
@@ -70,10 +69,10 @@ def _extract_docx_images(docx_bytes: bytes) -> dict[str, str]:
                     ext = Path(name).suffix.lower()
                     if ext not in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
                         ext = ".png"
-                    filename = f"{uuid.uuid4().hex}{ext}"
-                    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-                    (UPLOAD_DIR / filename).write_bytes(img_data)
-                    url = f"/uploads/{filename}"
+                    try:
+                        url = save_optimized_image(img_data, UPLOAD_DIR)
+                    except InvalidImageError:
+                        continue
 
                     # Key by the media filename (what rel_map values look like)
                     media_basename = name.split("/")[-1]
@@ -233,7 +232,16 @@ def list_posts(
     db: Session = Depends(get_db),
 ):
     """Returns all blog posts, optionally filtered by one or more tags (comma-separated)."""
-    query = db.query(BlogPost)
+    query = db.query(BlogPost).options(
+        load_only(
+            BlogPost.id,
+            BlogPost.title,
+            BlogPost.slug,
+            BlogPost.image_url,
+            BlogPost.created_at,
+            BlogPost.tags,
+        )
+    )
     if tag:
         tags = [t.strip().lower() for t in tag.split(",") if t.strip()]
         if tags:
@@ -246,7 +254,6 @@ def list_posts(
             id=p.id,
             title=p.title,
             slug=p.slug,
-            content=p.content or "",
             image_url=p.image_url,
             created_at=p.created_at,
             tags=p.tags,
@@ -274,6 +281,28 @@ def get_post(slug: str, db: Session = Depends(get_db)):
 
 # ── Admin ────────────────────────────────────────────────────────────────────
 
+@router.get("/admin/blog", response_model=list[BlogPostResponse])
+def admin_list_posts(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """Full content is intentionally restricted to the authenticated editor."""
+    posts = db.query(BlogPost).order_by(BlogPost.id.desc()).all()
+    return [
+        BlogPostResponse(
+            id=post.id,
+            title=post.title,
+            slug=post.slug,
+            content=post.content,
+            image_url=post.image_url,
+            author_name=post.author.name,
+            created_at=post.created_at,
+            tags=post.tags,
+        )
+        for post in posts
+    ]
+
+
 @router.post("/admin/blog", response_model=BlogPostResponse)
 def create_post(
     title: str = Form(...),
@@ -300,7 +329,7 @@ def create_post(
     post = BlogPost(
         title=title,
         slug=slug,
-        content=content,
+        content=persist_inline_data_images(content, UPLOAD_DIR),
         image_url=image_url,
         author_id=current_user.id,
         tags=tags or "",
@@ -337,7 +366,7 @@ def update_post(
         raise HTTPException(status_code=404, detail="Post not found")
 
     post.title = title
-    post.content = content
+    post.content = persist_inline_data_images(content, UPLOAD_DIR)
     post.tags = tags or ""
 
     if image and image.filename:

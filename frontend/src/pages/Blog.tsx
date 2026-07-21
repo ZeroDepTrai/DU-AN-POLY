@@ -9,6 +9,7 @@ import GlassCard from "../components/aurora/GlassCard";
 import SectionHeading from "../components/aurora/SectionHeading";
 import AuroraBadge from "../components/aurora/AuroraBadge";
 import AuroraInput from "../components/aurora/AuroraInput";
+import OptimizedImage from "../components/OptimizedImage";
 
 const PAGE_SIZE = 6;
 
@@ -94,9 +95,11 @@ export default function Blog() {
           <Link to={`/blog/${featuredPost.slug}`} className="group mb-10 block">
             <GlassCard intensity="med" hoverable className="flex flex-col overflow-hidden p-0 lg:flex-row">
               <div className="relative w-full overflow-hidden lg:w-1/2">
-                <img
+                <OptimizedImage
                   src={featuredPost.image_url}
                   alt={featuredPost.title}
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   className="aspect-video h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 lg:aspect-auto"
                 />
                 <div className="absolute left-4 top-4">

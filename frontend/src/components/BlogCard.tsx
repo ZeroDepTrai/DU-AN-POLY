@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import type { BlogPostListItem } from "../types";
 import GlassCard from "./aurora/GlassCard";
 import AuroraBadge from "./aurora/AuroraBadge";
+import OptimizedImage from "./OptimizedImage";
 
 interface BlogCardProps {
   post: BlogPostListItem;
@@ -25,9 +26,10 @@ export default function BlogCard({ post, featured = false }: BlogCardProps) {
         {post.image_url && (
           <div className={`relative overflow-hidden ${featured ? "aspect-[16/9]" : "aspect-video"}`}>
             <div className="absolute inset-0 bg-aurora-gradient opacity-0 transition-opacity group-hover:opacity-30" />
-            <img
+            <OptimizedImage
               src={post.image_url}
               alt={post.title}
+              sizes={featured ? "(max-width: 1024px) 100vw, 50vw" : "(max-width: 640px) 100vw, 33vw"}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
             {tagList[0] && (

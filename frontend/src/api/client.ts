@@ -339,7 +339,7 @@ export const blogApi = {
 };
 
 export const adminBlogApi = {
-  list: () => api.get<BlogPost[]>("/api/blog"),
+  list: () => api.get<BlogPost[]>("/api/admin/blog"),
   create: (formData: FormData) =>
     api.post<BlogPost>("/api/admin/blog", formData, {
       headers: { "Content-Type": "multipart/form-data" },

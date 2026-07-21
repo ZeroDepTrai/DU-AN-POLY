@@ -3,7 +3,7 @@ from typing import Iterable
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from app.database import get_db
 from app.deps import get_current_user, get_optional_user
@@ -19,6 +19,7 @@ from app.schemas import (
     LikeStatus,
     PaginatedProductsResponse,
     PaginatedRatingsResponse,
+    ProductListItem,
     ProductResponse,
     RatingCreate,
     RatingResponse,
@@ -26,6 +27,17 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/api/products", tags=["products"])
+
+
+PRODUCT_LIST_COLUMNS = (
+    Product.id,
+    Product.name,
+    Product.price,
+    Product.tags,
+    Product.image_url,
+    Product.stock,
+    Product.is_active,
+)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -134,18 +146,17 @@ def _attach_rating_like(
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-@router.get("", response_model=list[ProductResponse])
+@router.get("", response_model=list[ProductListItem])
 def list_products(
     tag: str | None = Query(default=None),
     db: Session = Depends(get_db),
     viewer: User | None = Depends(get_optional_user),
 ):
     """Returns all ACTIVE products, optionally filtered by tag. Backward-compatible."""
-    query = db.query(Product).filter(Product.is_active.is_(True))
+    query = db.query(Product).options(load_only(*PRODUCT_LIST_COLUMNS)).filter(Product.is_active.is_(True))
     if tag:
         query = query.filter(Product.tags.ilike(f"%{tag}%"))
     rows = query.order_by(Product.id.desc()).all()
-    _attach_media(rows, db)
     _attach_rating_like(rows, db, viewer.id if viewer else None)
     return rows
 
@@ -162,7 +173,7 @@ def search_products(
     viewer: User | None = Depends(get_optional_user),
 ):
     """New paginated/filtered search endpoint for Products and Accessories pages."""
-    query = db.query(Product).filter(Product.is_active.is_(True))
+    query = db.query(Product).options(load_only(*PRODUCT_LIST_COLUMNS)).filter(Product.is_active.is_(True))
     if tag:
         query = query.filter(Product.tags.ilike(f"%{tag}%"))
     if brand:
@@ -180,7 +191,6 @@ def search_products(
         query = query.order_by(Product.id.desc())
 
     page_rows = query.offset((page - 1) * limit).limit(limit).all()
-    _attach_media(page_rows, db)
     _attach_rating_like(page_rows, db, viewer.id if viewer else None)
     return PaginatedProductsResponse(
         products=page_rows,
@@ -193,7 +203,7 @@ def search_products(
 
 
 # NOTE: "/related" must come BEFORE "/{product_id}" so FastAPI matches it first
-@router.get("/{product_id}/related", response_model=list[ProductResponse])
+@router.get("/{product_id}/related", response_model=list[ProductListItem])
 def get_related_products(
     product_id: int,
     limit: int = Query(default=4, ge=1, le=20),
@@ -204,7 +214,7 @@ def get_related_products(
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     related = (
-        db.query(Product)
+        db.query(Product).options(load_only(*PRODUCT_LIST_COLUMNS))
         .filter(
             Product.id != product_id,
             Product.is_active.is_(True),
@@ -214,7 +224,6 @@ def get_related_products(
         .limit(limit)
         .all()
     )
-    _attach_media(related, db)
     _attach_rating_like(related, db, viewer.id if viewer else None)
     return related
 

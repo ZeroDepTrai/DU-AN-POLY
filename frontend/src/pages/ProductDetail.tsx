@@ -12,6 +12,7 @@ import HeartButton from "../components/aurora/HeartButton";
 import { useCart } from "../context/CartContext";
 import { useCartFly } from "../context/CartFlyContext";
 import { useAuth } from "../context/AuthContext";
+import OptimizedImage from "../components/OptimizedImage";
 
 const SPEC_LABELS: Record<string, string> = {
   "Hệ điều hành": "os",
@@ -191,10 +192,14 @@ function ProductGallery({ product }: { product: Product }) {
             style={{ pointerEvents: "none" }}
           />
         ) : (
-          <img
+          <OptimizedImage
             key={current?.url}
-            src={current?.url}
+            src={current?.url ?? product.image_url}
             alt={product.name}
+            priority
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            width={1200}
+            height={1200}
             className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
           />
         )}
@@ -291,7 +296,7 @@ function ProductGallery({ product }: { product: Product }) {
                   <span className="text-[9px] text-softgray">Video</span>
                 </div>
               ) : (
-                <img src={it.url} alt="" className="h-full w-full object-cover" />
+                <OptimizedImage src={it.url} alt="" sizes="80px" width={80} height={80} className="h-full w-full object-cover" />
               )}
             </button>
           ))}

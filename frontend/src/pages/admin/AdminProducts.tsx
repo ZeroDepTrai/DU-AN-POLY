@@ -282,7 +282,7 @@ export default function AdminProducts() {
       name: p.name,
       price: String(p.price),
       tags: p.tags,
-      description: p.description,
+      description: p.description ?? "",
       specifications: specs,
       stock: String(p.stock),
     });

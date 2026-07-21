@@ -61,13 +61,11 @@ class ProductResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class ProductAdminSummary(BaseModel):
-    """Lightweight Product shape used by admin tables (lists).
+class ProductListItem(BaseModel):
+    """Lightweight product shape for storefront cards and list views.
 
-    Omits `description` and `specifications` (large TEXT columns the
-    admin table doesn't display), which dramatically shrinks the
-    response payload and lets the admin list endpoint finish in one
-    fast SELECT instead of streaming megabytes per product.
+    Product descriptions can contain rich HTML and legacy inline images, so
+    they must only be returned by the detail endpoint.
     """
 
     id: int
@@ -77,12 +75,17 @@ class ProductAdminSummary(BaseModel):
     image_url: str
     stock: int
     is_active: bool = True
-    media: list["ProductMediaItem"] = []
     avg_rating: float = 0
     rating_count: int = 0
     like_count: int = 0
 
     model_config = {"from_attributes": True}
+
+
+class ProductAdminSummary(ProductListItem):
+    """Lightweight product shape used by admin tables."""
+
+    media: list["ProductMediaItem"] = []
 
 
 class ProductMediaItem(BaseModel):
@@ -229,7 +232,7 @@ class SpinHistoryItem(BaseModel):
 
 
 class PaginatedProductsResponse(BaseModel):
-    products: list[ProductResponse]
+    products: list[ProductListItem]
     total: int
     page: int
     limit: int
@@ -333,7 +336,6 @@ class BlogPostListResponse(BaseModel):
     id: int
     title: str
     slug: str
-    content: str = ""
     image_url: str
     created_at: str
     tags: str = ""

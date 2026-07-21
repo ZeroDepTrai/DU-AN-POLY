@@ -9,6 +9,7 @@ import GlowButton from "../components/aurora/GlowButton";
 import { AuroraInput, AuroraTextarea } from "../components/aurora/AuroraInput";
 import AuroraBadge from "../components/aurora/AuroraBadge";
 import SectionHeading from "../components/aurora/SectionHeading";
+import OptimizedImage from "../components/OptimizedImage";
 
 const PAYMENT_METHODS = [
   {
@@ -210,11 +211,16 @@ export default function Checkout() {
                 const isFree = item.source === "free";
                 return (
                   <div key={item.id} className="flex items-center gap-3">
-                    <img
-                      src={item.product_image_url}
-                      alt={item.product_name}
-                      className="h-14 w-14 rounded-xl object-cover"
-                    />
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl">
+                      <OptimizedImage
+                        src={item.product_image_url}
+                        alt={item.product_name}
+                        sizes="56px"
+                        width={56}
+                        height={56}
+                        className="h-14 w-14 rounded-xl object-cover"
+                      />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-warmwhite">{item.product_name}</p>
                       {isFree && <AuroraBadge tone="mint">Quà tặng</AuroraBadge>}

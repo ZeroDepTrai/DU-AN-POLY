@@ -21,8 +21,8 @@ export interface Product {
   price: number;
   tags: string;
   image_url: string;
-  description: string;
-  specifications: string;
+  description?: string;
+  specifications?: string;
   stock: number;
   is_active?: boolean;
   media?: ProductMediaItem[];

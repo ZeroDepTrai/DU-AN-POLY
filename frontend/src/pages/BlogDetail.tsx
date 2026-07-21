@@ -4,6 +4,7 @@ import { blogApi } from "../api/client";
 import LoadingSpinner from "../components/LoadingSpinner";
 import GlassCard from "../components/aurora/GlassCard";
 import GlowButton from "../components/aurora/GlowButton";
+import OptimizedImage from "../components/OptimizedImage";
 import AuroraBadge from "../components/aurora/AuroraBadge";
 
 export default function BlogDetail() {
@@ -42,10 +43,14 @@ export default function BlogDetail() {
 
       <article>
         {post.image_url && (
-          <div className="mb-8 overflow-hidden rounded-aurora">
-            <img
+          <div className="relative mb-8 overflow-hidden rounded-aurora">
+            <OptimizedImage
               src={post.image_url}
               alt={post.title}
+              priority
+              sizes="(max-width: 768px) 100vw, 768px"
+              width={1200}
+              height={675}
               className="h-72 w-full object-cover md:h-96"
             />
           </div>

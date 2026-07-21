@@ -6,6 +6,7 @@ import { useCartFly } from "../context/CartFlyContext";
 import type { Product } from "../types";
 import GlassCard from "./aurora/GlassCard";
 import StarRating from "./aurora/StarRating";
+import OptimizedImage from "./OptimizedImage";
 
 interface ProductCardProps {
   product: Product;
@@ -44,9 +45,6 @@ function ProductCardBase({ product, variant = "small", requireAuth = false }: Pr
     ? product.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
     : "";
 
-  const aboveFold = variant === "bento" || variant === "featured";
-  const imgLoading: "eager" | "lazy" = aboveFold ? "eager" : "lazy";
-
   const ratingAvg = product.avg_rating ?? 0;
   const ratingCount = product.rating_count ?? 0;
   const likeCount = product.like_count ?? 0;
@@ -61,12 +59,11 @@ function ProductCardBase({ product, variant = "small", requireAuth = false }: Pr
             <div className="absolute inset-0 bg-aurora-mesh opacity-60" />
             <div className="absolute inset-0 bg-gradient-to-br from-crimson/15 via-transparent to-lightpink/15" />
             {product.image_url && (
-              <img
+              <OptimizedImage
                 src={product.image_url}
                 alt={product.name}
-                loading={imgLoading}
-                decoding="async"
-                fetchPriority={aboveFold ? "high" : "auto"}
+                priority={variant === "bento"}
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="relative z-10 h-full w-full object-contain p-8 transition-transform duration-500 group-hover:scale-105"
               />
             )}
@@ -134,12 +131,10 @@ function ProductCardBase({ product, variant = "small", requireAuth = false }: Pr
           <div className="relative aspect-[4/3] overflow-hidden bg-aurora-bg-mid">
             <div className="absolute inset-0 bg-gradient-to-br from-crimson/15 via-transparent to-lightpink/15" />
             {product.image_url && (
-              <img
+              <OptimizedImage
                 src={product.image_url}
                 alt={product.name}
-                loading={imgLoading}
-                decoding="async"
-                fetchPriority={aboveFold ? "high" : "auto"}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 className="relative z-10 h-full w-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
               />
             )}
@@ -187,12 +182,10 @@ function ProductCardBase({ product, variant = "small", requireAuth = false }: Pr
         <div className="relative aspect-square overflow-hidden bg-aurora-bg-mid">
           <div className="absolute inset-0 bg-gradient-to-br from-crimson/15 via-transparent to-lightpink/15" />
           {product.image_url && (
-            <img
+            <OptimizedImage
               src={product.image_url}
               alt={product.name}
-              loading={imgLoading}
-              decoding="async"
-              fetchPriority={aboveFold ? "high" : "auto"}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="relative z-10 h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
             />
           )}

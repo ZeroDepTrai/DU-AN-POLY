@@ -9,6 +9,7 @@ import GlowButton from "../components/aurora/GlowButton";
 import { AuroraInput, AuroraTextarea } from "../components/aurora/AuroraInput";
 import AuroraBadge from "../components/aurora/AuroraBadge";
 import SectionHeading from "../components/aurora/SectionHeading";
+import OptimizedImage from "../components/OptimizedImage";
 
 const HERO_GLOW =
   "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=1200&q=85&auto=format&fit=crop";
@@ -49,16 +50,8 @@ export default function Home() {
   const { data: showcase = [], isLoading } = useQuery({
     queryKey: ["home-showcase"],
     queryFn: async () => {
-      const { data } = await productsApi.list();
-      const tokens = (s: string) =>
-        (s || "")
-          .toLowerCase()
-          .split(/[,\s]+/)
-          .map((x) => x.trim())
-          .filter(Boolean);
-      return data
-        .filter((p) => tokens(p.tags).includes("featured"))
-        .slice(0, 3);
+      const { data } = await productsApi.search({ tag: "featured", page: 1, limit: 3 });
+      return data.products;
     },
   });
 
@@ -121,9 +114,13 @@ export default function Home() {
             <div className="relative aspect-square max-h-[540px] w-full">
               <div className="absolute left-1/2 top-1/2 h-[85%] w-[85%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-aurora-gradient opacity-40 blur-3xl shadow-glow-violet" />
               <GlassCard intensity="high" glow className="absolute inset-0 overflow-hidden p-0">
-                <img
+                <OptimizedImage
                   src={HERO_GLOW}
                   alt="Premium smartphone"
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  width={1200}
+                  height={1200}
                   className="h-full w-full object-cover opacity-90"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-aurora-bg-deep via-transparent to-transparent" />
