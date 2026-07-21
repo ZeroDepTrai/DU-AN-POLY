@@ -20,6 +20,6 @@ RUN mkdir -p /data/uploads
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8000/api/health', timeout=5)"
+    CMD python -c "import os,httpx; httpx.get('http://localhost:' + os.getenv('PORT', '8000') + '/api/health', timeout=5)"
 
 CMD ["python", "migrate_and_start.py"]
