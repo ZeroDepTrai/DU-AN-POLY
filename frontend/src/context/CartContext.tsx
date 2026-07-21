@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { cartApi } from "../api/client";
+import { useAuth } from "./AuthContext";
 
 interface CartItemResponse {
   id: number;
@@ -35,6 +36,7 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState<CartItemResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,13 +52,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (authLoading) return;
+
+    if (!user) {
+      setItems([]);
       setLoading(false);
       return;
     }
-    fetchCart();
-  }, [fetchCart]);
+
+    setLoading(true);
+    void fetchCart();
+  }, [authLoading, fetchCart, user]);
 
   const addItem = async (productId: number, quantity = 1) => {
     await cartApi.addItem({ product_id: productId, quantity, source: "paid" });

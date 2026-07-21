@@ -16,7 +16,7 @@ interface ProductCardProps {
   requireAuth?: boolean;
 }
 
-function ProductCardBase({ product, variant = "small", requireAuth = false }: ProductCardProps) {
+function ProductCardBase({ product, variant = "small", requireAuth = true }: ProductCardProps) {
   const { user, loading: authLoading } = useAuth();
   const { addItem } = useCart();
   const { flyToCart } = useCartFly();

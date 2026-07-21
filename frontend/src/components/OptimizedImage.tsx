@@ -1,4 +1,4 @@
-import { useState, type ImgHTMLAttributes } from "react";
+import { useEffect, useState, type ImgHTMLAttributes } from "react";
 
 type OptimizedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src: string;
@@ -29,7 +29,15 @@ export default function OptimizedImage({
 }: OptimizedImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [useResponsiveVariant, setUseResponsiveVariant] = useState(true);
   const srcSet = responsiveSrcSet(src);
+  const activeSrcSet = useResponsiveVariant ? srcSet : undefined;
+
+  useEffect(() => {
+    setLoaded(false);
+    setFailed(false);
+    setUseResponsiveVariant(true);
+  }, [src]);
 
   return (
     <>
@@ -41,10 +49,11 @@ export default function OptimizedImage({
       )}
       {!failed && (
         <img
+          key={`${src}:${activeSrcSet ? "responsive" : "original"}`}
           {...props}
           src={src}
-          srcSet={srcSet}
-          sizes={srcSet ? sizes : undefined}
+          srcSet={activeSrcSet}
+          sizes={activeSrcSet ? sizes : undefined}
           alt={alt}
           width={width}
           height={height}
@@ -58,6 +67,14 @@ export default function OptimizedImage({
             onLoad?.(event);
           }}
           onError={(event) => {
+            if (activeSrcSet) {
+              // A partially completed legacy migration can leave the canonical
+              // WebP in place without every responsive variant. Retry the
+              // canonical source before treating the image as unavailable.
+              setLoaded(false);
+              setUseResponsiveVariant(false);
+              return;
+            }
             setFailed(true);
             onError?.(event);
           }}

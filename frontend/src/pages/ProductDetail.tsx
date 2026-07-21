@@ -154,18 +154,18 @@ function ProductGallery({ product }: { product: Product }) {
 
   if (items.length === 0) {
     return (
-      <GlassCard className="flex aspect-square items-center justify-center" intensity="med">
+      <GlassCard className="mx-auto flex aspect-[4/3] w-full max-w-[560px] items-center justify-center lg:mx-0" intensity="med">
         <p className="text-softgray">Chưa có hình ảnh</p>
       </GlassCard>
     );
   }
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-[560px] lg:mx-0">
       {/* Main stage */}
       <div
         ref={stageRef}
-        className="group relative w-full overflow-hidden rounded-aurora border border-white/10 bg-aurora-bg-mid shadow-glow-soft aspect-square"
+        className="group relative aspect-[4/3] max-h-[480px] w-full overflow-hidden rounded-aurora border border-white/10 bg-aurora-bg-mid shadow-glow-soft"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => {
           setIsHovered(false);
@@ -188,7 +188,7 @@ function ProductGallery({ product }: { product: Product }) {
             preload="metadata"
             disablePictureInPicture
             controlsList="nodownload nofullscreen noremoteplayback"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-contain"
             style={{ pointerEvents: "none" }}
           />
         ) : (
@@ -200,7 +200,7 @@ function ProductGallery({ product }: { product: Product }) {
             sizes="(max-width: 1024px) 100vw, 50vw"
             width={1200}
             height={1200}
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+            className="absolute inset-0 h-full w-full object-contain p-5 transition-opacity duration-500 sm:p-7"
           />
         )}
 
@@ -555,6 +555,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user, loading: authLoading } = useAuth();
   const { addItem } = useCart();
   const { flyToCart } = useCartFly();
   const [activeTab, setActiveTab] = useState<Tab>("mota");
@@ -627,7 +628,7 @@ export default function ProductDetail() {
       </nav>
 
       {/* Hero Section */}
-      <div className="mb-16 grid items-start gap-10 lg:grid-cols-[1fr_480px]">
+      <div className="mb-16 grid items-start gap-8 lg:grid-cols-[minmax(0,560px)_minmax(380px,480px)] lg:justify-center lg:gap-10">
         {/* Left: Gallery */}
         <div>
           <ProductGallery product={product} />
@@ -743,8 +744,12 @@ export default function ProductDetail() {
               variant="primary"
               size="lg"
               className="w-full"
-              disabled={!inStock}
+              disabled={!inStock || authLoading}
               onClick={() => {
+                if (!user) {
+                  navigate("/login", { state: { from: `/products/${product.id}` } });
+                  return;
+                }
                 // Launch the flying icon BEFORE navigating so the source
                 // rect (the button) is still mounted and the animation
                 // has somewhere to start from. The flight portal lives

@@ -47,7 +47,14 @@ export default function App() {
                   <Route path="/products" element={<Products />} />
                   <Route path="/products/:id" element={<ProductDetail />} />
                   <Route path="/accessories" element={<Accessories />} />
-                  <Route path="/cart" element={<CartPage />} />
+                  <Route
+                    path="/cart"
+                    element={
+                      <ProtectedRoute>
+                        <CartPage />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route
                     path="/checkout"
                     element={
