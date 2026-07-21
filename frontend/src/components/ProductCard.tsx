@@ -85,7 +85,7 @@ function ProductCardBase({ product, variant = "small", requireAuth = true }: Pro
               <OptimizedImage
                 src={product.image_url}
                 alt={product.name}
-                priority={variant === "bento"}
+                priority={variant === "bento" || variant === "featured"}
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className="relative z-10 h-full w-full object-contain p-8 transition-transform duration-500 group-hover:scale-105"
               />
@@ -164,6 +164,7 @@ function ProductCardBase({ product, variant = "small", requireAuth = true }: Pro
               <OptimizedImage
                 src={product.image_url}
                 alt={product.name}
+                priority={variant === "featured"}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 className="relative z-10 h-full w-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
               />

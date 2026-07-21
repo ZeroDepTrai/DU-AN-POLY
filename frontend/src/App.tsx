@@ -2,7 +2,7 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
-import LoadingSpinner from "./components/LoadingSpinner";
+import PageReadyGate, { PageFallback } from "./components/PageReadyGate";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { CartFlyProvider } from "./context/CartFlyContext";
@@ -30,18 +30,15 @@ const Spin = lazy(() => import("./pages/Spin"));
 const SpinHistory = lazy(() => import("./pages/SpinHistory"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 
-function PageFallback() {
-  return <LoadingSpinner label="Đang tải..." />;
-}
-
 export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
         <CartFlyProvider>
           <BrowserRouter>
-            <Suspense fallback={<PageFallback />}>
-              <Routes>
+            <PageReadyGate>
+              <Suspense fallback={<PageFallback />}>
+                <Routes>
                 <Route element={<Layout />}>
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<Products />} />
@@ -107,8 +104,9 @@ export default function App() {
 
                 <Route path="/404" element={<NotFound />} />
                 <Route path="*" element={<Navigate to="/404" replace />} />
-              </Routes>
-            </Suspense>
+                </Routes>
+              </Suspense>
+            </PageReadyGate>
           </BrowserRouter>
         </CartFlyProvider>
       </CartProvider>

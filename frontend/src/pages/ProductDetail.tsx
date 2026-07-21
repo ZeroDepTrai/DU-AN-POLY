@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { productsApi, ratingsApi, likesApi } from "../api/client";
@@ -561,6 +561,10 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab] = useState<Tab>("mota");
   const [quantity, setQuantity] = useState(1);
   const addToCartBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [id]);
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ["product", id],
