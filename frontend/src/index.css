@@ -398,3 +398,24 @@
 .cart-icon-bump {
   animation: cart-bump 520ms ease-out;
 }
+
+/* Lightweight route transition indicator. It replaces the disruptive
+   full-screen loader after the application's initial boot. */
+@keyframes page-navigation-progress {
+  0% { transform: translateX(-110%); }
+  55% { transform: translateX(85%); }
+  100% { transform: translateX(230%); }
+}
+
+.page-navigation-progress {
+  width: 45%;
+  animation: page-navigation-progress 1.05s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-navigation-progress {
+    width: 100%;
+    animation: none;
+  }
+}
