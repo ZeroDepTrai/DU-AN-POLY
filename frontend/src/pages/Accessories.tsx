@@ -51,8 +51,12 @@ export default function Accessories() {
 
   const filtered = useMemo(() => {
     return allProducts.filter((p) => {
-      if (selectedPrice.min !== 0) {
-        if (p.price < selectedPrice.min || p.price > selectedPrice.max) return false;
+      const isAllPrices = selectedPrice === PRICE_RANGE[0];
+      if (
+        !isAllPrices &&
+        (p.price < selectedPrice.min || p.price >= selectedPrice.max)
+      ) {
+        return false;
       }
       if (selectedCategories.length > 0) {
         const cats = CATEGORIES.filter((c) => selectedCategories.includes(c.label));
@@ -245,13 +249,13 @@ export default function Accessories() {
               <>
                 {bentoProduct && (
                   <div className="mb-5">
-                    <ProductCard product={bentoProduct} variant="bento" />
+                    <ProductCard product={bentoProduct} variant="bento" requireAuth />
                   </div>
                 )}
 
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {gridProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard key={product.id} product={product} requireAuth />
                   ))}
                 </div>
               </>

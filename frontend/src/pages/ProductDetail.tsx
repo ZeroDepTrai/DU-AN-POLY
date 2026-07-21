@@ -279,7 +279,7 @@ function ProductGallery({ product }: { product: Product }) {
               aria-label={`Xem ${it.media_type === "video" ? "video" : "ảnh"} ${i + 1}`}
               className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border transition-all duration-200 ${
                 i === safeIndex
-                  ? "border-sakura shadow-[0_0_0_1px_rgba(34,211,238,0.4),0_10px_24px_-10px_rgba(34,211,238,0.5)]"
+                  ? "border-sakura shadow-[0_0_0_1px_rgba(242,140,166,0.4),0_10px_24px_-10px_rgba(242,140,166,0.5)]"
                   : "border-white/10 hover:border-white/30"
               }`}
             >
@@ -802,7 +802,7 @@ export default function ProductDetail() {
           {activeTab === "mota" ? (
             product.description ? (
               <div
-                className="prose-aurora"
+                className="prose-aurora product-description"
                 dangerouslySetInnerHTML={{ __html: product.description }}
               />
             ) : (

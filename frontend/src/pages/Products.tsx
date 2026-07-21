@@ -20,6 +20,11 @@ const BRAND_FILTERS = [
   { label: "Samsung", value: "samsung" },
   { label: "Xiaomi", value: "xiaomi" },
   { label: "OPPO", value: "oppo" },
+  { label: "Vivo", value: "vivo" },
+  { label: "Realme", value: "realme" },
+  { label: "Huawei", value: "huawei" },
+  { label: "Sony", value: "sony" },
+  { label: "Nokia", value: "nokia" },
 ];
 
 const PRICE_FILTERS = [
@@ -209,13 +214,13 @@ export default function Products() {
             <>
               {bentoProduct && (
                 <div className="mb-5">
-                  <ProductCard product={bentoProduct} variant="bento" />
+                  <ProductCard product={bentoProduct} variant="bento" requireAuth />
                 </div>
               )}
 
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {gridProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard key={product.id} product={product} requireAuth />
                 ))}
               </div>
             </>

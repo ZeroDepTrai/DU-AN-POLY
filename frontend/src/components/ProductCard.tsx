@@ -1,5 +1,6 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { memo } from "react";
+import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useCartFly } from "../context/CartFlyContext";
 import type { Product } from "../types";
@@ -9,15 +10,28 @@ import StarRating from "./aurora/StarRating";
 interface ProductCardProps {
   product: Product;
   variant?: "small" | "featured" | "bento";
+  requireAuth?: boolean;
 }
 
-function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
+function ProductCardBase({ product, variant = "small", requireAuth = false }: ProductCardProps) {
+  const { user, loading: authLoading } = useAuth();
   const { addItem } = useCart();
   const { flyToCart } = useCartFly();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (requireAuth && authLoading) return;
+    if (requireAuth && !user) {
+      navigate("/login", {
+        state: { from: `${location.pathname}${location.search}` },
+      });
+      return;
+    }
+
     // Launch the flying icon from the button the user clicked so the
     // animation feels attached to the action (rather than spawning from
     // the card center).
@@ -98,7 +112,8 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
             )}
             <button
               onClick={handleAddToCart}
-              className="aurora-glow-btn mt-auto w-full justify-center px-5 py-3 text-base"
+              disabled={requireAuth && authLoading}
+              className="aurora-glow-btn mt-auto w-full justify-center px-5 py-3 text-base disabled:cursor-wait disabled:opacity-60"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -150,7 +165,8 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
               <p className="aurora-text-rainbow text-xl font-bold">{formattedPrice}₫</p>
               <button
                 onClick={handleAddToCart}
-                className="flex h-10 w-10 items-center justify-center rounded-xl aurora-glow-btn"
+                disabled={requireAuth && authLoading}
+                className="flex h-10 w-10 items-center justify-center rounded-xl aurora-glow-btn disabled:cursor-wait disabled:opacity-60"
                 aria-label="Thêm vào giỏ"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -207,7 +223,8 @@ function ProductCardBase({ product, variant = "small" }: ProductCardProps) {
           </div>
           <button
             onClick={handleAddToCart}
-            className="aurora-glow-btn mt-3 w-full justify-center px-5 py-3 text-base"
+            disabled={requireAuth && authLoading}
+            className="aurora-glow-btn mt-3 w-full justify-center px-5 py-3 text-base disabled:cursor-wait disabled:opacity-60"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

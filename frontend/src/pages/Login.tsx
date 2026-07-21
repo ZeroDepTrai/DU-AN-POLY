@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import GlassCard from "../components/aurora/GlassCard";
 import GlowButton from "../components/aurora/GlowButton";
@@ -8,7 +8,13 @@ import AuroraBadge from "../components/aurora/AuroraBadge";
 
 export default function Login() {
   const { login } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
+  const requestedPath = (location.state as { from?: string } | null)?.from;
+  const redirectTo =
+    requestedPath?.startsWith("/") && !requestedPath.startsWith("//")
+      ? requestedPath
+      : "/";
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -20,7 +26,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(loginEmail, loginPassword);
-      navigate("/");
+      navigate(redirectTo, { replace: true });
     } catch {
       setLoginError("Email hoặc mật khẩu không đúng");
     } finally {

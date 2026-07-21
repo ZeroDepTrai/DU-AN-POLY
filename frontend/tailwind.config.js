@@ -58,13 +58,13 @@ export default {
         "aurora-lg": "2rem",
       },
       boxShadow: {
-        "card-hover": "0 12px 36px -12px rgba(217, 74, 99, 0.35)",
-        glow: "0 0 80px 20px rgba(217, 74, 99, 0.25)",
-        "glow-violet": "0 0 60px 10px rgba(217, 74, 99, 0.35)",
-        "glow-cyan": "0 0 60px 10px rgba(34, 211, 238, 0.30)",
-        "glow-soft": "0 8px 32px -8px rgba(91, 108, 255, 0.25)",
-        "aurora-card": "0 20px 60px -20px rgba(91, 108, 255, 0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
-        "aurora-btn": "0 8px 24px -6px rgba(217, 74, 99, 0.55), inset 0 1px 0 rgba(255,255,255,0.20)",
+        "card-hover": "0 12px 36px -12px rgba(242, 140, 166, 0.35)",
+        glow: "0 0 80px 20px rgba(242, 140, 166, 0.25)",
+        "glow-violet": "0 0 60px 10px rgba(242, 140, 166, 0.35)",
+        "glow-cyan": "0 0 60px 10px rgba(242, 140, 166, 0.30)",
+        "glow-soft": "0 8px 32px -8px rgba(242, 140, 166, 0.25)",
+        "aurora-card": "0 20px 60px -20px rgba(242, 140, 166, 0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
+        "aurora-btn": "0 8px 24px -6px rgba(242, 140, 166, 0.55), inset 0 1px 0 rgba(255,255,255,0.20)",
       },
       keyframes: {
         "aurora-pan": {
@@ -81,8 +81,8 @@ export default {
           "50%": { transform: "translateY(-12px)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 0 0 rgba(217, 74, 99, 0.45)" },
-          "50%": { boxShadow: "0 0 0 16px rgba(217, 74, 99, 0)" },
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(242, 140, 166, 0.45)" },
+          "50%": { boxShadow: "0 0 0 16px rgba(242, 140, 166, 0)" },
         },
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
@@ -103,11 +103,11 @@ export default {
       },
       backgroundImage: {
         "aurora-radial":
-          "radial-gradient(ellipse at top, rgba(217,74,99,0.25), transparent 60%), radial-gradient(ellipse at bottom right, rgba(217,74,99,0.18), transparent 55%), radial-gradient(ellipse at bottom left, rgba(242,140,166,0.18), transparent 55%)",
+          "radial-gradient(ellipse at top, rgba(242,140,166,0.25), transparent 60%), radial-gradient(ellipse at bottom right, rgba(242,140,166,0.18), transparent 55%), radial-gradient(ellipse at bottom left, rgba(242,140,166,0.18), transparent 55%)",
         "aurora-conic":
           "conic-gradient(from 180deg at 50% 50%, #D94A63 0deg, #A82F49 90deg, #F28CA6 180deg, #E36A86 270deg, #D94A63 360deg)",
         "aurora-mesh":
-          "radial-gradient(at 20% 20%, rgba(217,74,99,0.30) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(242,140,166,0.30) 0px, transparent 50%), radial-gradient(at 0% 80%, rgba(168,47,73,0.25) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(217,74,99,0.25) 0px, transparent 50%)",
+          "radial-gradient(at 20% 20%, rgba(242,140,166,0.30) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(242,140,166,0.30) 0px, transparent 50%), radial-gradient(at 0% 80%, rgba(242,140,166,0.25) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(242,140,166,0.25) 0px, transparent 50%)",
         "aurora-gradient":
           "linear-gradient(135deg, #D94A63 0%, #A82F49 50%, #58202D 100%)",
         "rose-gradient":
