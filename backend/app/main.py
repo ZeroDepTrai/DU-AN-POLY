@@ -1,8 +1,10 @@
+import json
+import re
+import traceback
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-import json
-import re
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -432,27 +434,48 @@ async def chat_ws(websocket: WebSocket, token: str | None = None):
                 content = (data.get("content") or "").strip()
                 if not conv_id or not content:
                     continue
-                with SessionLocal() as db:
-                    conv = db.get(ChatConversation, conv_id)
-                    if conv is None:
-                        await websocket.send_json({"type": "error", "detail": "conversation not found"})
-                        continue
-                    sender_type = "agent" if user.role in (UserRole.admin, UserRole.customer_support) else "customer"
-                    sender_name = user.name or user.email
-                    msg = ChatMessage(
-                        conversation_id=conv_id,
-                        sender_type=sender_type,
-                        sender_name=sender_name,
-                        content=content,
+                try:
+                    with SessionLocal() as db:
+                        conv = db.get(ChatConversation, conv_id)
+                        if conv is None:
+                            await websocket.send_json({"type": "error", "detail": "conversation not found"})
+                            continue
+                        sender_type = "agent" if user.role in (UserRole.admin, UserRole.customer_support) else "customer"
+                        sender_name = user.name or user.email
+                        # IMPORTANT: ChatMessage.id is the String(36) PK with no
+                        # Python- or DB-level default. Without explicitly setting
+                        # it here, INSERT would crash on a NULL PK and the
+                        # exception would be swallowed by the outer `except`,
+                        # making messages vanish silently.
+                        msg = ChatMessage(
+                            id=str(uuid.uuid4()),
+                            conversation_id=conv_id,
+                            sender_type=sender_type,
+                            sender_name=sender_name,
+                            content=content,
+                        )
+                        db.add(msg)
+                        conv.updated_at = datetime.now(timezone.utc)
+                        if sender_type == "agent":
+                            conv.unread_count = 0
+                        db.commit()
+                        db.refresh(msg)
+                        payload = {"type": "new_message", "message": _to_msg(msg), "conversation_id": conv_id}
+                        await manager.chat_broadcast(payload)
+                except Exception as e:
+                    # Don't kill the whole WS for one bad payload — log it and
+                    # keep the connection open so subsequent messages still flow.
+                    import logging
+                    logging.getLogger("uvicorn.error").error(
+                        "[ws/chat] failed to handle message from %s: %s\n%s",
+                        getattr(user, "email", "?"),
+                        e,
+                        traceback.format_exc(),
                     )
-                    db.add(msg)
-                    conv.updated_at = datetime.now(timezone.utc)
-                    if sender_type == "agent":
-                        conv.unread_count = 0
-                    db.commit()
-                    db.refresh(msg)
-                    payload = {"type": "new_message", "message": _to_msg(msg), "conversation_id": conv_id}
-                    await manager.chat_broadcast(payload)
+                    try:
+                        await websocket.send_json({"type": "error", "detail": f"{type(e).__name__}: {e}"})
+                    except Exception:
+                        pass
     except WebSocketDisconnect:
         manager.chat_disconnect(websocket)
     except Exception:
