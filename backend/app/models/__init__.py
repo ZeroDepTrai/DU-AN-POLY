@@ -13,6 +13,7 @@ class UserRole(str, enum.Enum):
     customer = "customer"
     admin = "admin"
     driver = "driver"
+    customer_support = "customer_support"
 
 
 class OrderStatus(str, enum.Enum):
@@ -320,3 +321,37 @@ class ProductLike(Base):
     __table_args__ = (
         UniqueConstraint("product_id", "user_id", name="uq_like_product_user"),
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Desktop App: Chat System
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class ChatConversation(Base):
+    """A chat conversation between a customer and support agent."""
+
+    __tablename__ = "chat_conversations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    customer_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    customer_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="waiting", nullable=False)  # waiting, active, closed
+    assigned_to: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    unread_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
+class ChatMessage(Base):
+    """A message in a chat conversation."""
+
+    __tablename__ = "chat_messages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(ForeignKey("chat_conversations.id", ondelete="CASCADE"), index=True, nullable=False)
+    sender_type: Mapped[str] = mapped_column(String(20), nullable=False)  # customer, agent
+    sender_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))

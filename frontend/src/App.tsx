@@ -6,6 +6,7 @@ import PageReadyGate, { PageFallback } from "./components/PageReadyGate";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { CartFlyProvider } from "./context/CartFlyContext";
+import ChatBubble from "./components/ChatBubble";
 
 // Eager: tiny pages used above the fold on landing
 import Home from "./pages/Home";
@@ -110,6 +111,7 @@ export default function App() {
           </BrowserRouter>
         </CartFlyProvider>
       </CartProvider>
+      <ChatBubble />
     </AuthProvider>
   );
 }

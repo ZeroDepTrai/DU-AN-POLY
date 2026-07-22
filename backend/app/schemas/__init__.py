@@ -421,3 +421,116 @@ class PaginatedRatingsResponse(BaseModel):
     total: int
     page: int
     limit: int
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Desktop App: Users, Chat, Analytics
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class SupportUserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6, max_length=128)
+
+
+class SupportUserResponse(BaseModel):
+    id: int
+    email: EmailStr
+    role: UserRole
+    name: str | None = None
+    created_at: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ChatMessageCreate(BaseModel):
+    content: str = Field(min_length=1)
+
+
+class ChatMessageResponse(BaseModel):
+    id: str
+    conversation_id: str
+    sender_type: str
+    sender_name: str
+    content: str
+    timestamp: str
+    read: bool = False
+
+
+class ChatConversationResponse(BaseModel):
+    id: str
+    customer_name: str
+    customer_email: str
+    status: str
+    assigned_to: int | None = None
+    assigned_name: str | None = None
+    last_message: str | None = None
+    last_message_at: str | None = None
+    unread_count: int = 0
+    created_at: str
+
+
+class ChatStartRequest(BaseModel):
+    customer_name: str = Field(min_length=1)
+    customer_email: EmailStr
+
+
+class ChatAssignRequest(BaseModel):
+    agent_id: int
+
+
+class AnalyticsOverview(BaseModel):
+    total_products: int = 0
+    total_orders: int = 0
+    total_revenue: float = 0
+    active_users: int = 0
+    conversion_rate: float = 0
+    avg_order_value: float = 0
+    chat_response_time: float = 0
+    customer_satisfaction: float = 0
+
+
+class AnalyticsRevenue(BaseModel):
+    labels: list[str]
+    values: list[float]
+
+
+class AnalyticsOrdersByStatus(BaseModel):
+    labels: list[str]
+    values: list[int]
+
+
+class AnalyticsTopProducts(BaseModel):
+    labels: list[str]
+    values: list[int]
+
+
+class SpinPrizeResponse(BaseModel):
+    id: int
+    name: str
+    probability: float
+    active: bool = True
+
+    model_config = {"from_attributes": True}
+
+
+class SpinResultResponse(BaseModel):
+    id: int
+    customer_name: str
+    prize_name: str
+    won_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class RatingWithDetails(BaseModel):
+    id: int
+    order_id: int
+    product_id: int
+    product_name: str
+    customer_name: str
+    stars: int
+    review: str
+    created_at: str
+
+    model_config = {"from_attributes": True}
