@@ -432,6 +432,7 @@ async def chat_ws(websocket: WebSocket, token: str | None = None):
             elif kind == "message":
                 conv_id = data.get("conversation_id")
                 content = (data.get("content") or "").strip()
+                client_id = data.get("client_id")  # echoed back so the sender can de-dupe its own optimistic copy
                 if not conv_id or not content:
                     continue
                 try:
@@ -461,6 +462,8 @@ async def chat_ws(websocket: WebSocket, token: str | None = None):
                         db.commit()
                         db.refresh(msg)
                         payload = {"type": "new_message", "message": _to_msg(msg), "conversation_id": conv_id}
+                        if client_id:
+                            payload["client_id"] = client_id
                         await manager.chat_broadcast(payload)
                 except Exception as e:
                     # Don't kill the whole WS for one bad payload — log it and

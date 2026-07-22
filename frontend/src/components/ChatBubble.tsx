@@ -57,16 +57,41 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
         // Reading fields from `data.*` instead of `data.message.*` was the
         // bug that made incoming agent replies render as empty bubbles.
         const m = (data.message ?? {}) as Record<string, unknown>;
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (m.id as string) ?? `srv-${Date.now()}`,
-            sender: (m.sender_type as "customer" | "agent") ?? "agent",
-            content: (m.content as string) ?? "",
-            timestamp: (m.timestamp as string) ?? new Date().toISOString(),
-            read: (m.read as boolean) ?? false,
-          },
-        ]);
+        const serverId = (m.id as string) ?? `srv-${Date.now()}`;
+        const clientId = data.client_id as string | undefined;
+        setMessages((prev) => {
+          // Sender-side de-dup: when the broadcast round-trips back, replace
+          // the optimistic placeholder (same client_id) with the server's
+          // authoritative row instead of appending a second copy.
+          if (clientId) {
+            const idx = prev.findIndex((x) => x.id === clientId);
+            if (idx !== -1) {
+              const next = prev.slice();
+              next[idx] = {
+                id: serverId,
+                sender: (m.sender_type as "customer" | "agent") ?? prev[idx].sender,
+                content: (m.content as string) ?? prev[idx].content,
+                timestamp: (m.timestamp as string) ?? prev[idx].timestamp,
+                read: (m.read as boolean) ?? prev[idx].read,
+              };
+              return next;
+            }
+          }
+          // Receiver-side: incoming from the other party. Also drop duplicates
+          // by server id (Railway may re-deliver the same message after a
+          // reconnect).
+          if (prev.some((x) => x.id === serverId)) return prev;
+          return [
+            ...prev,
+            {
+              id: serverId,
+              sender: (m.sender_type as "customer" | "agent") ?? "agent",
+              content: (m.content as string) ?? "",
+              timestamp: (m.timestamp as string) ?? new Date().toISOString(),
+              read: (m.read as boolean) ?? false,
+            },
+          ];
+        });
         break;
       }
       case "message_read":
@@ -112,6 +137,12 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
     if (!token) {
       // Backend would 4401 the socket without a token — don't even try.
       setConnected(false);
+      return;
+    }
+    // If a healthy socket is already up, don't tear it down — that would
+    // cause a visible "Đang kết nối..." flicker for no reason.
+    const existing = wsRef.current;
+    if (existing && (existing.readyState === WebSocket.OPEN || existing.readyState === WebSocket.CONNECTING)) {
       return;
     }
     // encodeURIComponent is required: JWTs may contain `+`, `/`, `=` which
@@ -238,8 +269,14 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
     if (!inputValue.trim() || !socket || socket.readyState !== WebSocket.OPEN) return;
 
     const trimmed = inputValue.trim();
+    // Track the optimistic message by a client-generated id so the broadcast
+    // round-trip can replace the placeholder with the server's authoritative
+    // version. Without this, the customer's bubble would render the message
+    // twice: once from `setMessages` below, then again when the server's
+    // broadcast loops back through `new_message`.
+    const clientId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const message: Message = {
-      id: `temp-${Date.now()}`,
+      id: clientId,
       sender: "customer",
       content: trimmed,
       timestamp: new Date().toISOString(),
@@ -251,6 +288,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
         type: "message",
         conversation_id: conversationId,
         content: trimmed,
+        client_id: clientId,
       }));
     } catch (e) {
       console.error("Failed to send message:", e);

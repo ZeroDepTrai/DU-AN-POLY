@@ -88,8 +88,28 @@ export default function ChatTab() {
   };
 
   const handleSend = () => {
-    if (!messageInput.trim()) return;
-    sendMessage(messageInput.trim());
+    const trimmed = messageInput.trim();
+    if (!trimmed || !activeConversation) return;
+    // Add an optimistic placeholder so the agent's reply is visible
+    // immediately. The WebSocket broadcast will replace it with the
+    // server's authoritative row (matched by client_id).
+    const clientId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    useChatStore.getState().addMessage({
+      id: clientId,
+      conversation_id: activeConversation.id,
+      sender_id: user?.id ?? 0,
+      sender_type: "agent",
+      sender_name: user?.name || user?.email || "Agent",
+      content: trimmed,
+      timestamp: new Date().toISOString(),
+      read: false,
+    });
+    if (!sendMessage(trimmed, clientId)) {
+      // WS not open — the message is local-only; the user will need to retry
+      // once `isConnected` flips back to true. We keep the placeholder so the
+      // intent isn't lost on the screen.
+      console.warn("[chat] WS not open; message held in placeholder until reconnect.");
+    }
     setMessageInput("");
   };
 

@@ -15,6 +15,7 @@ from app.schemas import (
     ChatMessageResponse,
     ChatStartRequest,
 )
+from app.websocket import manager
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -96,7 +97,7 @@ def get_conversation_messages(
 
 
 @router.post("/conversations/{conversation_id}/assign")
-def assign_conversation(
+async def assign_conversation(
     conversation_id: str,
     payload: ChatAssignRequest,
     current_user: User = Depends(require_customer_support),
@@ -127,6 +128,20 @@ def assign_conversation(
     conv.status = "active"
     conv.updated_at = datetime.now(timezone.utc)
     db.commit()
+    db.refresh(conv)
+
+    # Broadcast a conversation_update so all connected chat clients
+    # (agent + customer) refresh the conversation's status / assigned_to
+    # in real-time without waiting on a tab refresh.
+    update_payload = {
+        "type": "conversation_update",
+        "conversation": _conversation_to_response(conv, db).model_dump(mode="json"),
+    }
+    try:
+        await manager.chat_broadcast(update_payload)
+    except Exception:
+        # Broadcast failures shouldn't fail the REST call.
+        pass
 
     return {"ok": True}
 
@@ -214,7 +229,7 @@ def mark_conversation_read(
 # ──────────────────────────────────────────────────────────────────────────────
 
 @router.post("/start", response_model=ChatConversationResponse)
-def start_conversation(
+async def start_conversation(
     payload: ChatStartRequest,
     db: Session = Depends(get_db),
 ):
@@ -243,6 +258,16 @@ def start_conversation(
     db.add(conv)
     db.commit()
     db.refresh(conv)
+
+    # Broadcast so connected agents see the new "waiting" conversation
+    # pop into their sidebar without needing to switch tabs.
+    try:
+        await manager.chat_broadcast({
+            "type": "conversation_update",
+            "conversation": _conversation_to_response(conv, db).model_dump(mode="json"),
+        })
+    except Exception:
+        pass
 
     return _conversation_to_response(conv, db)
 

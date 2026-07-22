@@ -21,7 +21,7 @@ interface ChatState {
   connect: (token: string) => void;
   reconnect: () => void;
   disconnect: () => void;
-  sendMessage: (content: string) => void;
+  sendMessage: (content: string, clientId?: string) => boolean;
 }
 
 const RECONNECT_BASE_MS = 500;
@@ -78,15 +78,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // a manual re-login.
     set({ token });
 
+    // If a healthy socket is already up, don't tear it down — that would
+    // cause a visible "Offline -> Online" flicker for no reason.
+    const existing = get().ws;
+    if (existing && existing.readyState === WebSocket.OPEN) return;
+    if (existing && existing.readyState === WebSocket.CONNECTING) return;
+
     // Tear down any previous socket without scheduling a reconnect for it.
-    const prev = get().ws;
-    if (prev) {
+    if (existing) {
       // Detach handlers so its onclose doesn't trigger a stale reconnect.
-      prev.onopen = null;
-      prev.onmessage = null;
-      prev.onclose = null;
-      prev.onerror = null;
-      try { prev.close(); } catch {}
+      existing.onopen = null;
+      existing.onmessage = null;
+      existing.onclose = null;
+      existing.onerror = null;
+      try { existing.close(); } catch {}
     }
 
     const openSocket = () => {
@@ -167,15 +172,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ ws: null, isConnected: false, token: null });
   },
 
-  sendMessage: (content) => {
+  sendMessage: (content: string, clientId?: string) => {
     const { ws, activeConversation } = get();
-    if (ws && activeConversation && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: "message",
-        conversation_id: activeConversation.id,
-        content,
-      }));
+    if (!ws || !activeConversation || ws.readyState !== WebSocket.OPEN) {
+      return false;
     }
+    // Echo the client_id back so the round-trip broadcast can replace the
+    // optimistic placeholder we add locally.
+    const cid =
+      clientId ?? `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    ws.send(JSON.stringify({
+      type: "message",
+      conversation_id: activeConversation.id,
+      content,
+      client_id: cid,
+    }));
+    return true;
   },
 }));
 
@@ -189,12 +201,33 @@ function handleWebSocketMessage(
       get().updateConversation(data.conversation as Conversation);
       break;
 
-    case "new_message":
-      get().addMessage(data.message as ChatMessage);
+    case "new_message": {
+      // Sender-side de-dup: when the agent's own message round-trips back
+      // through the broadcast, replace the optimistic placeholder (matched
+      // by client_id) instead of appending a duplicate.
+      const serverMsg = data.message as ChatMessage;
+      const clientId = data.client_id as string | undefined;
+      if (clientId) {
+        const state = get();
+        const placeholderIdx = state.messages.findIndex((x) => x.id === clientId);
+        if (placeholderIdx !== -1) {
+          _set((s) => {
+            const next = s.messages.slice();
+            next[placeholderIdx] = serverMsg;
+            return { messages: next };
+          });
+          break;
+        }
+      }
+      // Receiver-side: drop duplicates by server id (broadcast can re-deliver
+      // the same frame after a reconnect).
+      if (get().messages.some((m) => m.id === serverMsg.id)) break;
+      get().addMessage(serverMsg);
       if (data.conversation_id !== get().activeConversation?.id) {
         get().incrementUnread();
       }
       break;
+    }
 
     case "conversation_list":
       get().setConversations(data.conversations as Conversation[]);
