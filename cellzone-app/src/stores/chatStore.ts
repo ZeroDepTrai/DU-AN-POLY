@@ -72,7 +72,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       ws.close();
     }
 
-    const wsUrl = `${getWsBase()}/ws/chat?token=${token}`;
+    // encodeURIComponent: JWTs may contain `+`, `/`, `=` which the server
+    // would otherwise decode as spaces / path segments and reject with 4401.
+    const wsUrl = `${getWsBase()}/ws/chat?token=${encodeURIComponent(token)}`;
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {

@@ -212,7 +212,7 @@ async fn handle_raw_ws_client(client: TcpStream, tls: Arc<ClientConfig>) {
         *captured_for_cb.lock().unwrap() = Some((path, auth, origin));
         Ok::<_, tungstenite::handshake::server::ErrorResponse>(response)
     };
-    let mut client_ws = match tokio_tungstenite::accept_hdr_async(client, cb).await {
+    let client_ws = match tokio_tungstenite::accept_hdr_async(client, cb).await {
         Ok(v) => v,
         Err(e) => {
             eprintln!("[proxy-ws] client accept error ({}): {}", peer, e);
@@ -249,14 +249,14 @@ async fn handle_raw_ws_client(client: TcpStream, tls: Arc<ClientConfig>) {
     let mut req_builder = Request::builder()
         .method("GET")
         .uri(&upstream_uri)
-        .header("Host", UPSTREAM_HOST)
-        .header("Upgrade", "websocket")
-        .header("Connection", "Upgrade")
-        .header("Sec-WebSocket-Version", "13")
-        .header(
-            "Sec-WebSocket-Key",
-            "dGhlIHNhbXBsZSBub25jZQ==",
-        );
+        .header("Host", UPSTREAM_HOST);
+    // NOTE: do NOT set Upgrade / Connection / Sec-WebSocket-Key /
+    // Sec-WebSocket-Version manually. `client_async` below builds the
+    // 101 Switching-Protocols request itself and overrides these headers;
+    // setting a hardcoded Sec-WebSocket-Key used to silently mis-handshake
+    // against the upstream's hash check, which is why messages never
+    // reached the agent. Just forward Authorization and Origin and let
+    // tungstenite handle the rest.
     if let Some(t) = original_auth {
         req_builder = req_builder.header("Authorization", t);
     }
@@ -265,7 +265,7 @@ async fn handle_raw_ws_client(client: TcpStream, tls: Arc<ClientConfig>) {
     }
     let req = req_builder.body(()).unwrap();
 
-    let (mut upstream_ws, _resp) = match client_async(req, maybe_tls).await {
+    let (upstream_ws, _resp) = match client_async(req, maybe_tls).await {
         Ok(v) => v,
         Err(e) => {
             eprintln!("[proxy-ws] upstream handshake: {}", e);

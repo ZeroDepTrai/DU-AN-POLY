@@ -102,7 +102,7 @@ export default function ChatTab() {
           <h2 className="text-lg font-semibold text-[#f0f0f5] flex items-center gap-2">
             <MessageCircle className="w-5 h-5" />
             Chat
-            {!isConnected && <span className="text-xs text-amber-400">(Offline)</span>}
+            {!isConnected && <span className="text-xs text-amber-400">(Ngoại tuyến)</span>}
           </h2>
           <div className="flex gap-1 mt-3">
             {(["all", "waiting", "active"] as const).map((f) => (
@@ -113,14 +113,14 @@ export default function ChatTab() {
                   filter === f ? "bg-indigo-500 text-white" : "text-[#8b8b9a] hover:bg-white/5"
                 }`}
               >
-                {f === "all" ? "Tat ca" : f === "waiting" ? "Cho" : "Dang chat"}
+                {f === "all" ? "Tất cả" : f === "waiting" ? "Chờ" : "Đang chat"}
               </button>
             ))}
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           {filteredConversations.length === 0 ? (
-            <div className="p-4 text-center text-[#8b8b9a] text-sm">Khong co cuoc tro chuyen nao</div>
+            <div className="p-4 text-center text-[#8b8b9a] text-sm">Không có cuộc trò chuyện nào</div>
           ) : (
             filteredConversations.map((conv) => (
               <button
@@ -156,7 +156,7 @@ export default function ChatTab() {
                     conv.status === "active" ? "bg-emerald-500/20 text-emerald-400" :
                     "bg-gray-500/20 text-gray-400"
                   }`}>
-                    {conv.status === "waiting" ? "Cho" : conv.status === "active" ? "Dang chat" : "Dong"}
+                    {conv.status === "waiting" ? "Chờ" : conv.status === "active" ? "Đang chat" : "Đóng"}
                   </span>
                   {conv.assigned_name && (
                     <span className="text-[10px] text-[#5a5a6a]">-&gt; {conv.assigned_name}</span>
@@ -187,7 +187,7 @@ export default function ChatTab() {
                 activeConversation.status === "active" ? "bg-emerald-500/20 text-emerald-400" :
                 "bg-gray-500/20 text-gray-400"
               }`}>
-                {activeConversation.status === "waiting" ? "Dang cho" : activeConversation.status === "active" ? "Dang tro chuyen" : "Da dong"}
+                {activeConversation.status === "waiting" ? "Đang chờ" : activeConversation.status === "active" ? "Đang trò chuyện" : "Đã đóng"}
               </span>
             </div>
 
@@ -225,7 +225,7 @@ export default function ChatTab() {
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Nhap tin nhan..."
+                    placeholder="Nhập tin nhắn..."
                     className="flex-1 glass-input"
                   />
                   <button
@@ -244,8 +244,8 @@ export default function ChatTab() {
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
               <MessageCircle className="w-8 h-8 text-[#5a5a6a]" />
             </div>
-            <h3 className="text-lg font-medium text-[#f0f0f5] mb-2">Chua chon cuoc tro chuyen</h3>
-            <p className="text-sm text-[#8b8b9a]">Chon mot cuoc tro chuyen tu danh sach ben trai de bat dau tra loi khach hang</p>
+            <h3 className="text-lg font-medium text-[#f0f0f5] mb-2">Chưa chọn cuộc trò chuyện</h3>
+            <p className="text-sm text-[#8b8b9a]">Chọn một cuộc trò chuyện từ danh sách bên trái để bắt đầu trả lời khách hàng</p>
           </div>
         )}
       </div>

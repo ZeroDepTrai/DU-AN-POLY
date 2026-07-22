@@ -35,7 +35,7 @@ export default function BlogTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blog"] });
       resetForm();
-      setSuccess(editing ? "Cap nhat bai viet thanh cong!" : "Dang bai viet thanh cong!");
+      setSuccess(editing ? "Cập nhật bài viết thành công!" : "Đăng bài viết thành công!");
       setTimeout(() => setSuccess(""), 3000);
     },
     onError: (e: Error) => setError(e.message),
@@ -45,7 +45,7 @@ export default function BlogTab() {
     mutationFn: (id: number) => blogApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blog"] });
-      setSuccess("Xoa bai viet thanh cong!");
+      setSuccess("Xóa bài viết thành công!");
       setTimeout(() => setSuccess(""), 3000);
     },
     onError: (e: Error) => setError(e.message),
@@ -81,8 +81,8 @@ export default function BlogTab() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title.trim()) { setError("Tieu de khong duoc de trong"); return; }
-    if (!form.content.trim() || form.content === "<p></p>") { setError("Noi dung khong duoc de trong"); return; }
+    if (!form.title.trim()) { setError("Tiêu đề không được để trống"); return; }
+    if (!form.content.trim() || form.content === "<p></p>") { setError("Nội dung không được để trống"); return; }
     setError("");
     saveMutation.mutate();
   };
@@ -90,9 +90,9 @@ export default function BlogTab() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-[#f0f0f5]">Quan ly Blog</h1>
+        <h1 className="text-2xl font-bold text-[#f0f0f5]">Quản lý Blog</h1>
         <p className="text-sm text-[#8b8b9a] mt-1">
-          {canEdit ? "Viet va quan ly bai viet" : "Xem danh sach bai viet"}
+          {canEdit ? "Viết và quản lý bài viết" : "Xem danh sách bài viết"}
         </p>
       </div>
 
@@ -102,14 +102,14 @@ export default function BlogTab() {
       {canEdit && (
         <div className="glass-card p-6">
           <h2 className="text-lg font-semibold text-[#f0f0f5] mb-4">
-            {editing ? "Sua: " + editing.title : "Viet bai moi"}
+            {editing ? "Sửa: " + editing.title : "Viết bài mới"}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               type="text"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Tieu de bai viet"
+              placeholder="Tiêu đề bài viết"
               required
               className="w-full glass-input text-lg font-semibold"
             />
@@ -128,7 +128,7 @@ export default function BlogTab() {
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-                placeholder="Them nhan..."
+                placeholder="Thêm nhãn..."
                 className="flex-1 glass-input text-sm"
               />
               <button type="button" onClick={addTag} className="glass-button px-3">+</button>
@@ -137,24 +137,24 @@ export default function BlogTab() {
             <textarea
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder="Noi dung bai viet..."
+              placeholder="Nội dung bài viết..."
               rows={6}
               className="w-full glass-input resize-none"
             />
 
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 glass-input cursor-pointer hover:bg-white/5 px-3 py-2">
-                <span className="text-sm text-[#8b8b9a]">{imageFile ? imageFile.name : "Chon anh..."}</span>
+                <span className="text-sm text-[#8b8b9a]">{imageFile ? imageFile.name : "Chọn ảnh..."}</span>
                 <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="hidden" />
               </label>
               <div className="flex gap-2 ml-auto">
                 {editing && (
                   <button type="button" onClick={resetForm} className="px-4 py-2 text-[#8b8b9a] hover:text-[#f0f0f5]">
-                    Huy
+                    Hủy
                   </button>
                 )}
                 <button type="submit" className="glass-button px-6 py-2 text-[#f0f0f5] font-medium">
-                  {saveMutation.isPending ? "Dang luu..." : editing ? "Cap nhat" : "Dang bai"}
+                  {saveMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật" : "Đăng bài"}
                 </button>
               </div>
             </div>
@@ -164,21 +164,21 @@ export default function BlogTab() {
 
       <div className="glass-card overflow-hidden">
         <div className="border-b border-white/10 px-4 py-3">
-          <span className="text-sm text-[#8b8b9a]">{posts.length} bai viet</span>
+          <span className="text-sm text-[#8b8b9a]">{posts.length} bài viết</span>
         </div>
         {isLoading ? (
-          <div className="p-8 text-center text-[#8b8b9a]">Dang tai...</div>
+          <div className="p-8 text-center text-[#8b8b9a]">Đang tải...</div>
         ) : posts.length === 0 ? (
-          <div className="p-8 text-center text-[#8b8b9a]">Chua co bai viet nao.</div>
+          <div className="p-8 text-center text-[#8b8b9a]">Chưa có bài viết nào.</div>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-white/10 bg-white/5">
               <tr className="text-left text-[#8b8b9a]">
-                <th className="px-4 py-3">Anh</th>
-                <th className="px-4 py-3">Tieu de</th>
+                <th className="px-4 py-3">Ảnh</th>
+                <th className="px-4 py-3">Tiêu đề</th>
                 <th className="px-4 py-3">Tags</th>
                 <th className="px-4 py-3">Slug</th>
-                {(canEdit || canDelete) && <th className="px-4 py-3">Thao tac</th>}
+                {(canEdit || canDelete) && <th className="px-4 py-3">Thao tác</th>}
               </tr>
             </thead>
             <tbody>
@@ -200,7 +200,7 @@ export default function BlogTab() {
                     <td className="px-4 py-3">
                       <div className="flex gap-3">
                         {canEdit && <button onClick={() => handleEdit(post)} className="text-indigo-400 hover:text-indigo-300"><Edit2 className="w-4 h-4" /></button>}
-                        {canDelete && <button onClick={() => { if (confirm("Xoa \"" + post.title + "\"?")) deleteMutation.mutate(post.id); }} className="text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>}
+                        {canDelete && <button onClick={() => { if (confirm("Xóa \"" + post.title + "\"?")) deleteMutation.mutate(post.id); }} className="text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>}
                       </div>
                     </td>
                   )}

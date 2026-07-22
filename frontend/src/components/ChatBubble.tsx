@@ -41,7 +41,9 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
 
   const connectWebSocket = () => {
     const token = localStorage.getItem("token");
-    const socket = new WebSocket(`${finalWsUrl}?token=${token}`);
+    // encodeURIComponent is required: JWTs can contain `+`, `/`, `=` which
+    // the server otherwise decodes as spaces / path separators and rejects.
+    const socket = new WebSocket(`${finalWsUrl}?token=${encodeURIComponent(token ?? "")}`);
 
     socket.onopen = () => {
       setConnected(true);
@@ -76,17 +78,25 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
         setConversationId(data.conversation_id as string);
         setHasStarted(true);
         break;
-      case "new_message":
-        setMessages((prev) => [...prev, {
-          id: data.id as string,
-          sender: data.sender_type as "customer" | "agent",
-          content: data.content as string,
-          timestamp: data.timestamp as string,
-          read: data.read as boolean,
-        }]);
+      case "new_message": {
+        // Backend wraps the message in `{ type, message, conversation_id }`.
+        // Reading fields from `data.*` instead of `data.message.*` was the
+        // bug that made incoming agent replies render as empty bubbles.
+        const m = (data.message ?? {}) as Record<string, unknown>;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (m.id as string) ?? `srv-${Date.now()}`,
+            sender: (m.sender_type as "customer" | "agent") ?? "agent",
+            content: (m.content as string) ?? "",
+            timestamp: (m.timestamp as string) ?? new Date().toISOString(),
+            read: (m.read as boolean) ?? false,
+          },
+        ]);
         break;
+      }
       case "message_read":
-        setMessages((prev) => prev.map((m) => 
+        setMessages((prev) => prev.map((m) =>
           m.id === data.message_id ? { ...m, read: true } : m
         ));
         break;
