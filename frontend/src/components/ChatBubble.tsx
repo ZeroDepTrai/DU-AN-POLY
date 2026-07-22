@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { MessageCircle, X, Send, Minimize2, User, Check, CheckCheck } from "lucide-react";
 
 interface Message {
   id: string;
@@ -101,7 +100,7 @@ export default function ChatBubble({ wsUrl = "ws://localhost:8000/ws/chat", apiB
       
       if (response.ok) {
         const data = await response.json();
-        setConversationId(data.conversation_id);
+        setConversationId(data.id);
         setHasStarted(true);
         connectWebSocket();
       }
@@ -151,10 +150,14 @@ export default function ChatBubble({ wsUrl = "ws://localhost:8000/ws/chat", apiB
         }`}
       >
         {isOpen ? (
-          <Minimize2 className="w-6 h-6 text-white" />
+          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
         ) : (
           <>
-            <MessageCircle className="w-6 h-6 text-white" />
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
           </>
         )}
@@ -169,7 +172,9 @@ export default function ChatBubble({ wsUrl = "ws://localhost:8000/ws/chat", apiB
           <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-indigo-500 to-purple-600">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-white" />
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
               </div>
               <div>
                 <h3 className="font-semibold text-white">Hỗ trợ CellZone</h3>
@@ -183,13 +188,17 @@ export default function ChatBubble({ wsUrl = "ws://localhost:8000/ws/chat", apiB
                 onClick={() => setIsMinimized(!isMinimized)}
                 className="p-1 rounded hover:bg-white/20 transition-colors"
               >
-                <Minimize2 className="w-4 h-4 text-white" />
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+                </svg>
               </button>
               <button
                 onClick={() => { setIsOpen(false); setIsMinimized(false); }}
                 className="p-1 rounded hover:bg-white/20 transition-colors"
               >
-                <X className="w-4 h-4 text-white" />
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
           </div>
@@ -202,7 +211,9 @@ export default function ChatBubble({ wsUrl = "ws://localhost:8000/ws/chat", apiB
                   /* Start Form */
                   <div className="flex flex-col items-center justify-center h-full text-center px-4">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-4">
-                      <MessageCircle className="w-8 h-8 text-white" />
+                      <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
                     </div>
                     <h4 className="text-lg font-semibold text-white mb-2">Chào bạn!</h4>
                     <p className="text-sm text-gray-400 mb-6">
@@ -251,7 +262,15 @@ export default function ChatBubble({ wsUrl = "ws://localhost:8000/ws/chat", apiB
                               </span>
                               {!isAgent && (
                                 <span className="text-white/60">
-                                  {msg.read ? <CheckCheck className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+                                  {msg.read ? (
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
                                 </span>
                               )}
                             </div>
@@ -281,7 +300,9 @@ export default function ChatBubble({ wsUrl = "ws://localhost:8000/ws/chat", apiB
                       disabled={!inputValue.trim()}
                       className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center disabled:opacity-50 hover:opacity-90 transition-opacity"
                     >
-                      <Send className="w-4 h-4 text-white" />
+                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
                     </button>
                   </div>
                 </div>
