@@ -80,7 +80,20 @@ export interface PlaySpinResult {
 }
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
+  baseURL: (() => {
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (envUrl) return envUrl;
+    // Auto-detect based on hostname
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      if (host === "localhost" || host === "127.0.0.1") {
+        return "http://localhost:8000";
+      }
+      // Production or deployed environments (Vercel, etc.)
+      return "https://du-an-poly-production.up.railway.app";
+    }
+    return "";
+  })(),
 });
 
 api.interceptors.request.use((config) => {
