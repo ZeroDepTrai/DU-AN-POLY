@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User, UserRole } from "../types";
+import { getApiBase } from "../api/client";
 
 interface AuthState {
   user: User | null;
@@ -66,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         try {
-          const response = await fetch("http://localhost:8000/api/auth/login", {
+          const response = await fetch(`${getApiBase()}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
@@ -79,7 +80,7 @@ export const useAuthStore = create<AuthState>()(
           const data = await response.json();
 
           // Fetch user info
-          const userResponse = await fetch("http://localhost:8000/api/auth/me", {
+          const userResponse = await fetch(`${getApiBase()}/auth/me`, {
             headers: { Authorization: `Bearer ${data.access_token}` },
           });
 

@@ -14,7 +14,16 @@ import type {
   NotificationEmail,
 } from "../types";
 
-const API_BASE = "http://localhost:8000/api";
+// Configurable API base URL
+const API_BASE = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000/api";
+
+export function getApiBase(): string {
+  return API_BASE;
+}
+
+export function getWsBase(): string {
+  return API_BASE.replace(/^http/, "ws").replace("/api", "");
+}
 
 function getToken(): string | null {
   try {
@@ -40,7 +49,7 @@ async function request<T>(
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(`${getApiBase()}${endpoint}`, {
     ...options,
     headers,
   });
@@ -71,14 +80,14 @@ export const productsApi = {
   get: (id: number) => request<Product>(`/products/${id}`),
 
   create: (formData: FormData) =>
-    fetch(`${API_BASE}/admin/products`, {
+    fetch(`${getApiBase()}/admin/products`, {
       method: "POST",
       headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
     }).then((r) => r.json()),
 
   update: (id: number, formData: FormData) =>
-    fetch(`${API_BASE}/admin/products/${id}`, {
+    fetch(`${getApiBase()}/admin/products/${id}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
@@ -112,14 +121,14 @@ export const blogApi = {
   get: (id: number) => request<BlogPost>(`/blog/${id}`),
 
   create: (formData: FormData) =>
-    fetch(`${API_BASE}/admin/blog`, {
+    fetch(`${getApiBase()}/admin/blog`, {
       method: "POST",
       headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
     }).then((r) => r.json()),
 
   update: (id: number, formData: FormData) =>
-    fetch(`${API_BASE}/admin/blog/${id}`, {
+    fetch(`${getApiBase()}/admin/blog/${id}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
@@ -158,7 +167,7 @@ export const mediaApi = {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("is_cover", String(isCover));
-    return fetch(`${API_BASE}/admin/products/${productId}/media`, {
+    return fetch(`${getApiBase()}/admin/products/${productId}/media`, {
       method: "POST",
       headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,

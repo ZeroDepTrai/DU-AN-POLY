@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Conversation, ChatMessage } from "../types";
+import { getWsBase } from "../api/client";
 
 interface ChatState {
   conversations: Conversation[];
@@ -71,7 +72,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       ws.close();
     }
 
-    const wsUrl = `ws://localhost:8000/ws/chat?token=${token}`;
+    const wsUrl = `${getWsBase()}/ws/chat?token=${token}`;
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
