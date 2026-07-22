@@ -16,6 +16,7 @@ export default function ChatTab() {
     setActiveConversation,
     setMessages,
     connect,
+    reconnect,
     sendMessage,
   } = useChatStore();
   const { user, token } = useAuthStore();
@@ -47,6 +48,21 @@ export default function ChatTab() {
     // token changes (logout/login).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  // When the agent brings the window back into focus, immediately poke the
+  // chat store to reconnect. Railway's WS endpoint also restarts on
+  // deploys — both cases made the bubble sit at "Offline" forever, since
+  // the only reconnect trigger inside the store is the exponential-backoff
+  // timer that waits up to 5s. Visibility-driven reconnect feels instant.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        reconnect();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [reconnect]);
 
   const loadMessages = async (conv: Conversation) => {
     if (!conv) return;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 
 interface Message {
@@ -14,6 +14,14 @@ interface ChatBubbleProps {
   apiBase?: string;
 }
 
+// Exponential-backoff bounds for automatic reconnects. The base is
+// deliberately short (500ms) because the only failure modes we hit in
+// practice are (a) a brief network blip, (b) Railway restarting the
+// container after a deploy. Both clear within ~10s; the user never
+// has to sit through anything longer than RECONNECT_MAX_MS.
+const RECONNECT_BASE_MS = 500;
+const RECONNECT_MAX_MS = 5_000;
+
 export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
   const { user } = useAuth();
   const isAuthenticated = !!user;
@@ -22,7 +30,6 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
   const [hasStarted, setHasStarted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [ws, setWs] = useState<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -38,39 +45,6 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen, isMinimized]);
-
-  const connectWebSocket = () => {
-    const token = localStorage.getItem("token");
-    // encodeURIComponent is required: JWTs can contain `+`, `/`, `=` which
-    // the server otherwise decodes as spaces / path separators and rejects.
-    const socket = new WebSocket(`${finalWsUrl}?token=${encodeURIComponent(token ?? "")}`);
-
-    socket.onopen = () => {
-      setConnected(true);
-      if (conversationId) {
-        socket.send(JSON.stringify({ type: "join", conversation_id: conversationId }));
-      }
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleMessage(data);
-      } catch {
-        console.error("Failed to parse message");
-      }
-    };
-
-    socket.onclose = () => {
-      setConnected(false);
-    };
-
-    socket.onerror = () => {
-      setConnected(false);
-    };
-
-    setWs(socket);
-  };
 
   const handleMessage = (data: Record<string, unknown>) => {
     switch (data.type) {
@@ -103,6 +77,132 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
     }
   };
 
+  // ── WebSocket lifecycle ────────────────────────────────────────────────
+  //
+  // We replace the previous `useState<WebSocket>` approach with refs +
+  // callbacks. State belongs to React, but a socket is mutable state that
+  // outlives renders — keeping it in a `useRef` lets `connect` close the
+  // previous socket cleanly without firing reconnect storms.
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const intentionalCloseRef = useRef(false);
+  const conversationIdRef = useRef<string | null>(null);
+
+  const clearReconnectTimer = () => {
+    if (reconnectTimerRef.current !== null) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  };
+
+  const scheduleReconnect = useCallback(() => {
+    if (intentionalCloseRef.current) return;
+    const delay = Math.min(
+      RECONNECT_BASE_MS * 2 ** reconnectAttemptRef.current,
+      RECONNECT_MAX_MS
+    );
+    reconnectAttemptRef.current = Math.min(reconnectAttemptRef.current + 1, 6);
+    clearReconnectTimer();
+    reconnectTimerRef.current = window.setTimeout(() => connectWebSocket(), delay);
+  }, []);
+
+  const connectWebSocket = useCallback(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // Backend would 4401 the socket without a token — don't even try.
+      setConnected(false);
+      return;
+    }
+    // encodeURIComponent is required: JWTs may contain `+`, `/`, `=` which
+    // the server otherwise decodes as spaces / path separators and rejects.
+    const socket = new WebSocket(`${finalWsUrl}?token=${encodeURIComponent(token)}`);
+
+    socket.onopen = () => {
+      setConnected(true);
+      reconnectAttemptRef.current = 0;
+      if (conversationIdRef.current) {
+        socket.send(
+          JSON.stringify({ type: "join", conversation_id: conversationIdRef.current })
+        );
+      }
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        handleMessage(data);
+      } catch {
+        console.error("Failed to parse message");
+      }
+    };
+
+    socket.onclose = () => {
+      // Only schedule a reconnect if this is still the active socket — a
+      // newer one would have replaced `wsRef.current`.
+      if (wsRef.current === socket) {
+        wsRef.current = null;
+        setConnected(false);
+        if (!intentionalCloseRef.current) scheduleReconnect();
+      }
+    };
+
+    socket.onerror = () => {
+      // Chromium fires `error` then `close`; set the flag here so the UI
+      // shows Offline immediately rather than waiting for `close`.
+      if (wsRef.current === socket) {
+        setConnected(false);
+      }
+    };
+
+    // Close any previous socket that was still holding state.
+    if (wsRef.current && wsRef.current !== socket) {
+      try { wsRef.current.close(); } catch {}
+    }
+    wsRef.current = socket;
+  // intentional dependency list — we want to capture `finalWsUrl` once and
+  // reuse; scheduleReconnect is a stable callback referencing only refs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalWsUrl]);
+
+  // When the user signs in/out, stop the reconnect loop and forget the token.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      intentionalCloseRef.current = true;
+      clearReconnectTimer();
+      if (wsRef.current) {
+        try { wsRef.current.close(); } catch {}
+        wsRef.current = null;
+      }
+      setConnected(false);
+      setMessages([]);
+      setHasStarted(false);
+      setConversationId(null);
+    } else {
+      intentionalCloseRef.current = false;
+    }
+    return () => clearReconnectTimer();
+  }, [isAuthenticated]);
+
+  // Mirror conversation_id into a ref so the onopen callback can attach
+  // the latest value without depending on it.
+  useEffect(() => {
+    conversationIdRef.current = conversationId;
+  }, [conversationId]);
+
+  // Visibility-driven reconnect — when the user brings the tab back into
+  // focus after a long pause, the WS is almost certainly stale. Fire one
+  // immediately instead of waiting on the backoff timer.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && !connected && isAuthenticated) {
+        connectWebSocket();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [connected, isAuthenticated, connectWebSocket]);
+
   const startChat = async () => {
     if (!isAuthenticated || !user) return;
 
@@ -134,21 +234,27 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
   };
 
   const sendMessage = () => {
-    if (!inputValue.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
+    const socket = wsRef.current;
+    if (!inputValue.trim() || !socket || socket.readyState !== WebSocket.OPEN) return;
 
+    const trimmed = inputValue.trim();
     const message: Message = {
       id: `temp-${Date.now()}`,
       sender: "customer",
-      content: inputValue.trim(),
+      content: trimmed,
       timestamp: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, message]);
-    ws.send(JSON.stringify({
-      type: "message",
-      conversation_id: conversationId,
-      content: inputValue.trim(),
-    }));
+    try {
+      socket.send(JSON.stringify({
+        type: "message",
+        conversation_id: conversationId,
+        content: trimmed,
+      }));
+    } catch (e) {
+      console.error("Failed to send message:", e);
+    }
     setInputValue("");
   };
 

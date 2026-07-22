@@ -9,6 +9,7 @@ interface ChatState {
   isConnected: boolean;
   unreadCount: number;
   ws: WebSocket | null;
+  token: string | null;
   setConversations: (convs: Conversation[]) => void;
   setActiveConversation: (conv: Conversation | null) => void;
   setMessages: (msgs: ChatMessage[]) => void;
@@ -18,9 +19,13 @@ interface ChatState {
   incrementUnread: () => void;
   clearUnread: () => void;
   connect: (token: string) => void;
+  reconnect: () => void;
   disconnect: () => void;
   sendMessage: (content: string) => void;
 }
+
+const RECONNECT_BASE_MS = 500;
+const RECONNECT_MAX_MS = 5_000;
 
 export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
@@ -29,6 +34,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isConnected: false,
   unreadCount: 0,
   ws: null,
+  token: null,
 
   setConversations: (convs) => set({ conversations: convs }),
 
@@ -67,47 +73,98 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   connect: (token) => {
-    const { ws } = get();
-    if (ws) {
-      ws.close();
+    // Keep the token on the store so the reconnect logic below can re-open
+    // the socket after a network blip / Railway redeploy without requiring
+    // a manual re-login.
+    set({ token });
+
+    // Tear down any previous socket without scheduling a reconnect for it.
+    const prev = get().ws;
+    if (prev) {
+      // Detach handlers so its onclose doesn't trigger a stale reconnect.
+      prev.onopen = null;
+      prev.onmessage = null;
+      prev.onclose = null;
+      prev.onerror = null;
+      try { prev.close(); } catch {}
     }
 
-    // encodeURIComponent: JWTs may contain `+`, `/`, `=` which the server
-    // would otherwise decode as spaces / path segments and reject with 4401.
-    const wsUrl = `${getWsBase()}/ws/chat?token=${encodeURIComponent(token)}`;
-    const socket = new WebSocket(wsUrl);
+    const openSocket = () => {
+      // encodeURIComponent: JWTs may contain `+`, `/`, `=` which the server
+      // would otherwise decode as spaces / path segments and reject with 4401.
+      const wsUrl = `${getWsBase()}/ws/chat?token=${encodeURIComponent(token)}`;
+      const socket = new WebSocket(wsUrl);
 
-    socket.onopen = () => {
-      set({ isConnected: true });
-      socket.send(JSON.stringify({ type: "auth", token }));
+      socket.onopen = () => {
+        set({ isConnected: true });
+        try {
+          socket.send(JSON.stringify({ type: "auth", token }));
+        } catch {}
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleWebSocketMessage(data, set, get);
+        } catch {
+          console.error("Failed to parse WebSocket message");
+        }
+      };
+
+      socket.onclose = () => {
+        // Only react to *this* socket's close. If a newer socket has been
+        // installed (by a fresh login / page reload / another reconnect
+        // attempt), `get().ws !== socket` and we drop the event.
+        const { ws: current, token: currentToken } = get();
+        if (current !== socket) return;
+        set({ isConnected: false });
+        if (!currentToken) return;
+        scheduleReconnect(currentToken, 0);
+      };
+
+      socket.onerror = () => {
+        // Treat errors as a close — Chromium fires `error` then `close`, but
+        // we set the flag here so the UI shows Offline immediately.
+        set({ isConnected: false });
+      };
+
+      set({ ws: socket });
     };
 
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleWebSocketMessage(data, set, get);
-      } catch {
-        console.error("Failed to parse WebSocket message");
-      }
+    const scheduleReconnect = (tk: string, attempt: number) => {
+      // Exponential backoff capped at RECONNECT_MAX_MS. attempt 0 -> 1s,
+      // attempt 1 -> 2s, attempt 2 -> 4s ... doubling up to 30s.
+      const delay = Math.min(RECONNECT_BASE_MS * 2 ** attempt, RECONNECT_MAX_MS);
+      setTimeout(() => {
+        // Bail out if a fresh login replaced the token or the user logged out.
+        if (get().token !== tk) return;
+        openSocket();
+      }, delay);
     };
 
-    socket.onclose = () => {
-      set({ isConnected: false });
-    };
+    openSocket();
+  },
 
-    socket.onerror = () => {
-      set({ isConnected: false });
-    };
-
-    set({ ws: socket });
+  // Force-reconnect using the currently-stored token. Called by the
+  // visibilitychange handler so that a tab refresh / window focus
+  // immediately re-establishes the link instead of waiting on the
+  // exponential-backoff timer.
+  reconnect: () => {
+    const { token, isConnected } = get();
+    if (!token || isConnected) return;
+    get().connect(token);
   },
 
   disconnect: () => {
     const { ws } = get();
     if (ws) {
-      ws.close();
-      set({ ws: null, isConnected: false });
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onclose = null;
+      ws.onerror = null;
+      try { ws.close(); } catch {}
     }
+    set({ ws: null, isConnected: false, token: null });
   },
 
   sendMessage: (content) => {
