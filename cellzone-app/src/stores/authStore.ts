@@ -66,29 +66,43 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       login: async (email: string, password: string) => {
+        const apiUrl = `${getApiBase()}/auth/login`;
+        console.log("[Auth] Login URL:", apiUrl);
         try {
-          const response = await fetch(`${getApiBase()}/auth/login`, {
+          const response = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
           });
 
+          console.log("[Auth] Response status:", response.status);
+
           if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            console.log("[Auth] Login failed:", response.status, errData);
             return false;
           }
 
           const data = await response.json();
+          console.log("[Auth] Login success! Token:", data.access_token ? "received" : "missing");
 
           // Fetch user info
-          const userResponse = await fetch(`${getApiBase()}/auth/me`, {
+          const meUrl = `${getApiBase()}/auth/me`;
+          console.log("[Auth] Fetching user from:", meUrl);
+          const userResponse = await fetch(meUrl, {
             headers: { Authorization: `Bearer ${data.access_token}` },
           });
 
+          console.log("[Auth] User response status:", userResponse.status);
+
           if (!userResponse.ok) {
+            const meErr = await userResponse.text();
+            console.log("[Auth] /me failed:", meErr);
             return false;
           }
 
           const user = await userResponse.json();
+          console.log("[Auth] User data:", user);
 
           set({
             user,
@@ -96,7 +110,8 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
           });
           return true;
-        } catch {
+        } catch (err) {
+          console.error("[Auth] Exception:", err);
           return false;
         }
       },

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { productsApi } from "../api/client";
+import { productsApi, normalizeMediaUrl } from "../api/client";
 import { useAuthStore } from "../stores/authStore";
 import type { Product } from "../types";
 import { Plus, Edit2, Trash2, Search, X, Upload } from "lucide-react";
@@ -362,7 +362,7 @@ export default function ProductsTab() {
               {filtered.map((p) => (
                 <tr key={p.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3">
-                    <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
+                    <img src={normalizeMediaUrl(p.image_url)} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
                   </td>
                   <td className="px-4 py-3 font-medium text-[#f0f0f5] max-w-[200px] truncate">
                     {p.name}

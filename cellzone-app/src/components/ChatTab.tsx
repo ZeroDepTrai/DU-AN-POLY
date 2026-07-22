@@ -35,6 +35,19 @@ export default function ChatTab() {
     loadConversations();
   }, [setConversations]);
 
+  // Connect to the chat WebSocket exactly once per token; do NOT invoke
+  // `connect(token)` on every render — re-running it on unrelated re-renders
+  // would tear down and rebuild the socket, which freezes the UI under
+  // frequent state updates (e.g. an empty conversation list).
+  useEffect(() => {
+    if (token && !isConnected) {
+      connect(token);
+    }
+    // `connect` is a stable Zustand action; we only want to re-run when the
+    // token changes (logout/login).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
   const loadMessages = async (conv: Conversation) => {
     if (!conv) return;
     try {
@@ -80,10 +93,6 @@ export default function ChatTab() {
     const date = new Date(timestamp);
     return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
   };
-
-  if (token && !isConnected) {
-    connect(token);
-  }
 
   return (
     <div className="h-full flex gap-6 animate-fade-in">

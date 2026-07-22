@@ -13,7 +13,7 @@ import {
   Cell,
 } from "recharts";
 import { TrendingUp, Users, ShoppingCart, DollarSign, Package, Clock } from "lucide-react";
-import { analyticsApi } from "../api/client";
+import { analyticsApi, normalizeMediaUrl } from "../api/client";
 import type { AnalyticsStats, ChartDataPoint } from "../types";
 
 interface DashboardProps {
@@ -276,7 +276,7 @@ export default function Dashboard({ products, orders }: DashboardProps) {
                 className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20"
               >
                 <img
-                  src={p.image_url}
+                  src={normalizeMediaUrl(p.image_url)}
                   alt={p.name}
                   className="h-10 w-10 rounded-lg object-cover"
                 />

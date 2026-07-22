@@ -17,12 +17,41 @@ import type {
 // Configurable API base URL
 const API_BASE = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000/api";
 
+// Local proxy base for static assets (uploads, media). When running inside the
+// Tauri desktop app, requests go through a Rust-side reverse proxy on port
+// 9876, so /uploads/* and /api/* both work without WebView2 fetch issues.
+const ASSET_BASE = (import.meta.env.VITE_ASSET_URL as string) || API_BASE.replace(/\/api$/, "");
+
+// WebSocket base — the Rust proxy listens on a dedicated WS port so it can
+// do a raw relay without going through hyper.
+const WS_BASE = (import.meta.env.VITE_WS_URL as string) || ASSET_BASE;
+
 export function getApiBase(): string {
   return API_BASE;
 }
 
 export function getWsBase(): string {
-  return API_BASE.replace(/^http/, "ws").replace("/api", "");
+  return WS_BASE.replace(/^http/, "ws");
+}
+
+export function getAssetBase(): string {
+  return ASSET_BASE;
+}
+
+/**
+ * Normalize an image URL so it always goes through the local asset origin.
+ * - If the URL is already absolute (starts with http/https), leave it.
+ * - If it's a relative path like "/uploads/abc.jpg", prepend the asset base.
+ * - If it's a bare filename or relative path without leading "/", also prepend.
+ */
+export function normalizeMediaUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("//")) return `http:${trimmed}`;
+  const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  return `${ASSET_BASE}${path}`;
 }
 
 function getToken(): string | null {
@@ -99,7 +128,7 @@ export const productsApi = {
 
 // Orders API
 export const ordersApi = {
-  list: () => request<Order[]>("/orders"),
+  list: () => request<Order[]>("/admin/orders"),
 
   get: (id: number) => request<Order>(`/orders/${id}`),
 
@@ -140,7 +169,7 @@ export const blogApi = {
 
 // Coupons API
 export const couponsApi = {
-  list: () => request<Coupon[]>("/coupons"),
+  list: () => request<Coupon[]>("/admin/coupons"),
 
   create: (data: Partial<Coupon>) =>
     request<Coupon>("/admin/coupons", {
@@ -241,21 +270,47 @@ export const analyticsApi = {
 };
 
 // Spin API
+//
+// The backend's `/api/admin/wheel` returns a `WheelConfigResponse` (with a
+// nested `prizes` array). We unwrap it on the client side so callers can
+// treat it as a plain `SpinPrize[]`.
+interface WheelConfigResponse {
+  id?: number;
+  title?: string;
+  background_url?: string;
+  prizes: SpinPrize[];
+  spend_per_spin_vnd?: number;
+}
+
+const wheelResponseToPrizes = (data: WheelConfigResponse): SpinPrize[] => {
+  if (!data || !Array.isArray(data.prizes)) return [];
+  return data.prizes.map((p, i) => ({
+    id: (p as { id?: number }).id ?? i + 1,
+    name: p.name,
+    // Backend uses `weight` (a float); the UI speaks "probability %".
+    probability: Math.round((p as { weight?: number }).weight ?? 0),
+    active: true,
+  }));
+};
+
 export const spinApi = {
-  listPrizes: () => request<SpinPrize[]>("/spin/prizes"),
+  listPrizes: async () => {
+    const data = await request<WheelConfigResponse>("/admin/wheel");
+    return wheelResponseToPrizes(data);
+  },
 
   configure: (prizes: Partial<SpinPrize>[]) =>
-    request<SpinPrize[]>("/admin/spin/configure", {
-      method: "POST",
+    request<WheelConfigResponse>("/admin/wheel", {
+      method: "PUT",
       body: JSON.stringify({ prizes }),
     }),
 
-  listResults: () => request<SpinResult[]>("/spin/results"),
+  listResults: () => request<SpinResult[]>("/spin/history"),
 };
 
 // Ratings API
 export const ratingsApi = {
-  list: () => request<Rating[]>("/ratings"),
+  list: () => request<Rating[]>("/admin/ratings"),
 
   respond: (id: number, response: string) =>
     request<Rating>(`/admin/ratings/${id}/respond`, {

@@ -95,22 +95,28 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
 
   const startChat = async () => {
     if (!isAuthenticated || !user) return;
-    
+
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`${finalApiBase}/chat/start`, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
+        body: JSON.stringify({
+          customer_name: user.name || user.email || "Khách",
+          customer_email: user.email,
+        }),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setConversationId(data.id || data.conversation_id);
         setHasStarted(true);
         connectWebSocket();
+      } else {
+        console.error("Failed to start chat", response.status, await response.text());
       }
     } catch {
       console.error("Failed to start chat");

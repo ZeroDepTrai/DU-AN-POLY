@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
+import json
 import re
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -301,3 +303,157 @@ async def order_tracking_ws(tracking_code: str, websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(tracking_code, websocket)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Chat WebSocket
+#
+# The agent dashboard (Tauri app) and the website's customer chat bubble both
+# connect here. Auth is via the ``token`` query parameter so it survives the
+# browser-side WebSocket constructor (which can't set Authorization headers).
+# Frames are JSON objects:
+#   - inbound  {type:"auth", token}          (optional — token in URL is enough)
+#   - inbound  {type:"ping"}                 (heartbeat)
+#   - inbound  {type:"message", conversation_id, content}
+#   - outbound {type:"conversation_list",   conversations: [...]}  (snapshot)
+#   - outbound {type:"messages",            conversation_id, messages: [...]} (snapshot)
+#   - outbound {type:"new_message",         message: {...}} (broadcast)
+#   - outbound {type:"conversation_update", conversation: {...}} (broadcast)
+# ─────────────────────────────────────────────────────────────────────────────
+@app.websocket("/ws/chat")
+async def chat_ws(websocket: WebSocket, token: str | None = None):
+    from app.database import SessionLocal
+    from app.models import ChatConversation, ChatMessage
+    from jose import JWTError, jwt
+
+    # Authenticate from ?token=...
+    user = None
+    if token:
+        try:
+            payload = jwt.decode(
+                token,
+                settings.jwt_secret,
+                algorithms=[settings.jwt_algorithm],
+            )
+            user_id = int(payload.get("sub", 0))
+            if user_id:
+                with SessionLocal() as db:
+                    user = db.get(User, user_id)
+        except (JWTError, ValueError):
+            user = None
+
+    # Agents must authenticate. Customer-side WebSocket entry is also
+    # authenticated because the website already exchanges a token before
+    # calling /api/chat/start — keep the door closed to anonymous spam.
+    if user is None:
+        await websocket.close(code=4401)
+        return
+
+    await manager.chat_connect(websocket)
+
+    def _to_conv(c) -> dict:
+        return {
+            "id": c.id,
+            "customer_name": c.customer_name,
+            "customer_email": c.customer_email,
+            "status": c.status,
+            "assigned_to": c.assigned_to,
+            "last_message": None,
+            "last_message_at": c.updated_at.isoformat(),
+            "unread_count": c.unread_count,
+            "created_at": c.created_at.isoformat(),
+        }
+
+    def _to_msg(m) -> dict:
+        return {
+            "id": m.id,
+            "conversation_id": m.conversation_id,
+            "sender_type": m.sender_type,
+            "sender_name": m.sender_name,
+            "content": m.content,
+            "timestamp": m.created_at.isoformat(),
+            "read": m.read,
+        }
+
+    # Send a snapshot so the client immediately has the conversation list.
+    try:
+        with SessionLocal() as db:
+            convs = db.query(ChatConversation).order_by(ChatConversation.updated_at.desc()).all()
+            snapshot = []
+            for c in convs:
+                d = _to_conv(c)
+                last = (
+                    db.query(ChatMessage)
+                    .filter(ChatMessage.conversation_id == c.id)
+                    .order_by(ChatMessage.created_at.desc())
+                    .first()
+                )
+                if last is not None:
+                    d["last_message"] = last.content
+                    d["last_message_at"] = last.created_at.isoformat()
+                snapshot.append(d)
+            await websocket.send_json({"type": "conversation_list", "conversations": snapshot})
+    except Exception:
+        pass
+
+    try:
+        while True:
+            raw = await websocket.receive_text()
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            kind = data.get("type")
+            if kind == "ping":
+                try:
+                    await websocket.send_json({"type": "pong"})
+                except Exception:
+                    break
+            elif kind == "get_messages":
+                conv_id = data.get("conversation_id")
+                if not conv_id:
+                    continue
+                with SessionLocal() as db:
+                    rows = (
+                        db.query(ChatMessage)
+                        .filter(ChatMessage.conversation_id == conv_id)
+                        .order_by(ChatMessage.created_at.asc())
+                        .all()
+                    )
+                    await websocket.send_json(
+                        {
+                            "type": "messages",
+                            "conversation_id": conv_id,
+                            "messages": [_to_msg(m) for m in rows],
+                        }
+                    )
+            elif kind == "message":
+                conv_id = data.get("conversation_id")
+                content = (data.get("content") or "").strip()
+                if not conv_id or not content:
+                    continue
+                with SessionLocal() as db:
+                    conv = db.get(ChatConversation, conv_id)
+                    if conv is None:
+                        await websocket.send_json({"type": "error", "detail": "conversation not found"})
+                        continue
+                    sender_type = "agent" if user.role in (UserRole.admin, UserRole.customer_support) else "customer"
+                    sender_name = user.name or user.email
+                    msg = ChatMessage(
+                        conversation_id=conv_id,
+                        sender_type=sender_type,
+                        sender_name=sender_name,
+                        content=content,
+                    )
+                    db.add(msg)
+                    conv.updated_at = datetime.now(timezone.utc)
+                    if sender_type == "agent":
+                        conv.unread_count = 0
+                    db.commit()
+                    db.refresh(msg)
+                    payload = {"type": "new_message", "message": _to_msg(msg), "conversation_id": conv_id}
+                    await manager.chat_broadcast(payload)
+    except WebSocketDisconnect:
+        manager.chat_disconnect(websocket)
+    except Exception:
+        manager.chat_disconnect(websocket)

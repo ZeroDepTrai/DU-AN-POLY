@@ -1,0 +1,374 @@
+<!--
+  Style: Interactive Product Demo — Vibrant & Block-based
+  Best for: Software, tools
+  Pattern: Product Demo + Features (video center, feature breakdown)
+
+  React source:     frontend/src/pages/Home.tsx
+  Design tokens:    frontend/src/copy/styles/interactive-demo/styles.css
+
+  Color palette: Blue primary + Orange accent
+  Typography: Rubik (headings) + Nunito Sans (body)
+  Block layout, geometric shapes, high color contrast
+-->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CellZone — Trải nghiệm sản phẩm đỉnh cao</title>
+  <meta name="description" content="CellZone — Nơi công nghệ tối tân hội tụ cùng nghệ thuật thiết kế đỉnh cao." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       NAV
+       ═══════════════════════════════════════════════════════ -->
+  <nav class="nav" role="navigation" aria-label="Điều hướng chính">
+    <div class="container">
+      <div class="nav-inner">
+        <a href="/" class="nav-brand" aria-label="CellZone">CellZone</a>
+        <ul class="nav-links">
+          <li><a href="/products">Sản phẩm</a></li>
+          <li><a href="/accessories">Phụ kiện</a></li>
+          <li><a href="/about">Giới thiệu</a></li>
+          <li><a href="#contact">Liên hệ</a></li>
+        </ul>
+        <a href="/products" class="btn-primary" style="padding:var(--s2) var(--s5);font-size:var(--text-xs);">Mua ngay</a>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       §1 — HERO
+       ═══════════════════════════════════════════════════════ -->
+  <section class="hero" aria-label="Hero">
+    <div class="container">
+
+      <span class="hero-badge">
+        <svg class="svg-icon svg-icon-sm" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        CellZone · Flagship 2024
+      </span>
+
+      <h1 class="hero-title">Công nghệ <em>đỉnh cao</em><br>cho cuộc sống hiện đại</h1>
+
+      <p class="hero-sub">
+        Thiết bị di động flagship mới nhất từ Apple, Samsung, Xiaomi, OPPO.
+        Trải nghiệm không gian mua sắm thượng lưu đầu tiên tại Việt Nam.
+      </p>
+
+      <div class="hero-cta-group">
+        <a href="/products" class="btn-primary">
+          Khám phá ngay
+          <svg class="svg-icon svg-icon-sm" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </a>
+        <a href="/accessories" class="btn-outline">Phụ kiện cao cấp</a>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       §2 — PRODUCT DEMO / FEATURE VISUAL
+       ═══════════════════════════════════════════════════════ -->
+  <section class="demo-section" aria-label="Trải nghiệm sản phẩm">
+    <div class="container">
+      <div class="demo-grid">
+
+        <div class="demo-visual" role="img" aria-label="Premium smartphone showcase">
+          <img src="https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=800&q=85&auto=format&fit=crop" alt="Premium smartphone" loading="lazy" />
+          <div class="demo-play-btn" aria-hidden="true">
+            <div class="demo-play-circle">
+              <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="demo-content-label">Khám phá</span>
+          <h2 class="demo-content-title">Thiết bị flagship<br>định hình tương lai</h2>
+          <p class="demo-content-desc">
+            Mỗi chiếc điện thoại tại CellZone được tuyển chọn kỹ lưỡng —
+            từ thiết kế, hiệu năng đến hệ sinh thái phụ kiện đồng bộ.
+          </p>
+          <a href="/products" class="btn-primary">Xem chi tiết</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       §3 — FEATURE CARDS
+       ═══════════════════════════════════════════════════════ -->
+  <section class="feature-grid-section" aria-label="Tính năng nổi bật">
+    <div class="container">
+
+      <div class="section-header-center">
+        <span class="section-label">Tại sao CellZone</span>
+        <h2 class="section-title">Dịch vụ đẳng cấp — Chi tiêu thông minh</h2>
+        <p class="section-sub">Ba trụ cột giúp CellZone trở thành điểm đến tin cậy của mọi tín đồ công nghệ.</p>
+      </div>
+
+      <div class="grid-4 lg:grid-cols-4 gap-5">
+
+        <div class="feature-card">
+          <div class="feature-icon icon-blue" aria-hidden="true">
+            <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h3 class="feature-title">Bảo hành VIP</h3>
+          <p class="feature-desc">1 đổi 1 trong 30 ngày, hỗ trợ kỹ thuật trọn đời miễn phí.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon icon-orange" aria-hidden="true">
+            <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="feature-title">Hỗ trợ 24/7</h3>
+          <p class="feature-desc">Đội ngũ chuyên viên tư vấn cá nhân hóa, sẵn sàng 24/7.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon icon-green" aria-hidden="true">
+            <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </div>
+          <h3 class="feature-title">Trả góp 0%</h3>
+          <p class="feature-desc">Kỳ hạn 6-12 tháng, lãi suất 0% qua thẻ tín dụng.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon icon-purple" aria-hidden="true">
+            <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          </div>
+          <h3 class="feature-title">Sản phẩm chính hãng</h3>
+          <p class="feature-desc">100% chính hãng từ nhà sản xuất, đầy đủ giấy tờ bảo hành.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       §4 — BRANDS
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section border-y" style="background:#fff;" aria-label="Thương hiệu">
+    <div class="container">
+      <div class="grid-4 lg:grid-cols-4 gap-6">
+
+        <a href="/products?brand=apple" class="brand-card" aria-label="Apple">
+          <div class="brand-icon">
+            <svg class="svg-icon svg-icon-lg text-white" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <span class="brand-name">Apple</span>
+        </a>
+
+        <a href="/products?brand=samsung" class="brand-card" aria-label="Samsung">
+          <div class="brand-icon">
+            <svg class="svg-icon svg-icon-lg text-white" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <span class="brand-name">Samsung</span>
+        </a>
+
+        <a href="/products?brand=xiaomi" class="brand-card" aria-label="Xiaomi">
+          <div class="brand-icon">
+            <svg class="svg-icon svg-icon-lg text-white" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <span class="brand-name">Xiaomi</span>
+        </a>
+
+        <a href="/products?brand=oppo" class="brand-card" aria-label="OPPO">
+          <div class="brand-icon">
+            <svg class="svg-icon svg-icon-lg text-white" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <span class="brand-name">OPPO</span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       §5 — FEATURED PRODUCTS
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section" aria-label="Sản phẩm nổi bật">
+    <div class="container">
+
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-12">
+        <div>
+          <span class="section-label">Bộ sưu tập</span>
+          <h2 class="section-title">Sản phẩm nổi bật</h2>
+        </div>
+        <a href="/products" class="btn-outline">Xem tất cả</a>
+      </div>
+
+      <div class="grid-3 lg:grid-cols-3 gap-6">
+
+        <article class="product-card" aria-label="iPhone 15 Pro Max">
+          <div class="product-card-img-wrap">
+            <img src="https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&q=80&auto=format&fit=crop" alt="iPhone 15 Pro Max" loading="lazy" />
+            <span class="product-badge badge-orange" aria-label="Nổi bật">Nổi bật</span>
+          </div>
+          <div class="product-card-body">
+            <p class="product-brand">Apple</p>
+            <h3 class="product-title">iPhone 15 Pro Max</h3>
+            <div>
+              <span class="product-price">34.990.000đ</span>
+              <span class="product-price-old">39.990.000đ</span>
+            </div>
+            <a href="/products/1" class="product-cta">Xem chi tiết</a>
+          </div>
+        </article>
+
+        <article class="product-card" aria-label="Samsung Galaxy S24 Ultra">
+          <div class="product-card-img-wrap">
+            <img src="https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=600&q=80&auto=format&fit=crop" alt="Samsung Galaxy S24 Ultra" loading="lazy" />
+            <span class="product-badge badge-blue" aria-label="Nổi bật">Nổi bật</span>
+          </div>
+          <div class="product-card-body">
+            <p class="product-brand">Samsung</p>
+            <h3 class="product-title">Galaxy S24 Ultra</h3>
+            <div>
+              <span class="product-price">29.990.000đ</span>
+              <span class="product-price-old">32.990.000đ</span>
+            </div>
+            <a href="/products/2" class="product-cta">Xem chi tiết</a>
+          </div>
+        </article>
+
+        <article class="product-card" aria-label="Xiaomi 14 Pro">
+          <div class="product-card-img-wrap">
+            <img src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&q=80&auto=format&fit=crop" alt="Xiaomi 14 Pro" loading="lazy" />
+            <span class="product-badge badge-orange" aria-label="Nổi bật">Nổi bật</span>
+          </div>
+          <div class="product-card-body">
+            <p class="product-brand">Xiaomi</p>
+            <h3 class="product-title">Xiaomi 14 Pro</h3>
+            <div>
+              <span class="product-price">18.990.000đ</span>
+              <span class="product-price-old">21.990.000đ</span>
+            </div>
+            <a href="/products/3" class="product-cta">Xem chi tiết</a>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       §6 — CTA
+       ═══════════════════════════════════════════════════════ -->
+  <section class="cta-section" aria-label="Kêu gọi hành động">
+    <div class="container">
+      <h2 class="cta-title">Sẵn sàng bắt đầu?</h2>
+      <p class="cta-sub">Khám phá bộ sưu tập flagship mới nhất và trải nghiệm dịch vụ đẳng cấp tại CellZone.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:var(--s3);justify-content:center;">
+        <a href="/products" class="btn-accent">Mua sắm ngay</a>
+        <a href="/accessories" class="btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.4);">Phụ kiện cao cấp</a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       §7 — CONTACT
+       ═══════════════════════════════════════════════════════ -->
+  <section id="contact" class="contact-section" aria-label="Liên hệ">
+    <div class="container">
+      <div class="grid-2 lg:grid-cols-2 gap-10">
+
+        <div>
+          <div class="contact-map-wrap">
+            <iframe title="Vị trí CellZone" src="https://www.openstreetmap.org/export/embed.html?bbox=106.6%2C10.7%2C106.8%2C10.9&layer=mapnik" loading="lazy" allowfullscreen></iframe>
+          </div>
+        </div>
+
+        <div class="contact-form-card">
+          <h3 class="contact-title">Gửi thông điệp</h3>
+          <p class="contact-sub">Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.</p>
+          <form id="contact-form" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="name">Tên của bạn</label>
+              <input class="form-input" type="text" id="name" name="name" placeholder="Nguyen Van A" autocomplete="name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="email">Email</label>
+              <input class="form-input" type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="message">Nội dung</label>
+              <textarea class="form-input" id="message" name="message" placeholder="Viết tin nhắn..." rows="5" required></textarea>
+            </div>
+            <button type="submit" class="btn-primary w-full" style="justify-content:center;">Gửi thông điệp</button>
+          </form>
+          <div id="success" class="hidden" style="text-align:center;padding:var(--s8);" role="status" aria-live="polite">
+            <div style="display:flex;align-items:center;justify-content:center;width:4rem;height:4rem;border-radius:50%;background:var(--color-accent);margin:0 auto var(--s4);">
+              <svg class="svg-icon svg-icon-lg text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 style="font-family:var(--font-heading);font-size:var(--text-xl);font-weight:800;color:var(--color-fg);margin-bottom:var(--s2);">Gửi thành công!</h3>
+            <p style="font-family:var(--font-body);font-size:var(--text-sm);color:#64748B;">CellZone sẽ liên hệ với bạn trong thời gian sớm nhất.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <p class="footer-brand">CellZone</p>
+      <p class="footer-copy">© 2024 CellZone. Công nghệ tối tân. Nghệ thuật thiết kế.</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var form = document.getElementById('contact-form');
+      var success = document.getElementById('success');
+      if (!form || !success) return;
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var name = form.querySelector('[name="name"]').value.trim();
+        var email = form.querySelector('[name="email"]').value.trim();
+        var msg = form.querySelector('[name="message"]').value.trim();
+        if (!name || !email || !msg) return;
+        form.style.display = 'none';
+        success.classList.remove('hidden');
+      });
+    })();
+  </script>
+
+</body>
+</html>

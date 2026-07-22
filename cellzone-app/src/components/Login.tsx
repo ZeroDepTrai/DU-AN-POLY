@@ -1,24 +1,62 @@
 import { useState } from "react";
 import { useAuthStore } from "../stores/authStore";
+import { getApiBase } from "../api/client";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const login = useAuthStore((state) => state.login);
+  const [debug, setDebug] = useState<{status?: number; data?: string} | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    setDebug(null);
 
     try {
-      const success = await login(email, password);
-      if (!success) {
+      const apiUrl = `${getApiBase()}/auth/login`;
+      setDebug({ status: 0, data: `Connecting to: ${apiUrl}` });
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }).catch((err) => {
+        setDebug({ status: -1, data: `Network error: ${err.message}\nName: ${err.name}\nStack: ${err.stack?.slice(0, 200)}` });
+        throw err;
+      });
+
+      setDebug({ status: response.status, data: "" });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: "Unknown error" }));
+        setDebug({ status: response.status, data: JSON.stringify(errData) });
         setError("Email hoặc mật khẩu không đúng");
+        setLoading(false);
+        return;
       }
-    } catch {
+
+      const data = await response.json();
+      setDebug({ status: response.status, data: "Got token: " + (data.access_token ? "YES" : "NO") });
+
+      // Fetch user info
+      const meResponse = await fetch(`${getApiBase()}/auth/me`, {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+
+      if (!meResponse.ok) {
+        setDebug({ status: meResponse.status, data: "/me failed" });
+        setError("Failed to get user info");
+        setLoading(false);
+        return;
+      }
+
+      const user = await meResponse.json();
+      useAuthStore.getState().setAuth(user, data.access_token);
+    } catch (err) {
+      setDebug({ status: -1, data: `Exception: ${err}` });
       setError("Đã xảy ra lỗi. Vui lòng thử lại.");
     } finally {
       setLoading(false);
@@ -93,6 +131,13 @@ export default function Login() {
             {error && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
                 {error}
+              </div>
+            )}
+
+            {debug && (
+              <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs font-mono">
+                <div>Status: {debug.status}</div>
+                <div className="break-all">{debug.data}</div>
               </div>
             )}
 

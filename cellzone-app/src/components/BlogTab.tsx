@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { blogApi } from "../api/client";
+import { blogApi, normalizeMediaUrl } from "../api/client";
 import { useAuthStore } from "../stores/authStore";
 import type { BlogPost } from "../types";
 import { Edit2, Trash2 } from "lucide-react";
@@ -185,7 +185,7 @@ export default function BlogTab() {
               {posts.map((post) => (
                 <tr key={post.id} className="border-t border-white/10 hover:bg-white/5">
                   <td className="px-4 py-3">
-                    {post.image_url && <img src={post.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />}
+                    {post.image_url && <img src={normalizeMediaUrl(post.image_url)} alt="" className="h-10 w-10 rounded-lg object-cover" />}
                   </td>
                   <td className="px-4 py-3 font-medium text-[#f0f0f5] max-w-[200px] truncate">{post.title}</td>
                   <td className="px-4 py-3">

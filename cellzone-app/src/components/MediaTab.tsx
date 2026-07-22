@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { productsApi, mediaApi } from "../api/client";
+import { productsApi, mediaApi, normalizeMediaUrl } from "../api/client";
 import { useAuthStore } from "../stores/authStore";
 import { Upload, Image, Trash2 } from "lucide-react";
 
@@ -81,7 +81,7 @@ export default function MediaTab() {
                     : "border-white/10 hover:bg-white/5"
                 }`}
               >
-                <img src={p.image_url} alt="" className="h-9 w-9 rounded-md object-cover" />
+                <img src={normalizeMediaUrl(p.image_url)} alt="" className="h-9 w-9 rounded-md object-cover" />
                 <div className="min-w-0 flex-1 text-left">
                   <p className="text-xs font-medium text-[#f0f0f5] truncate">{p.name}</p>
                   <p className="text-[10px] text-[#5a5a6a]">#{p.id}</p>

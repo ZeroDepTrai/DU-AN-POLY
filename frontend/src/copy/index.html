@@ -1,0 +1,575 @@
+<!--
+  React source:     frontend/src/pages/Home.tsx
+  Design tokens:    frontend/src/copy/styles.css
+  Source Tailwind:  frontend/tailwind.config.js
+  Source CSS:       frontend/src/index.css
+
+  To convert back to React:
+  ─────────────────────────────────────────────────────────────────
+  HTML class name             →  React / Tailwind equivalent
+  ─────────────────────────────────────────────────────────────────
+  .aurora-glow-btn            →  className="aurora-glow-btn"
+  .btn-outline               →  className="rounded-xl border border-white/10 bg-white/[0.04] px-7 py-3.5 ..."
+  .aurora-text-gradient       →  className="aurora-text-gradient"
+  .aurora-text-rainbow       →  className="aurora-text-rainbow"
+  .glass-card                →  <GlassCard intensity="med" />
+  .glass-card-low            →  <GlassCard intensity="low" />
+  .glass-card-high           →  <GlassCard intensity="high" />
+  .glass-card-hoverable      →  <GlassCard intensity="med" hoverable />
+  .aurora-input              →  <AuroraInput />  or  className="aurora-input"
+  textarea.aurora-input      →  <AuroraTextarea />
+  .badge                     →  <AuroraBadge />
+  .badge-sakura              →  <AuroraBadge tone="sakura" />
+  .badge-crimson             →  <AuroraBadge tone="crimson" />
+  .pill-chip                 →  className="pill-chip"
+  .pill-chip-active          →  className="pill-chip pill-chip-active"
+  .container-padding          →  className="container-padding"
+  .section-padding           →  className="section-padding"
+  .section-heading-*          →  <SectionHeading eyebrow="..." title="..." subtitle="..." />
+  .product-card              →  <ProductCard product={...} variant="featured" />
+  .aurora-glow-btn + size    →  <GlowButton variant="aurora" size="lg" />
+  .animate-float-slow         →  className="animate-float-slow"
+  .animate-pulse-dot          →  className="animate-pulse-dot"
+  .animate-aurora-pan         →  className="animate-aurora-pan"
+  ─────────────────────────────────────────────────────────────────
+
+  Sections map to React components:
+    §1 Hero           → Home.tsx lines 73–143
+    §2 Brand          → Home.tsx lines 145–174
+    §3 Featured       → Home.tsx lines 176–210
+    §4 Values         → Home.tsx lines 212–237
+    §5 Policies       → Home.tsx lines 239–269
+    §6 Contact        → Home.tsx lines 271–361
+-->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CellZone — Trải nghiệm không gian mua sắm thượng lưu</title>
+  <meta name="description" content="CellZone — Nơi công nghệ tối tân hội tụ cùng nghệ thuật thiết kế đỉnh cao. Khám phá thiết bị di động định hình tương lai." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       §1 — HERO
+       React: frontend/src/pages/Home.tsx  lines 73–143
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="hero-section section-divider" aria-label="Hero">
+    <div class="hero-gradient">
+      <div class="container-padding pt-16 pb-20 lg:pt-24 lg:pb-28">
+
+        <!-- Two-column hero grid -->
+        <div class="grid gap-12 lg:grid-cols-2">
+
+          <!-- Left: text content -->
+          <div class="relative z-10">
+
+            <!-- Eyebrow badge -->
+            <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur-xl">
+              <span class="pulse-dot" aria-hidden="true"></span>
+              <span class="text-xs font-semibold uppercase tracking-widest text-sakura">CellZone · Aurora UI</span>
+            </div>
+
+            <!-- Headline -->
+            <h1 class="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-balance sm:text-4xl lg:text-6xl">
+              <span class="aurora-text-gradient">Trải nghiệm</span><br>
+              <span class="aurora-text-rainbow">không gian mua sắm</span><br>
+              <span class="aurora-text-gradient">thượng lưu</span>
+            </h1>
+
+            <!-- Subtext -->
+            <p class="mb-10 max-w-lg text-base leading-relaxed text-pretty sm:text-lg text-softgray">
+              Nơi công nghệ tối tân hội tụ cùng nghệ thuật thiết kế đỉnh cao.
+              Khám phá những thiết bị di động định hình tương lai.
+            </p>
+
+            <!-- CTAs -->
+            <div class="flex flex-wrap gap-3">
+              <a href="/products" class="aurora-glow-btn" aria-label="Mua sắm ngay tại CellZone">
+                Mua sắm ngay
+                <svg class="svg-icon svg-icon-sm" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </a>
+              <a href="/accessories" class="btn-outline">
+                Phụ kiện cao cấp
+              </a>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="mt-10 grid grid-cols-3 gap-3 sm:max-w-md">
+              <div class="stat-card">
+                <p class="stat-k aurora-text-rainbow">12T</p>
+                <p class="stat-t">Bảo hành</p>
+              </div>
+              <div class="stat-card">
+                <p class="stat-k aurora-text-rainbow">0%</p>
+                <p class="stat-t">Trả góp</p>
+              </div>
+              <div class="stat-card">
+                <p class="stat-k aurora-text-rainbow">24/7</p>
+                <p class="stat-t">Hỗ trợ</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: hero visual -->
+          <div class="relative aspect-square max-h-[540px] w-full">
+            <!-- Ambient orb -->
+            <div class="hero-orb animate-aurora-pan" aria-hidden="true"></div>
+
+            <!-- Glass card with image -->
+            <div class="glass-card-high absolute inset-0 overflow-hidden p-0 animate-float-slow" role="img" aria-label="Premium smartphone flagship">
+              <img
+                src="https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=800&q=85&auto=format&fit=crop"
+                alt="Premium smartphone"
+                class="h-full w-full object-cover opacity-90"
+                loading="eager"
+              />
+              <!-- Gradient overlay -->
+              <div class="hero-img-overlay" aria-hidden="true"></div>
+
+              <!-- Floating badges -->
+              <div class="hero-floating-badge">
+                <div class="hero-badge-pill">
+                  <p class="text-xs uppercase tracking-wider text-steelgray">Flagship mới</p>
+                  <p class="text-sm font-semibold text-warmwhite">Khám phá ngay</p>
+                </div>
+                <div class="hero-hot-pill animate-pulse-dot" role="status" aria-label="Sản phẩm nổi bật">Hot</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /.hero-grid -->
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       §2 — BRAND CATEGORIES
+       React: frontend/src/pages/Home.tsx  lines 145–174
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="border-y border-white/10" aria-label="Danh mục thương hiệu">
+    <div class="container-padding py-10">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+        <!-- Apple -->
+        <a href="/products?brand=apple" class="brand-card group" aria-label="Xem sản phẩm Apple">
+          <div class="glass-card-low flex flex-col items-center justify-center gap-3 py-7 hover:border-rose/40">
+            <div class="brand-icon-wrap shadow-glow-violet">
+              <svg class="svg-icon svg-icon-lg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span class="text-base font-semibold uppercase tracking-wider text-warmwhite">Apple</span>
+            <span class="text-xs uppercase tracking-widest text-steelgray">01</span>
+          </div>
+        </a>
+
+        <!-- Samsung -->
+        <a href="/products?brand=samsung" class="brand-card group" aria-label="Xem sản phẩm Samsung">
+          <div class="glass-card-low flex flex-col items-center justify-center gap-3 py-7 hover:border-rose/40">
+            <div class="brand-icon-wrap shadow-glow-violet">
+              <svg class="svg-icon svg-icon-lg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span class="text-base font-semibold uppercase tracking-wider text-warmwhite">Samsung</span>
+            <span class="text-xs uppercase tracking-widest text-steelgray">02</span>
+          </div>
+        </a>
+
+        <!-- Xiaomi -->
+        <a href="/products?brand=xiaomi" class="brand-card group" aria-label="Xem sản phẩm Xiaomi">
+          <div class="glass-card-low flex flex-col items-center justify-center gap-3 py-7 hover:border-rose/40">
+            <div class="brand-icon-wrap shadow-glow-violet">
+              <svg class="svg-icon svg-icon-lg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span class="text-base font-semibold uppercase tracking-wider text-warmwhite">Xiaomi</span>
+            <span class="text-xs uppercase tracking-widest text-steelgray">03</span>
+          </div>
+        </a>
+
+        <!-- OPPO -->
+        <a href="/products?brand=oppo" class="brand-card group" aria-label="Xem sản phẩm OPPO">
+          <div class="glass-card-low flex flex-col items-center justify-center gap-3 py-7 hover:border-rose/40">
+            <div class="brand-icon-wrap shadow-glow-violet">
+              <svg class="svg-icon svg-icon-lg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span class="text-base font-semibold uppercase tracking-wider text-warmwhite">OPPO</span>
+            <span class="text-xs uppercase tracking-widest text-steelgray">04</span>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       §3 — FEATURED PRODUCTS
+       React: frontend/src/pages/Home.tsx  lines 176–210
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="container-padding section-padding" aria-label="Sản phẩm nổi bật">
+    <!-- Section heading -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <span class="section-heading-eyebrow">Bộ sưu tập</span>
+        <h2 class="section-heading-title">Sản phẩm nổi bật</h2>
+        <p class="section-heading-subtitle">
+          Những thiết bị được tuyển chọn bởi đội ngũ CellZone — định hình chuẩn mực mới cho trải nghiệm di động.
+        </p>
+      </div>
+      <a href="/products" class="link-view-all shrink-0">
+        Xem tất cả
+        <svg class="svg-icon svg-icon-sm" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </a>
+    </div>
+
+    <!-- Product grid — 3 static cards (replace with dynamic data in React) -->
+    <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+
+      <!-- Product 1 -->
+      <article class="product-card" aria-label="iPhone 15 Pro Max">
+        <div class="product-card-img-wrap">
+          <img
+            src="https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&q=80&auto=format&fit=crop"
+            alt="iPhone 15 Pro Max"
+            class="product-card-img"
+            loading="lazy"
+          />
+          <div class="product-card-badge" aria-label="Sản phẩm nổi bật">Nổi bật</div>
+        </div>
+        <div class="product-card-body">
+          <p class="product-card-brand">Apple</p>
+          <h3 class="product-card-title">iPhone 15 Pro Max</h3>
+          <div class="product-card-price-row">
+            <span class="product-card-price">34.990.000đ</span>
+            <span class="product-card-price-old">39.990.000đ</span>
+          </div>
+          <a href="/products/1" class="product-card-cta">
+            Xem chi tiết
+            <svg class="svg-icon svg-icon-sm" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+        </div>
+      </article>
+
+      <!-- Product 2 -->
+      <article class="product-card" aria-label="Samsung Galaxy S24 Ultra">
+        <div class="product-card-img-wrap">
+          <img
+            src="https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=600&q=80&auto=format&fit=crop"
+            alt="Samsung Galaxy S24 Ultra"
+            class="product-card-img"
+            loading="lazy"
+          />
+          <div class="product-card-badge" aria-label="Sản phẩm nổi bật">Nổi bật</div>
+        </div>
+        <div class="product-card-body">
+          <p class="product-card-brand">Samsung</p>
+          <h3 class="product-card-title">Galaxy S24 Ultra</h3>
+          <div class="product-card-price-row">
+            <span class="product-card-price">29.990.000đ</span>
+            <span class="product-card-price-old">32.990.000đ</span>
+          </div>
+          <a href="/products/2" class="product-card-cta">
+            Xem chi tiết
+            <svg class="svg-icon svg-icon-sm" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+        </div>
+      </article>
+
+      <!-- Product 3 -->
+      <article class="product-card" aria-label="Xiaomi 14 Pro">
+        <div class="product-card-img-wrap">
+          <img
+            src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&q=80&auto=format&fit=crop"
+            alt="Xiaomi 14 Pro"
+            class="product-card-img"
+            loading="lazy"
+          />
+          <div class="product-card-badge" aria-label="Sản phẩm nổi bật">Nổi bật</div>
+        </div>
+        <div class="product-card-body">
+          <p class="product-card-brand">Xiaomi</p>
+          <h3 class="product-card-title">Xiaomi 14 Pro</h3>
+          <div class="product-card-price-row">
+            <span class="product-card-price">18.990.000đ</span>
+            <span class="product-card-price-old">21.990.000đ</span>
+          </div>
+          <a href="/products/3" class="product-card-cta">
+            Xem chi tiết
+            <svg class="svg-icon svg-icon-sm" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       §4 — CORE VALUES
+       React: frontend/src/pages/Home.tsx  lines 212–237
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="border-y border-white/10" aria-label="Giá trị cốt lõi">
+    <div class="container-padding section-padding">
+      <!-- Heading centered -->
+      <div class="section-heading section-heading-center">
+        <span class="section-heading-eyebrow">Giá trị cốt lõi</span>
+        <h2 class="section-heading-title">Trải nghiệm khác biệt</h2>
+        <p class="section-heading-subtitle">
+          Ba trụ cột giúp CellZone trở thành điểm đến tin cậy của mọi tín đồ công nghệ.
+        </p>
+      </div>
+
+      <!-- 3-column value cards -->
+      <div class="mt-12 grid gap-5 sm:grid-cols-3">
+
+        <!-- Value 1: Tiên phong -->
+        <div class="glass-card-hoverable flex flex-col items-center p-8 text-center">
+          <div class="value-icon-wrap mb-5 gradient-lightpink">
+            <svg class="svg-icon svg-icon-lg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 class="mb-3 text-lg font-bold text-warmwhite">Tiên phong</h3>
+          <p class="text-sm leading-relaxed text-softgray">
+            Mang đến những sản phẩm công nghệ đột phá, kiến tạo chuẩn mực mới cho cuộc sống hiện đại.
+          </p>
+        </div>
+
+        <!-- Value 2: Đẳng cấp -->
+        <div class="glass-card-hoverable flex flex-col items-center p-8 text-center">
+          <div class="value-icon-wrap mb-5 gradient-sakura">
+            <svg class="svg-icon svg-icon-lg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="mb-3 text-lg font-bold text-warmwhite">Đẳng cấp</h3>
+          <p class="text-sm leading-relaxed text-softgray">
+            Biểu tượng của sự tiên phong và đẳng cấp trong lĩnh vực bán lẻ thiết bị thông minh cao cấp.
+          </p>
+        </div>
+
+        <!-- Value 3: Cam kết -->
+        <div class="glass-card-hoverable flex flex-col items-center p-8 text-center">
+          <div class="value-icon-wrap mb-5 gradient-deeprose">
+            <svg class="svg-icon svg-icon-lg" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h3 class="mb-3 text-lg font-bold text-warmwhite">Cam kết</h3>
+          <p class="text-sm leading-relaxed text-softgray">
+            Cam kết tuyệt đối về độ hoàn thiện, dịch vụ hậu mãi chuyên nghiệp và sự hài lòng tối đa.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       §5 — POLICIES
+       React: frontend/src/pages/Home.tsx  lines 239–269
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="container-padding section-padding" aria-label="Chính sách">
+    <div class="grid gap-5 lg:grid-cols-2">
+
+      <!-- Policy 1: VIP Warranty -->
+      <div class="glass-card-hoverable flex items-start gap-5 p-7">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sakura to-crimson shadow-glow-violet" aria-hidden="true">
+          <svg class="svg-icon svg-icon-md text-warmwhite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="mb-2 text-lg font-bold text-warmwhite">Bảo hành VIP 1 đổi 1</h3>
+          <p class="text-sm leading-relaxed text-softgray">
+            Mọi sản phẩm tại CellZone đều được hưởng chế độ bảo hành VIP 1 đổi 1 trong 30 ngày và hỗ trợ kỹ thuật trọn đời.
+          </p>
+        </div>
+      </div>
+
+      <!-- Policy 2: 24/7 Support -->
+      <div class="glass-card-hoverable flex items-start gap-5 p-7">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose to-sakura shadow-glow-violet" aria-hidden="true">
+          <svg class="svg-icon svg-icon-md text-warmwhite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="mb-2 text-lg font-bold text-warmwhite">Hỗ trợ 24/7</h3>
+          <p class="text-sm leading-relaxed text-softgray">
+            Đội ngũ chuyên viên tư vấn cá nhân hóa sẵn sàng hỗ trợ 24/7, đảm bảo trải nghiệm liền mạch sau khi mua sắm.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       §6 — CONTACT
+       React: frontend/src/pages/Home.tsx  lines 271–361
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section id="contact" class="border-t border-white/10" aria-label="Liên hệ">
+    <div class="container-padding section-padding">
+
+      <!-- Heading centered -->
+      <div class="section-heading section-heading-center">
+        <span class="section-heading-eyebrow">Liên hệ</span>
+        <h2 class="section-heading-title">Gửi thông điệp đến CellZone</h2>
+        <p class="section-heading-subtitle">Chúng tôi sẽ phản hồi trong thời gian sớm nhất.</p>
+      </div>
+
+      <!-- Two-column layout: map + form -->
+      <div class="mt-10 grid gap-6 lg:grid-cols-2">
+
+        <!-- Left: map card -->
+        <div class="glass-card overflow-hidden p-0">
+          <div class="contact-map-wrap">
+            <iframe
+              title="Vị trí CellZone trên bản đồ"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=106.6%2C10.7%2C106.8%2C10.9&layer=mapnik"
+              loading="lazy"
+              allowfullscreen
+            ></iframe>
+          </div>
+          <div class="border-t border-white/10 p-6">
+            <div class="badge badge-crimson mb-3" role="status">Trụ sở chính</div>
+            <h3 class="mb-2 text-xl font-bold text-warmwhite">123 Đường Công Nghệ</h3>
+            <p class="flex items-center gap-2 text-sm text-softgray">
+              <svg class="svg-icon svg-icon-sm text-sakura shrink-0" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Quận 1, TP. HCM
+            </p>
+          </div>
+        </div>
+
+        <!-- Right: contact form -->
+        <div class="glass-card p-8">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="badge badge-sakura" role="status">Aurora · Liên hệ</div>
+          </div>
+          <h3 class="contact-form-heading">Gửi thông điệp</h3>
+          <p class="contact-form-sub">Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.</p>
+
+          <!-- Form -->
+          <form id="contact-form" action="#" method="POST" novalidate>
+
+            <!-- Name -->
+            <div class="form-group">
+              <label class="form-label" for="contact-name">Tên của bạn</label>
+              <input
+                class="aurora-input"
+                type="text"
+                id="contact-name"
+                name="name"
+                placeholder="Nguyen Van A"
+                autocomplete="name"
+                required
+              />
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label class="form-label" for="contact-email">Email liên hệ</label>
+              <input
+                class="aurora-input"
+                type="email"
+                id="contact-email"
+                name="email"
+                placeholder="your@email.com"
+                autocomplete="email"
+                required
+              />
+            </div>
+
+            <!-- Message -->
+            <div class="form-group">
+              <label class="form-label" for="contact-message">Nội dung cần hỗ trợ</label>
+              <textarea
+                class="aurora-input"
+                id="contact-message"
+                name="message"
+                placeholder="Viết tin nhắn của bạn..."
+                rows="5"
+                required
+              ></textarea>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="aurora-glow-btn w-full" style="padding-block: var(--space-3);">
+              Gửi thông điệp
+            </button>
+
+          </form>
+
+          <!-- Success state (toggle via JS or copy into React) -->
+          <div id="contact-success" class="hidden text-center py-10" role="status" aria-live="polite">
+            <div class="success-icon-wrap">
+              <svg class="svg-icon svg-icon-lg text-warmwhite" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 class="mb-2 text-xl font-bold text-warmwhite">Gửi thành công!</h3>
+            <p class="text-sm text-softgray">CellZone sẽ liên hệ với bạn trong thời gian sớm nhất.</p>
+            <button type="button" class="aurora-glow-btn mt-6" onclick="resetForm()">Gửi thêm</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Contact form interactivity (plain JS — mirrors React state) ── -->
+  <script>
+    (function () {
+      var form = document.getElementById('contact-form');
+      var success = document.getElementById('contact-success');
+
+      if (!form || !success) return;
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        // Validate
+        var name    = form.querySelector('[name="name"]').value.trim();
+        var email   = form.querySelector('[name="email"]').value.trim();
+        var message = form.querySelector('[name="message"]').value.trim();
+        if (!name || !email || !message) return;
+
+        // Show success state
+        form.style.display = 'none';
+        success.classList.remove('hidden');
+      });
+
+      window.resetForm = function () {
+        form.reset();
+        success.classList.add('hidden');
+        form.style.display = '';
+      };
+    })();
+  </script>
+
+</body>
+</html>

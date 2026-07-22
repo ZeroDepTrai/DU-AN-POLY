@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { authApi } from "../api/client";
+import { authApi, default as api } from "../api/client";
 import type { User } from "../types";
 
 interface AuthContextValue {
@@ -29,13 +29,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadUser = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) {
+      console.log("[Auth] No token found");
       setLoading(false);
       return;
     }
     try {
+      console.log("[Auth] Fetching user data...");
       const { data } = await authApi.me();
+      console.log("[Auth] User loaded:", data);
       setUser(data);
-    } catch {
+    } catch (err) {
+      console.error("[Auth] Failed to load user:", err);
       localStorage.removeItem("token");
       setUser(null);
     } finally {
@@ -48,9 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadUser]);
 
   const login = async (email: string, password: string) => {
-    const { data } = await authApi.login({ email, password });
-    localStorage.setItem("token", data.access_token);
-    await loadUser();
+    console.log("[Auth] Attempting login to:", api.defaults.baseURL);
+    try {
+      const { data } = await authApi.login({ email, password });
+      console.log("[Auth] Login successful, token:", data.access_token?.substring(0, 20) + "...");
+      localStorage.setItem("token", data.access_token);
+      await loadUser();
+    } catch (err) {
+      console.error("[Auth] Login failed:", err);
+      throw err;
+    }
   };
 
   const register = async (name: string, email: string, password: string) => {

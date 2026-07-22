@@ -348,6 +348,53 @@ def admin_list_orders(db: Session = Depends(get_db), _: User = Depends(require_a
     return [order_to_response(order) for order in orders]
 
 
+@router.get("/ratings", response_model=list)
+def admin_list_ratings(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+    limit: int = 200,
+):
+    """List the most recent product ratings across the catalog for the admin
+    Ratings tab. Returns flat rows with the reviewer name, stars, review text,
+    and the associated product name (denormalised in Python to avoid a join
+    that would otherwise force ``joinedload`` on every rating)."""
+    rows = (
+        db.query(ProductRating)
+        .order_by(ProductRating.id.desc())
+        .limit(limit)
+        .all()
+    )
+    out = []
+    product_ids = {r.product_id for r in rows}
+    user_ids = {r.user_id for r in rows}
+    products_by_id = {}
+    if product_ids:
+        products_by_id = {
+            p.id: p
+            for p in db.query(Product).filter(Product.id.in_(product_ids)).all()
+        }
+    users_by_id = {}
+    if user_ids:
+        users_by_id = {
+            u.id: u
+            for u in db.query(User).filter(User.id.in_(user_ids)).all()
+        }
+    for r in rows:
+        user = users_by_id.get(r.user_id)
+        product = products_by_id.get(r.product_id)
+        out.append({
+            "id": r.id,
+            "order_id": 0,
+            "product_id": r.product_id,
+            "product_name": product.name if product else "",
+            "customer_name": user.name if user and user.name else (user.email if user else ""),
+            "rating": r.stars,
+            "comment": r.review or "",
+            "created_at": r.created_at.isoformat() if getattr(r, "created_at", None) else "",
+        })
+    return out
+
+
 @router.patch("/orders/{order_id}/location", response_model=OrderResponse)
 async def update_order_location(
     order_id: int,
