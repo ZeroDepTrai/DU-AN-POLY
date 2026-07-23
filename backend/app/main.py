@@ -175,6 +175,8 @@ async def lifespan(app: FastAPI):
                        "ALTER TABLE orders ADD COLUMN coupon_id INTEGER REFERENCES coupons(id)")
             _force_add(conn, "users", "created_at",
                        "ALTER TABLE users ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()")
+            _force_add(conn, "users", "customer_support",
+                       "ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'customer_support'")
 
             # Existing columns whose declared length is too narrow for the
             # strings the runtime now produces (spin reward Vietnamese

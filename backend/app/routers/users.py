@@ -30,7 +30,7 @@ def list_users(
             email=u.email,
             role=u.role,
             name=u.name,
-            created_at=u.created_at.isoformat() if u.created_at else None,
+            created_at=str(u.created_at) if u.created_at else None,
         )
         for u in users
     ]
@@ -65,7 +65,7 @@ def create_support_user(
         email=user.email,
         role=user.role,
         name=user.name,
-        created_at=user.created_at.isoformat() if user.created_at else None,
+        created_at=str(user.created_at) if user.created_at else None,
     )
 
 
