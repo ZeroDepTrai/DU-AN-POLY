@@ -229,7 +229,7 @@ def mark_conversation_read(
 # ──────────────────────────────────────────────────────────────────────────────
 
 @router.post("/conversations/{conversation_id}/close", response_model=dict)
-def customer_close_conversation(
+async def customer_close_conversation(
     conversation_id: str,
     db: Session = Depends(get_db),
 ):
