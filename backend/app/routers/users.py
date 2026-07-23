@@ -23,7 +23,7 @@ def list_users(
     db: Session = Depends(get_db),
 ):
     """List all users (admin and customer support can view)."""
-    users = db.query(User).order_by(User.id.desc()).all()
+    users = db.query(User).filter(User.role.in_([UserRole.admin, UserRole.customer_support])).order_by(User.id.desc()).all()
     return [
         SupportUserResponse(
             id=u.id,

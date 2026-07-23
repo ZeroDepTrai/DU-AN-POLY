@@ -228,7 +228,7 @@ def mark_conversation_read(
 # Public endpoints for website chat bubble
 # ──────────────────────────────────────────────────────────────────────────────
 
-@router.post("/conversations/{conversation_id}/close", response_model=dict)
+@router.post("/conversations/{conversation_id}/end", response_model=dict)
 async def customer_close_conversation(
     conversation_id: str,
     db: Session = Depends(get_db),

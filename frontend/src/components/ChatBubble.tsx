@@ -34,6 +34,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [closedStatus, setClosedStatus] = useState<"open" | "closed" | "by_agent">("open");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Determine URLs based on environment
@@ -53,6 +54,16 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
         setConversationId(data.conversation_id as string);
         setHasStarted(true);
         break;
+      case "conversation_update": {
+        const updatedConv = data.conversation as Record<string, unknown> | undefined;
+        if (updatedConv && updatedConv.id === conversationId) {
+          const status = updatedConv.status as string | undefined;
+          if (status === "closed") {
+            setClosedStatus("by_agent");
+          }
+        }
+        break;
+      }
       case "new_message": {
         const incomingConversationId = data.conversation_id as string | undefined;
         if (
@@ -245,7 +256,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
     setShowEndConfirm(false);
     try {
       const token = localStorage.getItem("token");
-      await fetch(`${finalApiBase}/chat/conversations/${conversationId}/close`, {
+      await fetch(`${finalApiBase}/chat/conversations/${conversationId}/end`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -255,6 +266,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
     } catch {
       // Non-critical: conversation stays open on the UI even if close fails.
     }
+    setClosedStatus("closed");
     setHasStarted(false);
     setConversationId(null);
     setMessages([]);
@@ -284,6 +296,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
         conversationIdRef.current = nextConversationId;
         setConversationId(nextConversationId);
         setHasStarted(true);
+        setClosedStatus("open");
         connectWebSocket();
       } else {
         console.error("Failed to start chat", response.status, await response.text());
@@ -554,13 +567,18 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
                         </div>
                       );
                     })}
+                    {closedStatus === "by_agent" && (
+                      <div className="text-center text-xs text-gray-400 py-2 italic">
+                        Nhân viên đã kết thúc cuộc trò chuyện này.
+                      </div>
+                    )}
                     <div ref={messagesEndRef} />
                   </>
                 )}
               </div>
 
               {/* Input */}
-              {hasStarted && (
+              {hasStarted && closedStatus !== "by_agent" && (
                 <div className="border-t border-white/10 p-4">
                   <div className="flex gap-2">
                     <input
