@@ -26,6 +26,18 @@ interface ChatState {
 
 const RECONNECT_BASE_MS = 500;
 const RECONNECT_MAX_MS = 5_000;
+const HEARTBEAT_MS = 20_000;
+
+let reconnectAttempt = 0;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+function clearSocketTimers() {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  reconnectTimer = null;
+  heartbeatTimer = null;
+}
 
 export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
@@ -51,11 +63,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     messages: [...state.messages, msg],
   })),
 
-  updateConversation: (conv) => set((state) => ({
-    conversations: state.conversations.map((c) =>
-      c.id === conv.id ? conv : c
-    ),
-  })),
+  updateConversation: (conv) => set((state) => {
+    const exists = state.conversations.some((c) => c.id === conv.id);
+    return {
+      conversations: exists
+        ? state.conversations.map((c) => (c.id === conv.id ? conv : c))
+        : [conv, ...state.conversations],
+    };
+  }),
 
   setConnected: (connected) => set({ isConnected: connected }),
 
@@ -73,20 +88,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   connect: (token) => {
-    // Keep the token on the store so the reconnect logic below can re-open
-    // the socket after a network blip / Railway redeploy without requiring
-    // a manual re-login.
     set({ token });
 
-    // If a healthy socket is already up, don't tear it down — that would
-    // cause a visible "Offline -> Online" flicker for no reason.
     const existing = get().ws;
-    if (existing && existing.readyState === WebSocket.OPEN) return;
-    if (existing && existing.readyState === WebSocket.CONNECTING) return;
+    if (
+      existing &&
+      (existing.readyState === WebSocket.OPEN ||
+        existing.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
 
-    // Tear down any previous socket without scheduling a reconnect for it.
     if (existing) {
-      // Detach handlers so its onclose doesn't trigger a stale reconnect.
       existing.onopen = null;
       existing.onmessage = null;
       existing.onclose = null;
@@ -94,60 +107,61 @@ export const useChatStore = create<ChatState>((set, get) => ({
       try { existing.close(); } catch {}
     }
 
-    const openSocket = () => {
-      // encodeURIComponent: JWTs may contain `+`, `/`, `=` which the server
-      // would otherwise decode as spaces / path segments and reject with 4401.
-      const wsUrl = `${getWsBase()}/ws/chat?token=${encodeURIComponent(token)}`;
-      const socket = new WebSocket(wsUrl);
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
 
-      socket.onopen = () => {
-        set({ isConnected: true });
-        try {
-          socket.send(JSON.stringify({ type: "auth", token }));
-        } catch {}
-      };
+    const wsUrl = `${getWsBase()}/ws/chat?token=${encodeURIComponent(token)}`;
+    const socket = new WebSocket(wsUrl);
+    set({ ws: socket });
 
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          handleWebSocketMessage(data, set, get);
-        } catch {
-          console.error("Failed to parse WebSocket message");
+    socket.onopen = () => {
+      if (get().ws !== socket) return;
+      reconnectAttempt = 0;
+      heartbeatTimer = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "ping" }));
         }
-      };
-
-      socket.onclose = () => {
-        // Only react to *this* socket's close. If a newer socket has been
-        // installed (by a fresh login / page reload / another reconnect
-        // attempt), `get().ws !== socket` and we drop the event.
-        const { ws: current, token: currentToken } = get();
-        if (current !== socket) return;
-        set({ isConnected: false });
-        if (!currentToken) return;
-        scheduleReconnect(currentToken, 0);
-      };
-
-      socket.onerror = () => {
-        // Treat errors as a close — Chromium fires `error` then `close`, but
-        // we set the flag here so the UI shows Offline immediately.
-        set({ isConnected: false });
-      };
-
-      set({ ws: socket });
+      }, HEARTBEAT_MS);
     };
 
-    const scheduleReconnect = (tk: string, attempt: number) => {
-      // Exponential backoff capped at RECONNECT_MAX_MS. attempt 0 -> 1s,
-      // attempt 1 -> 2s, attempt 2 -> 4s ... doubling up to 30s.
-      const delay = Math.min(RECONNECT_BASE_MS * 2 ** attempt, RECONNECT_MAX_MS);
-      setTimeout(() => {
-        // Bail out if a fresh login replaced the token or the user logged out.
-        if (get().token !== tk) return;
-        openSocket();
+    socket.onmessage = (event) => {
+      if (get().ws !== socket) return;
+      set({ isConnected: true });
+      try {
+        const data = JSON.parse(event.data);
+        handleWebSocketMessage(data, set, get);
+      } catch {
+        console.error("Failed to parse WebSocket message");
+      }
+    };
+
+    socket.onclose = () => {
+      if (get().ws !== socket) return;
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+      set({ ws: null, isConnected: false });
+
+      const currentToken = get().token;
+      if (!currentToken || reconnectTimer) return;
+      const delay = Math.min(
+        RECONNECT_BASE_MS * 2 ** reconnectAttempt,
+        RECONNECT_MAX_MS
+      );
+      reconnectAttempt = Math.min(reconnectAttempt + 1, 6);
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        if (get().token === currentToken && !get().isConnected) {
+          get().connect(currentToken);
+        }
       }, delay);
     };
 
-    openSocket();
+    socket.onerror = () => {
+      // Wait for onclose before changing UI state. WebView2 emits a transient
+      // error during some successful handshakes, which caused Offline flicker.
+    };
   },
 
   // Force-reconnect using the currently-stored token. Called by the
@@ -162,6 +176,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   disconnect: () => {
     const { ws } = get();
+    clearSocketTimers();
+    reconnectAttempt = 0;
     if (ws) {
       ws.onopen = null;
       ws.onmessage = null;
@@ -173,8 +189,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   sendMessage: (content: string, clientId?: string) => {
-    const { ws, activeConversation } = get();
-    if (!ws || !activeConversation || ws.readyState !== WebSocket.OPEN) {
+    const { ws, activeConversation, isConnected } = get();
+    if (
+      !ws ||
+      !activeConversation ||
+      !isConnected ||
+      ws.readyState !== WebSocket.OPEN
+    ) {
       return false;
     }
     // Echo the client_id back so the round-trip broadcast can replace the

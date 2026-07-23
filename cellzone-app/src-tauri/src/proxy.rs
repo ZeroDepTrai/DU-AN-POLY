@@ -16,6 +16,8 @@ use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use tokio_rustls::TlsConnector;
 use tokio_tungstenite::client_async;
 use tokio_tungstenite::MaybeTlsStream;
+use tungstenite::client::IntoClientRequest;
+use tungstenite::http::HeaderValue;
 
 const PROXY_HOST: &str = "127.0.0.1";
 pub const PROXY_HTTP_PORT: u16 = 9876;
@@ -246,24 +248,25 @@ async fn handle_raw_ws_client(client: TcpStream, tls: Arc<ClientConfig>) {
     };
     let maybe_tls = MaybeTlsStream::Rustls(tls_stream);
 
-    let mut req_builder = Request::builder()
-        .method("GET")
-        .uri(&upstream_uri)
-        .header("Host", UPSTREAM_HOST);
-    // NOTE: do NOT set Upgrade / Connection / Sec-WebSocket-Key /
-    // Sec-WebSocket-Version manually. `client_async` below builds the
-    // 101 Switching-Protocols request itself and overrides these headers;
-    // setting a hardcoded Sec-WebSocket-Key used to silently mis-handshake
-    // against the upstream's hash check, which is why messages never
-    // reached the agent. Just forward Authorization and Origin and let
-    // tungstenite handle the rest.
-    if let Some(t) = original_auth {
-        req_builder = req_builder.header("Authorization", t);
+    // Let tungstenite generate a complete RFC 6455 client handshake, including
+    // Upgrade, Connection, Sec-WebSocket-Key, and Sec-WebSocket-Version.
+    let mut req = match upstream_uri.clone().into_client_request() {
+        Ok(req) => req,
+        Err(e) => {
+            eprintln!("[proxy-ws] invalid upstream request: {}", e);
+            return;
+        }
+    };
+    req.headers_mut()
+        .insert("Host", HeaderValue::from_static(UPSTREAM_HOST));
+    if let Some(auth) = original_auth {
+        if let Ok(value) = HeaderValue::from_str(&auth) {
+            req.headers_mut().insert("Authorization", value);
+        }
     }
-    if let Some(o) = original_origin {
-        req_builder = req_builder.header("Origin", o);
-    }
-    let req = req_builder.body(()).unwrap();
+    // Do not forward the WebView's localhost Origin to Railway. Railway may
+    // reject that origin even though the authenticated upstream is trusted.
+    let _ = original_origin;
 
     let (upstream_ws, _resp) = match client_async(req, maybe_tls).await {
         Ok(v) => v,

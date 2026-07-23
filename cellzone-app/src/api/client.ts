@@ -14,17 +14,24 @@ import type {
   NotificationEmail,
 } from "../types";
 
-// Configurable API base URL
-const API_BASE = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000/api";
+// In a normal browser development session, talk directly to the local backend.
+// Inside Tauri, always use the Rust proxy: it avoids WebView2 networking issues
+// and keeps HTTP, assets, and WebSocket traffic on stable local origins.
+const isTauri =
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+const DEFAULT_HTTP_ORIGIN = isTauri
+  ? "http://127.0.0.1:9876"
+  : "http://localhost:8000";
+const DEFAULT_WS_ORIGIN = isTauri
+  ? "ws://127.0.0.1:9877"
+  : DEFAULT_HTTP_ORIGIN.replace(/^http/, "ws");
 
-// Local proxy base for static assets (uploads, media). When running inside the
-// Tauri desktop app, requests go through a Rust-side reverse proxy on port
-// 9876, so /uploads/* and /api/* both work without WebView2 fetch issues.
-const ASSET_BASE = (import.meta.env.VITE_ASSET_URL as string) || API_BASE.replace(/\/api$/, "");
-
-// WebSocket base — the Rust proxy listens on a dedicated WS port so it can
-// do a raw relay without going through hyper.
-const WS_BASE = (import.meta.env.VITE_WS_URL as string) || ASSET_BASE;
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string) || `${DEFAULT_HTTP_ORIGIN}/api`;
+const ASSET_BASE =
+  (import.meta.env.VITE_ASSET_URL as string) ||
+  (isTauri ? DEFAULT_HTTP_ORIGIN : API_BASE.replace(/\/api$/, ""));
+const WS_BASE = (import.meta.env.VITE_WS_URL as string) || DEFAULT_WS_ORIGIN;
 
 export function getApiBase(): string {
   return API_BASE;

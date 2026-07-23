@@ -53,6 +53,13 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
         setHasStarted(true);
         break;
       case "new_message": {
+        const incomingConversationId = data.conversation_id as string | undefined;
+        if (
+          conversationIdRef.current &&
+          incomingConversationId !== conversationIdRef.current
+        ) {
+          break;
+        }
         // Backend wraps the message in `{ type, message, conversation_id }`.
         // Reading fields from `data.*` instead of `data.message.*` was the
         // bug that made incoming agent replies render as empty bubbles.
@@ -179,11 +186,9 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
     };
 
     socket.onerror = () => {
-      // Chromium fires `error` then `close`; set the flag here so the UI
-      // shows Offline immediately rather than waiting for `close`.
-      if (wsRef.current === socket) {
-        setConnected(false);
-      }
+      // `close` is the authoritative lifecycle event. Some browsers emit a
+      // transient error while the connection remains usable, so changing the
+      // status here causes an Online/Offline flicker.
     };
 
     // Close any previous socket that was still holding state.
@@ -253,7 +258,9 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
 
       if (response.ok) {
         const data = await response.json();
-        setConversationId(data.id || data.conversation_id);
+        const nextConversationId = data.id || data.conversation_id;
+        conversationIdRef.current = nextConversationId;
+        setConversationId(nextConversationId);
         setHasStarted(true);
         connectWebSocket();
       } else {
@@ -395,7 +402,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
               <div>
                 <h3 className="font-semibold text-white">Hỗ trợ CellZone</h3>
                 <p className="text-xs text-white/70">
-                  {connected ? "Đang kết nối..." : hasStarted ? "Trực tuyến" : "Bắt đầu trò chuyện"}
+                  {connected ? "Trực tuyến" : hasStarted ? "Đang kết nối..." : "Bắt đầu trò chuyện"}
                 </p>
               </div>
             </div>

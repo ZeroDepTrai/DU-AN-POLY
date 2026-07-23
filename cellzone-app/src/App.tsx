@@ -59,7 +59,7 @@ function MainLayout() {
   };
 
   const renderTab = () => {
-    if (loading) {
+    if (loading && activeTab === "dashboard") {
       return (
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
