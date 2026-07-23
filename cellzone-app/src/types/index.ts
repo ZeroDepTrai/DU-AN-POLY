@@ -24,6 +24,7 @@ export interface Product {
   description?: string;
   specifications?: string;
   image_url: string;
+  is_active?: boolean;
   created_at?: string;
 }
 
@@ -62,6 +63,7 @@ export interface BlogPost {
   tags?: string;
   image_url?: string;
   author_name?: string;
+  is_active?: boolean;
   created_at?: string;
 }
 

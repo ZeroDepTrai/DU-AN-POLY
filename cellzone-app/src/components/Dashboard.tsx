@@ -221,10 +221,10 @@ export default function Dashboard({ products, orders }: DashboardProps) {
                   paddingAngle={3}
                   dataKey="value"
                 >
-                  {ordersByStatus.map((entry, index) => (
+                  {ordersByStatus.map((entry) => (
                     <Cell
                       key={entry.name}
-                      fill={Object.values(STATUS_COLORS)[index % Object.values(STATUS_COLORS).length]}
+                      fill={STATUS_COLORS[entry.name] || "#8b8b9a"}
                     />
                   ))}
                 </Pie>
@@ -247,14 +247,10 @@ export default function Dashboard({ products, orders }: DashboardProps) {
               <div key={item.name} className="flex items-center gap-1.5 text-xs">
                 <div
                   className="w-2.5 h-2.5 rounded-full"
-                  style={{
-                    backgroundColor:
-                      STATUS_COLORS[item.name.replace("Chờ xử lý", "pending")?.toLowerCase()] ||
-                      "#8b8b9a",
-                  }}
+                  style={{ backgroundColor: STATUS_COLORS[item.name] || "#8b8b9a" }}
                 />
                 <span className="text-[#8b8b9a]">
-                  {item.name}: {item.value}
+                  {STATUS_LABELS[item.name] || item.name}: {item.value}
                 </span>
               </div>
             ))}

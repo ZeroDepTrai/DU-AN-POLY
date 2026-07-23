@@ -42,7 +42,7 @@ def get_analytics_overview(
                 SELECT COALESCE(SUM(oi.quantity * oi.unit_price), 0) as total
                 FROM orders o
                 JOIN order_items oi ON o.id = oi.order_id
-                WHERE o.status IN ('delivered', 'completed')
+                WHERE o.status = 'delivered'
             """)
         ).scalar()
         if result:
@@ -102,7 +102,7 @@ def get_revenue_analytics(
                     FROM orders o
                     JOIN order_items oi ON o.id = oi.order_id
                     WHERE DATE(o.updated_at AT TIME ZONE 'UTC') = :date
-                    AND o.status IN ('delivered', 'completed')
+                    AND o.status = 'delivered'
                 """),
                 {"date": date_str}
             ).scalar()
@@ -119,7 +119,7 @@ def get_orders_by_status(
     db: Session = Depends(get_db),
 ):
     """Get order count by status."""
-    status_labels = ["Pending", "Processing", "Shipped", "In Transit", "Delivered"]
+    status_labels = ["pending", "processing", "shipped", "in_transit", "delivered"]
     status_values = [OrderStatus.pending, OrderStatus.processing, OrderStatus.shipped,
                      OrderStatus.in_transit, OrderStatus.delivered]
 
@@ -150,7 +150,7 @@ def get_top_products(
                 SELECT p.name, COALESCE(SUM(oi.quantity), 0) as total_sold
                 FROM products p
                 LEFT JOIN order_items oi ON p.id = oi.product_id
-                LEFT JOIN orders o ON oi.order_id = o.id AND o.status IN ('delivered', 'completed')
+                LEFT JOIN orders o ON oi.order_id = o.id AND o.status = 'delivered'
                 GROUP BY p.id, p.name
                 ORDER BY total_sold DESC
                 LIMIT :limit

@@ -130,6 +130,16 @@ export const productsApi = {
 
   get: (id: number) => request<Product>(`/products/${id}`),
 
+  // Admin endpoints
+  listAdmin: () => request<Product[]>("/admin/products"),
+
+  quickAdd: (formData: FormData) =>
+    fetch(`${getApiBase()}/admin/products/quick`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData,
+    }).then((r) => r.json()),
+
   create: (formData: FormData) =>
     fetch(`${getApiBase()}/admin/products`, {
       method: "POST",
@@ -143,6 +153,12 @@ export const productsApi = {
       headers: { Authorization: `Bearer ${getToken()}` },
       body: formData,
     }).then((r) => r.json()),
+
+  softDelete: (id: number) =>
+    request<{ ok: boolean }>(`/admin/products/${id}/soft-delete`, { method: "POST" }),
+
+  restore: (id: number) =>
+    request<Product>(`/admin/products/${id}/restore`, { method: "POST" }),
 
   delete: (id: number) =>
     request<{ ok: boolean }>(`/admin/products/${id}`, { method: "DELETE" }),
@@ -170,6 +186,9 @@ export const blogApi = {
   list: () => request<BlogPost[]>("/blog"),
 
   get: (id: number) => request<BlogPost>(`/blog/${id}`),
+
+  // Admin endpoints
+  listAdmin: () => request<BlogPost[]>("/admin/blog"),
 
   create: (formData: FormData) =>
     fetch(`${getApiBase()}/admin/blog`, {
