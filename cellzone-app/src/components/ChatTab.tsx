@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { useAuthStore } from "../stores/authStore";
-import { chatApi } from "../api/client";
+import { chatApi, getApiBase } from "../api/client";
 import { MessageCircle, Send, User } from "lucide-react";
 import type { Conversation } from "../types";
 import { useEffect } from "react";
@@ -15,6 +15,7 @@ export default function ChatTab() {
     setConversations,
     setActiveConversation,
     setMessages,
+    clearMessages,
     connect,
     reconnect,
     sendMessage,
@@ -22,11 +23,16 @@ export default function ChatTab() {
   const { user, token } = useAuthStore();
   const [messageInput, setMessageInput] = useState("");
   const [filter, setFilter] = useState<"all" | "waiting" | "active">("all");
+  const [sendError, setSendError] = useState("");
+  const [closingId, setClosingId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadConversations = async () => {
       try {
+        // Warm the proxy → Railway TLS connection before the expensive
+        // parallel requests below, so the first HTTPS round-trip is fast.
+        await fetch(`${getApiBase().replace(/\/api$/, "")}/api/health`).catch(() => {});
         const data = await chatApi.listConversations();
         setConversations(data);
       } catch {
@@ -64,32 +70,73 @@ export default function ChatTab() {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [reconnect]);
 
+  // Keep activeConversation status in sync with real-time conversation_update
+  // events. Without this, closing a conversation in another tab or by another
+  // agent leaves the chat window showing the old (non-closed) status.
+  useEffect(() => {
+    if (!activeConversation) return;
+    const unsubscribe = useChatStore.subscribe((state, _prev) => {
+      const updated = state.conversations.find((c) => c.id === activeConversation.id);
+      if (updated && updated.status !== activeConversation.status) {
+        useChatStore.getState().setActiveConversation(updated);
+      }
+    });
+    return unsubscribe;
+  }, [activeConversation]);
+
   const loadMessages = async (conv: Conversation) => {
     if (!conv) return;
-    try {
-      const data = await chatApi.getMessages(conv.id);
-      setMessages(data);
-      await chatApi.markRead(conv.id);
-    } catch {
-      console.error("Failed to load messages");
-    }
+    // Warm the proxy → Railway TLS in case the connection has gone idle.
+    await fetch(`${getApiBase().replace(/\/api$/, "")}/api/health`).catch(() => {});
+    // Fire all three requests in parallel — the user sees messages immediately.
+    await Promise.allSettled([
+      chatApi.getMessages(conv.id).then((data) => setMessages(data)),
+      user?.id
+        ? chatApi.assignConversation(conv.id, user.id).catch(() =>
+            console.error("Failed to assign conversation"),
+          )
+        : Promise.resolve(),
+      chatApi.markRead(conv.id).catch(() =>
+        console.error("Failed to mark read"),
+      ),
+    ]);
   };
 
   const selectConversation = async (conv: Conversation) => {
+    // Skip if clicking the same conversation that's already selected.
+    if (activeConversation?.id === conv.id) return;
     setActiveConversation(conv);
+    // Clear stale messages IMMEDIATELY — don't let old messages linger while
+    // the new conversation's messages are loading from the network.
+    clearMessages();
     loadMessages(conv);
-    if (user?.id) {
-      try {
-        await chatApi.assignConversation(conv.id, user.id);
-      } catch {
-        console.error("Failed to assign conversation");
+  };
+
+  const handleCloseConversation = async (conv: Conversation) => {
+    if (!window.confirm(`Kết thúc cuộc trò chuyện với "${conv.customer_name}"?\nHành động này không thể hoàn tác.`)) return;
+    setClosingId(conv.id);
+    try {
+      await chatApi.closeConversation(conv.id);
+      // If this was the active conversation, deselect it.
+      if (activeConversation?.id === conv.id) {
+        setActiveConversation(null);
+        clearMessages();
       }
+    } catch {
+      console.error("Failed to close conversation");
+    } finally {
+      setClosingId(null);
     }
   };
 
   const handleSend = () => {
     const trimmed = messageInput.trim();
     if (!trimmed || !activeConversation) return;
+    if (activeConversation.status === "closed") {
+      setSendError("Cuộc trò chuyện này đã đóng.");
+      return;
+    }
+    setSendError("");
     // Add an optimistic placeholder so the agent's reply is visible
     // immediately. The WebSocket broadcast will replace it with the
     // server's authoritative row (matched by client_id).
@@ -197,6 +244,16 @@ export default function ChatTab() {
                   {conv.assigned_name && (
                     <span className="text-[10px] text-[#5a5a6a]">-&gt; {conv.assigned_name}</span>
                   )}
+                  {conv.status !== "closed" && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleCloseConversation(conv); }}
+                      disabled={closingId === conv.id}
+                      className="ml-auto text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1 disabled:opacity-50"
+                      title="Kết thúc cuộc trò chuyện"
+                    >
+                      {closingId === conv.id ? "..." : "✕"}
+                    </button>
+                  )}
                 </div>
               </button>
             ))
@@ -218,13 +275,25 @@ export default function ChatTab() {
                   <p className="text-xs text-[#5a5a6a]">{activeConversation.customer_email}</p>
                 </div>
               </div>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                activeConversation.status === "waiting" ? "bg-amber-500/20 text-amber-400" :
-                activeConversation.status === "active" ? "bg-emerald-500/20 text-emerald-400" :
-                "bg-gray-500/20 text-gray-400"
-              }`}>
-                {activeConversation.status === "waiting" ? "Đang chờ" : activeConversation.status === "active" ? "Đang trò chuyện" : "Đã đóng"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  activeConversation.status === "waiting" ? "bg-amber-500/20 text-amber-400" :
+                  activeConversation.status === "active" ? "bg-emerald-500/20 text-emerald-400" :
+                  "bg-gray-500/20 text-gray-400"
+                }`}>
+                  {activeConversation.status === "waiting" ? "Đang chờ" : activeConversation.status === "active" ? "Đang trò chuyện" : "Đã đóng"}
+                </span>
+                {activeConversation.status !== "closed" && (
+                  <button
+                    onClick={() => handleCloseConversation(activeConversation)}
+                    disabled={closingId === activeConversation.id}
+                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                    title="Kết thúc cuộc trò chuyện"
+                  >
+                    {closingId === activeConversation.id ? "..." : "Kết thúc"}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -252,6 +321,14 @@ export default function ChatTab() {
               })}
               <div ref={messagesEndRef} />
             </div>
+
+            {sendError && (
+              <div className="px-4 pb-2">
+                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                  {sendError}
+                </p>
+              </div>
+            )}
 
             {activeConversation.status !== "closed" && (
               <div className="p-4 border-t border-white/10">

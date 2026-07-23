@@ -63,21 +63,25 @@ export function normalizeMediaUrl(url: string | null | undefined): string {
 
 function getToken(): string | null {
   try {
-    const stored = localStorage.getItem("cellzone-auth");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return parsed.state?.token || null;
-    }
+    const raw = localStorage.getItem("cellzone-auth");
+    if (!raw) return null;
+    // Zustand persist wraps state in { state: { user, token, ... }, version, name }.
+    // Support both raw token string (fallback) and persisted store shape.
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "string") return parsed;
+    return (parsed.state?.token as string | null) ?? (parsed.token as string | null) ?? null;
   } catch {
     return null;
   }
-  return null;
 }
 
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
   const token = getToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -85,17 +89,28 @@ async function request<T>(
     ...options.headers,
   };
 
-  const response = await fetch(`${getApiBase()}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${getApiBase()}${endpoint}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: "Request failed" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Request failed" }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("Yêu cầu hết thời gian chờ (10 giây). Vui lòng kiểm tra kết nối mạng.");
+    }
+    throw err;
   }
-
-  return response.json();
 }
 
 // Auth API
@@ -326,16 +341,16 @@ export const ratingsApi = {
     }),
 };
 
-// Settings API
+// Settings API — backed by /api/admin/admin-emails
 export const settingsApi = {
-  listEmails: () => request<NotificationEmail[]>("/settings/emails"),
+  listEmails: () => request<NotificationEmail[]>("/admin/admin-emails"),
 
   addEmail: (email: string) =>
-    request<NotificationEmail>("/settings/emails", {
+    request<NotificationEmail>("/admin/admin-emails", {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
 
   deleteEmail: (id: number) =>
-    request<{ ok: boolean }>(`/settings/emails/${id}`, { method: "DELETE" }),
+    request<{ ok: boolean }>(`/admin/admin-emails/${id}`, { method: "DELETE" }),
 };

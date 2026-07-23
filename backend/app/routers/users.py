@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import create_access_token, get_current_user, hash_password, require_admin
+from app.deps import create_access_token, get_current_user, hash_password, require_admin, require_customer_support
 from app.models import User, UserRole
 from app.schemas import (
     SupportUserCreate,
@@ -19,10 +19,10 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 
 @router.get("", response_model=list[SupportUserResponse])
 def list_users(
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_customer_support),
     db: Session = Depends(get_db),
 ):
-    """List all users (admin only)."""
+    """List all users (admin and customer support can view)."""
     users = db.query(User).order_by(User.id.desc()).all()
     return [
         SupportUserResponse(
@@ -30,7 +30,7 @@ def list_users(
             email=u.email,
             role=u.role,
             name=u.name,
-            created_at=u.id,  # simplified
+            created_at=u.created_at.isoformat() if u.created_at else None,
         )
         for u in users
     ]
@@ -39,10 +39,10 @@ def list_users(
 @router.post("/support", response_model=SupportUserResponse)
 def create_support_user(
     payload: SupportUserCreate,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_customer_support),
     db: Session = Depends(get_db),
 ):
-    """Create a customer support account (admin only)."""
+    """Create a customer support account (admin or support can create)."""
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise HTTPException(
@@ -65,16 +65,17 @@ def create_support_user(
         email=user.email,
         role=user.role,
         name=user.name,
+        created_at=user.created_at.isoformat() if user.created_at else None,
     )
 
 
 @router.delete("/{user_id}")
 def delete_user(
     user_id: int,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_customer_support),
     db: Session = Depends(get_db),
 ):
-    """Delete a user (admin only, cannot delete self)."""
+    """Delete a user (admin and customer support, cannot delete self)."""
     if user_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

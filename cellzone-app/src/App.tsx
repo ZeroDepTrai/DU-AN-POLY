@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "./stores/authStore";
 import { useState, useEffect } from "react";
-import { productsApi, ordersApi } from "./api/client";
+import { productsApi, ordersApi, getApiBase } from "./api/client";
 
 import Login from "./components/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -45,6 +45,11 @@ function MainLayout() {
 
   const loadData = async () => {
     try {
+      // Warm up the TLS connection to Railway before the heavy parallel requests.
+      // Without this, the first fetch pays ~400ms for TLS alone on top of the
+      // data round-trip, making the dashboard feel sluggish on cold starts.
+      await fetch(`${getApiBase().replace(/\/api$/, "")}/api/health`).catch(() => {});
+
       const [prods, ords] = await Promise.all([
         productsApi.list().catch(() => []),
         ordersApi.list().catch(() => []),

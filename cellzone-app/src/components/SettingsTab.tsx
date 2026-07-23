@@ -26,7 +26,7 @@ export default function SettingsTab() {
       setSuccess("Thêm email thành công!");
       setTimeout(() => setSuccess(""), 3000);
     },
-    onError: (e: Error) => setError(e.message),
+    onError: (e: unknown) => setError((e as Error).message),
   });
 
   const deleteMutation = useMutation({
@@ -36,7 +36,7 @@ export default function SettingsTab() {
       setSuccess("Xóa email thành công!");
       setTimeout(() => setSuccess(""), 3000);
     },
-    onError: (e: Error) => setError(e.message),
+    onError: (e: unknown) => setError((e as Error).message),
   });
 
   const handleSubmit = (e: React.FormEvent) => {

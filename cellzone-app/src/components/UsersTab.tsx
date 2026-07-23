@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { usersApi } from "../api/client";
+import { usersApi, getApiBase } from "../api/client";
 import { useAuthStore } from "../stores/authStore";
-import { Plus, Trash2, Shield, UserCog } from "lucide-react";
+import { User } from "../types";
+import { Plus, Trash2, Shield, UserCog, RefreshCw } from "lucide-react";
 
 export default function UsersTab() {
   const { user: currentUser } = useAuthStore();
@@ -13,9 +14,17 @@ export default function UsersTab() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, isError, error: queryError } = useQuery({
     queryKey: ["users"],
-    queryFn: usersApi.list,
+    queryFn: async () => {
+      // Warm the proxy → Railway TLS connection before the request,
+      // so the first HTTPS round-trip is fast instead of waiting ~400ms
+      // for TLS alone.
+      await fetch(`${getApiBase().replace(/\/api$/, "")}/api/health`).catch(() => {});
+      return usersApi.list();
+    },
+    retry: 1,
+    staleTime: 30_000,
   });
 
   const createMutation = useMutation({
@@ -29,7 +38,7 @@ export default function UsersTab() {
       setSuccess("Tạo tài khoản hỗ trợ thành công!");
       setTimeout(() => setSuccess(""), 3000);
     },
-    onError: (e: Error) => setError(e.message),
+    onError: (e: unknown) => setError((e as Error).message),
   });
 
   const deleteMutation = useMutation({
@@ -39,7 +48,7 @@ export default function UsersTab() {
       setSuccess("Xóa tài khoản thành công!");
       setTimeout(() => setSuccess(""), 3000);
     },
-    onError: (e: Error) => setError(e.message),
+    onError: (e: unknown) => setError((e as Error).message),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -113,11 +122,35 @@ export default function UsersTab() {
 
       {/* Users List */}
       <div className="glass-card overflow-hidden">
-        <div className="border-b border-white/10 px-4 py-3">
+        <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between">
           <span className="text-sm text-[#8b8b9a]">{users.length} người dùng</span>
+          {(isError || isLoading) && (
+            <button
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["users"] })}
+              className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Tải lại
+            </button>
+          )}
         </div>
         {isLoading ? (
           <div className="p-8 text-center text-[#8b8b9a]">Đang tải...</div>
+        ) : isError ? (
+          <div className="p-8 text-center">
+            <p className="text-red-400 text-sm mb-3">
+              {queryError instanceof Error
+                ? queryError.message
+                : "Không thể kết nối máy chủ. Vui lòng thử lại."}
+            </p>
+            <button
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["users"] })}
+              className="glass-button px-4 py-2 text-sm text-[#f0f0f5] flex items-center gap-2 mx-auto"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Thử lại
+            </button>
+          </div>
         ) : users.length === 0 ? (
           <div className="p-8 text-center text-[#8b8b9a]">Chưa có người dùng nào.</div>
         ) : (
@@ -130,7 +163,7 @@ export default function UsersTab() {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
+              {users.map((u: User) => (
                 <tr key={u.id} className="border-t border-white/10 hover:bg-white/5">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -142,6 +175,9 @@ export default function UsersTab() {
                       <div>
                         <p className="font-medium text-[#f0f0f5]">{u.email}</p>
                         {u.id === currentUser?.id && <span className="text-[10px] text-indigo-400">(Bạn)</span>}
+                        {u.created_at && !isNaN(new Date(u.created_at).getTime()) && (
+                          <span className="ml-2 text-xs text-[#5a5a6a]">{new Date(u.created_at).toLocaleDateString("vi-VN")}</span>
+                        )}
                       </div>
                     </div>
                   </td>

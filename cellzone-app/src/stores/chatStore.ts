@@ -13,6 +13,7 @@ interface ChatState {
   setConversations: (convs: Conversation[]) => void;
   setActiveConversation: (conv: Conversation | null) => void;
   setMessages: (msgs: ChatMessage[]) => void;
+  clearMessages: () => void;
   addMessage: (msg: ChatMessage) => void;
   updateConversation: (conv: Conversation) => void;
   setConnected: (connected: boolean) => void;
@@ -58,6 +59,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setMessages: (msgs) => set({ messages: msgs }),
+
+  clearMessages: () => set({ messages: [] }),
 
   addMessage: (msg) => set((state) => ({
     messages: [...state.messages, msg],

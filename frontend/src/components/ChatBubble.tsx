@@ -33,6 +33,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
   const [connected, setConnected] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Determine URLs based on environment
@@ -239,6 +240,27 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [connected, isAuthenticated, connectWebSocket]);
 
+  const handleEndChat = async () => {
+    if (!conversationId) return;
+    setShowEndConfirm(false);
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${finalApiBase}/chat/conversations/${conversationId}/close`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+    } catch {
+      // Non-critical: conversation stays open on the UI even if close fails.
+    }
+    setHasStarted(false);
+    setConversationId(null);
+    setMessages([]);
+    setIsOpen(false);
+  };
+
   const startChat = async () => {
     if (!isAuthenticated || !user) return;
 
@@ -363,6 +385,39 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
         </div>
       )}
 
+      {/* End Chat Confirmation Modal */}
+      {showEndConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-white/10 bg-[#12121a] p-6 shadow-2xl">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg">
+                <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </div>
+              <h3 className="mb-2 text-xl font-bold text-warmwhite">Kết thúc cuộc trò chuyện?</h3>
+              <p className="mb-6 text-sm text-softgray">
+                Bạn có chắc muốn kết thúc cuộc trò chuyện này không? Hành động này không thể hoàn tác.
+              </p>
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={() => setShowEndConfirm(false)}
+                  className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-warmwhite backdrop-blur-xl transition-all hover:bg-white/[0.08]"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleEndChat}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-all hover:opacity-90"
+                >
+                  Kết thúc
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chat Button */}
       <button
         onClick={handleBubbleClick}
@@ -408,6 +463,15 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
             </div>
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setShowEndConfirm(true)}
+                title="Kết thúc cuộc trò chuyện"
+                className="rounded p-1 transition-colors hover:bg-white/20"
+              >
+                <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </button>
+              <button
                 onClick={() => setIsMinimized(!isMinimized)}
                 className="rounded p-1 transition-colors hover:bg-white/20"
               >
@@ -416,7 +480,13 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
                 </svg>
               </button>
               <button
-                onClick={() => { setIsOpen(false); setIsMinimized(false); }}
+                onClick={() => {
+                  if (hasStarted && messages.length > 0) {
+                    if (!window.confirm("Bạn có chắc muốn đóng cửa sổ chat? Cuộc trò chuyện của bạn sẽ được giữ lại.")) return;
+                  }
+                  setIsOpen(false);
+                  setIsMinimized(false);
+                }}
                 className="rounded p-1 transition-colors hover:bg-white/20"
               >
                 <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

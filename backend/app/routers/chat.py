@@ -228,6 +228,33 @@ def mark_conversation_read(
 # Public endpoints for website chat bubble
 # ──────────────────────────────────────────────────────────────────────────────
 
+@router.post("/conversations/{conversation_id}/close", response_model=dict)
+def customer_close_conversation(
+    conversation_id: str,
+    db: Session = Depends(get_db),
+):
+    """Allow a customer to close their own conversation."""
+    conv = db.get(ChatConversation, conversation_id)
+    if not conv:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    conv.status = "closed"
+    conv.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(conv)
+
+    # Broadcast so connected agents see the conversation close in real-time.
+    try:
+        await manager.chat_broadcast({
+            "type": "conversation_update",
+            "conversation": _conversation_to_response(conv, db).model_dump(mode="json"),
+        })
+    except Exception:
+        pass
+
+    return {"ok": True}
+
+
 @router.post("/start", response_model=ChatConversationResponse)
 async def start_conversation(
     payload: ChatStartRequest,
