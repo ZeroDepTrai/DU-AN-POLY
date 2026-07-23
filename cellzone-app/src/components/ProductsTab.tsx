@@ -180,7 +180,7 @@ export default function ProductsTab() {
     setShowForm(false);
     setError("");
     setCustomSpecLabels([]);
-    setCustomSpecLabel([]);
+    setCustomSpecLabel("");
   };
 
   const parseSpecs = (specsStr: string): Record<string, string> => {
@@ -232,14 +232,28 @@ export default function ProductsTab() {
     deleteMutation.mutate(p.id);
   };
 
-  const toggleTag = (tag: string, tags: string[], setTags: React.Dispatch<React.SetStateAction<string[]>>) => {
-    const t = tag.toLowerCase();
-    setTags(tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t]);
+  const handleToggleFormTag = (tag: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag.toLowerCase())
+        ? prev.tags.filter((x) => x !== tag.toLowerCase())
+        : [...prev.tags, tag.toLowerCase()],
+    }));
   };
 
-  const addCustomTag = (tags: string[], setTags: React.Dispatch<React.SetStateAction<string[]>>) => {
+  const handleToggleQuickTag = (tag: string) => {
+    const t = tag.toLowerCase();
+    setQuickForm((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(t) ? prev.tags.filter((x) => x !== t) : [...prev.tags, t],
+    }));
+  };
+
+  const handleAddCustomTag = () => {
     const t = tagInput.trim().toLowerCase();
-    if (t && !tags.includes(t)) setTags([...tags, t]);
+    if (t && !formData.tags.includes(t)) {
+      setFormData((prev) => ({ ...prev, tags: [...prev.tags, t] }));
+    }
     setTagInput("");
   };
 
@@ -321,8 +335,8 @@ export default function ProductsTab() {
               type="button"
               onClick={() => {
                 if (showForm) {
-                  if (tab === "quick") toggleTag(tag, quickForm.tags, setQuickForm);
-                  else toggleTag(tag, formData.tags, setFormData);
+                  if (tab === "quick") handleToggleQuickTag(tag);
+                  else handleToggleFormTag(tag);
                 }
               }}
               className="rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer glass hover:bg-white/10 text-[#8b8b9a] hover:text-[#f0f0f5]"
@@ -429,7 +443,7 @@ export default function ProductsTab() {
                   {quickForm.tags.map((t) => (
                     <span key={t} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-xs">
                       {t}
-                      <button type="button" onClick={() => toggleTag(t, quickForm.tags, setQuickForm)} className="hover:text-white">×</button>
+                      <button type="button" onClick={() => handleToggleQuickTag(t)} className="hover:text-white">×</button>
                     </span>
                   ))}
                 </div>
@@ -466,7 +480,7 @@ export default function ProductsTab() {
                 <label className="block text-sm text-[#8b8b9a] mb-2">Nhãn</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {PHONE_TAG_PRESETS.map((tag) => (
-                    <button key={tag} type="button" onClick={() => toggleTag(tag, formData.tags, setFormData)}
+                    <button key={tag} type="button" onClick={() => handleToggleFormTag(tag)}
                       className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                         formData.tags.includes(tag.toLowerCase())
                           ? "bg-indigo-500 text-white"
@@ -479,16 +493,16 @@ export default function ProductsTab() {
                 <div className="flex gap-2">
                   <input type="text" value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomTag(formData.tags, setFormData))}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCustomTag())}
                     placeholder="Thêm nhãn tùy chỉnh..." className="flex-1 glass-input text-sm" />
-                  <button type="button" onClick={() => addCustomTag(formData.tags, setFormData)} className="glass-button px-3">+</button>
+                  <button type="button" onClick={handleAddCustomTag} className="glass-button px-3">+</button>
                 </div>
                 {formData.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {formData.tags.map((t) => (
                       <span key={t} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-xs">
                         {t}
-                        <button type="button" onClick={() => toggleTag(t, formData.tags, setFormData)} className="hover:text-white">×</button>
+                        <button type="button" onClick={() => handleToggleFormTag(t)} className="hover:text-white">×</button>
                       </span>
                     ))}
                   </div>

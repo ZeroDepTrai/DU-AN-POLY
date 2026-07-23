@@ -101,6 +101,31 @@ export default function BlogTab() {
     setShowForm(true);
   };
 
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") { e.preventDefault(); addCustomTag(); }
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const fd = new FormData();
+      fd.append("title", form.title);
+      fd.append("content", form.content);
+      fd.append("tags", selectedTags.join(","));
+      if (imageFile) fd.append("image", imageFile);
+      if (coverPreview) fd.append("cover_image_url", coverPreview);
+      return editing ? blogApi.update(editing.id, fd) : blogApi.create(fd);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-blog"] });
+      queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["blog"] });
+      resetForm();
+      setSuccess(editing ? "Cập nhật bài viết thành công!" : "Đăng bài viết thành công!");
+      setTimeout(() => setSuccess(""), 3000);
+    },
+    onError: (e: unknown) => setError((e as Error).message),
+  });
+
   const handleSubmit = () => {
     if (!form.title.trim()) { setError("Tiêu đề không được để trống"); return; }
     if (!form.content.trim() || form.content === "<p></p>") { setError("Nội dung không được để trống"); return; }
@@ -179,6 +204,23 @@ export default function BlogTab() {
               {tag}
             </button>
           ))}
+          <div className="flex items-center gap-1 ml-2">
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagKeyDown}
+              placeholder="Thêm nhãn..."
+              className="glass-input text-xs h-7 w-28 px-2 py-1"
+            />
+            <button
+              type="button"
+              onClick={addCustomTag}
+              className="h-7 w-7 flex items-center justify-center rounded glass text-[#8b8b9a] hover:text-[#f0f0f5] text-sm"
+            >
+              +
+            </button>
+          </div>
           {selectedTags.length > 0 && (
             <button type="button" onClick={() => setSelectedTags([])}
               className="text-xs text-[#5a5a6a] hover:text-red-400 ml-1 underline">
