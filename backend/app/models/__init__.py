@@ -96,6 +96,10 @@ class Order(Base):
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
     coupon_id: Mapped[int | None] = mapped_column(ForeignKey("coupons.id"), nullable=True, index=True)
     coupon: Mapped[Optional["Coupon"]] = relationship()
+    created_at: Mapped[datetime] = mapped_column(
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
 
 
 class OrderItem(Base):

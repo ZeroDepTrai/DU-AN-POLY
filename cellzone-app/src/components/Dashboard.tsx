@@ -68,7 +68,7 @@ export default function Dashboard({ products, orders }: DashboardProps) {
       }
       if (byStatus.labels.length) {
         setOrdersByStatus(byStatus.labels.map((label, i) => ({
-          name: STATUS_LABELS[label] || label,
+          name: label, // English key for status color lookup
           value: byStatus.values[i],
         })));
       }

@@ -101,7 +101,7 @@ def get_revenue_analytics(
                     SELECT COALESCE(SUM(oi.quantity * oi.unit_price), 0) as daily_total
                     FROM orders o
                     JOIN order_items oi ON o.id = oi.order_id
-                    WHERE DATE(o.updated_at AT TIME ZONE 'UTC') = :date
+                    WHERE DATE(o.created_at AT TIME ZONE 'UTC') = :date
                     AND o.status = 'delivered'
                 """),
                 {"date": date_str}
