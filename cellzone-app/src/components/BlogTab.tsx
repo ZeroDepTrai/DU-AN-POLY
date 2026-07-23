@@ -105,27 +105,6 @@ export default function BlogTab() {
     if (e.key === "Enter") { e.preventDefault(); addCustomTag(); }
   };
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const fd = new FormData();
-      fd.append("title", form.title);
-      fd.append("content", form.content);
-      fd.append("tags", selectedTags.join(","));
-      if (imageFile) fd.append("image", imageFile);
-      if (coverPreview) fd.append("cover_image_url", coverPreview);
-      return editing ? blogApi.update(editing.id, fd) : blogApi.create(fd);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-blog"] });
-      queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
-      queryClient.invalidateQueries({ queryKey: ["blog"] });
-      resetForm();
-      setSuccess(editing ? "Cập nhật bài viết thành công!" : "Đăng bài viết thành công!");
-      setTimeout(() => setSuccess(""), 3000);
-    },
-    onError: (e: unknown) => setError((e as Error).message),
-  });
-
   const handleSubmit = () => {
     if (!form.title.trim()) { setError("Tiêu đề không được để trống"); return; }
     if (!form.content.trim() || form.content === "<p></p>") { setError("Nội dung không được để trống"); return; }
