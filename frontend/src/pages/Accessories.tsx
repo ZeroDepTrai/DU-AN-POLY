@@ -17,11 +17,11 @@ const CATEGORIES: { label: string; keywords: string[] }[] = [
 ];
 const COMPATIBILITY = ["iPhone", "Samsung", "Xiaomi", "OPPO", "Universal"];
 const PRICE_RANGE = [
-  { label: "Tất cả", min: 0, max: Infinity },
+  { label: "Tất cả", min: 0, max: null as number | null },
   { label: "Dưới 100K", min: 0, max: 100000 },
   { label: "100K - 300K", min: 100000, max: 300000 },
   { label: "300K - 500K", min: 300000, max: 500000 },
-  { label: "Trên 500K", min: 500000, max: Infinity },
+  { label: "Trên 500K", min: 500000, max: null },
 ];
 
 function matchesCategory(tags: string, cat: { keywords: string[] }) {
@@ -52,11 +52,9 @@ export default function Accessories() {
   const filtered = useMemo(() => {
     return allProducts.filter((p) => {
       const isAllPrices = selectedPrice === PRICE_RANGE[0];
-      if (
-        !isAllPrices &&
-        (p.price < selectedPrice.min || p.price >= selectedPrice.max)
-      ) {
-        return false;
+      if (!isAllPrices) {
+        if (p.price < selectedPrice.min) return false;
+        if (selectedPrice.max !== null && p.price > selectedPrice.max) return false;
       }
       if (selectedCategories.length > 0) {
         const cats = CATEGORIES.filter((c) => selectedCategories.includes(c.label));

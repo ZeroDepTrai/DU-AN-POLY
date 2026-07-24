@@ -169,6 +169,8 @@ def search_products(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=100),
     search: str | None = Query(default=None),
+    price_min: int | None = Query(default=None, ge=0),
+    price_max: int | None = Query(default=None, ge=0),
     db: Session = Depends(get_db),
     viewer: User | None = Depends(get_optional_user),
 ):
@@ -180,6 +182,10 @@ def search_products(
         query = query.filter(Product.tags.ilike(f"%{brand}%"))
     if search:
         query = query.filter(Product.name.ilike(f"%{search}%"))
+    if price_min is not None:
+        query = query.filter(Product.price >= price_min)
+    if price_max is not None:
+        query = query.filter(Product.price <= price_max)
 
     total = query.with_entities(Product.id).count()
 

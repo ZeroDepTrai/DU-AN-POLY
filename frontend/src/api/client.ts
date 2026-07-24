@@ -119,7 +119,7 @@ export const authApi = {
 export const productsApi = {
   list: (tag?: string) =>
     api.get<Product[]>("/api/products", { params: tag ? { tag } : undefined }),
-  search: (params?: { tag?: string; brand?: string; sort?: string; page?: number; limit?: number; search?: string }) =>
+  search: (params?: { tag?: string; brand?: string; sort?: string; page?: number; limit?: number; search?: string; price_min?: number; price_max?: number }) =>
     api.get<{ products: Product[]; total: number; page: number; limit: number; category: string; brand: string }>(
       "/api/products/search", { params }
     ),

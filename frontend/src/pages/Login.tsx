@@ -19,21 +19,17 @@ export default function Login() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>("");
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoginError("");
     setLoading(true);
-    setDebugInfo(`Trying to login to: ${import.meta.env.VITE_API_URL || "auto-detected"}`);
     try {
       await login(loginEmail, loginPassword);
-      setDebugInfo("Login successful! Redirecting...");
       navigate(redirectTo, { replace: true });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }; message?: string };
-      const msg = error.response?.data?.detail || error.message || "Unknown error";
-      setDebugInfo(`Login failed: ${msg}`);
+      console.error("Login failed:", error.response?.data?.detail || error.message || "Unknown error");
       setLoginError("Email hoặc mật khẩu không đúng");
     } finally {
       setLoading(false);
@@ -112,13 +108,6 @@ export default function Login() {
             {loginError && (
               <div className="rounded-xl border border-deeprose/40 bg-deeprose/10 p-3 text-sm text-lightpink">
                 {loginError}
-              </div>
-            )}
-
-            {/* Debug Info */}
-            {debugInfo && (
-              <div className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-400 font-mono">
-                {debugInfo}
               </div>
             )}
 

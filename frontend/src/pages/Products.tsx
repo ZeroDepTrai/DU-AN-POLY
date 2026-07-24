@@ -47,7 +47,7 @@ export default function Products() {
   );
 
   const { data, isLoading } = useQuery({
-    queryKey: ["products-search", brand, sort, page, search],
+    queryKey: ["products-search", brand, sort, page, search, priceMin, priceMax],
     queryFn: async () => {
       const resp = await productsApi.search({
         brand: brand || undefined,
@@ -55,21 +55,17 @@ export default function Products() {
         page,
         limit: PAGE_SIZE,
         search: search || undefined,
+        price_min: priceMin > 0 ? priceMin : undefined,
+        price_max: priceMax > 0 ? priceMax : undefined,
       });
       return resp.data;
     },
   });
 
-  const allProducts = data?.products ?? [];
+  const products = data?.products ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-
-  const products = allProducts.filter((p) => {
-    if (priceMin !== 0 && p.price < priceMin) return false;
-    if (priceMax !== 0 && p.price > priceMax) return false;
-    return true;
-  });
+  const currentPage = Math.min(Math.max(1, page), totalPages);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -226,7 +222,7 @@ export default function Products() {
             </>
           )}
 
-          {totalPages > 1 && (
+          {totalPages > 1 && products.length > 0 && (
             <div className="mt-10">
               <Pagination
                 currentPage={currentPage}
