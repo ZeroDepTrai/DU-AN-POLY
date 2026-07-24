@@ -108,10 +108,15 @@ export default function App() {
                 </Routes>
               </Suspense>
             </PageReadyGate>
+            {/* ChatBubble must live INSIDE <BrowserRouter/> because the
+                product-chip click handler calls useNavigate(). React
+                throws "useNavigate() may be used only in the context of
+                a <Router>" if it can't find a router ancestor, and that
+                error happens at mount time so the entire tree goes blank. */}
+            <ChatBubble />
           </BrowserRouter>
         </CartFlyProvider>
       </CartProvider>
-      <ChatBubble />
     </AuthProvider>
   );
 }
