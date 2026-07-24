@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 import traceback
@@ -249,6 +250,71 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Retention middleware
+#
+# Runs the chat / verification-code / coupon cleanup before each request,
+# but throttled so we don't hit Postgres with DELETE statements on every
+# page load. The middleware keeps a (last_run_ts, asyncio.Lock) pair at
+# module scope; if ``last_run_ts`` is within ``_RETENTION_INTERVAL_SECONDS``
+# the request passes through immediately, otherwise we acquire the lock
+# and run :func:`app.services.retention.run_retention` synchronously.
+#
+# Health probes are skipped so monitoring pings don't queue up writes.
+# The cleanup itself is exception-safe: any DB error is logged and
+# swallowed, never propagated to the request handler.
+# ─────────────────────────────────────────────────────────────────────────────
+_RETENTION_INTERVAL_SECONDS = 60
+_retention_last_run: float = 0.0
+_retention_lock = asyncio.Lock()
+
+# Paths that should never trigger retention. Mostly health probes +
+# Vercel's build/asset URLs that hit the same domain.
+_RETENTION_SKIP_PREFIXES = ("/api/health",)
+
+
+class RetentionMiddleware:
+    """Throttled pre-request cleanup for short-lived tables."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        if not settings.retention_enabled:
+            await self.app(scope, receive, send)
+            return
+        path = scope.get("path", "") or ""
+        if any(path.startswith(p) for p in _RETENTION_SKIP_PREFIXES):
+            await self.app(scope, receive, send)
+            return
+
+        global _retention_last_run
+        now = asyncio.get_event_loop().time()
+        should_run = (now - _retention_last_run) >= _RETENTION_INTERVAL_SECONDS
+        if should_run:
+            # Only one coroutine enters the cleanup at a time. Other
+            # in-flight requests skip the cleanup and proceed.
+            if not _retention_lock.locked():
+                async with _retention_lock:
+                    _retention_last_run = asyncio.get_event_loop().time()
+                    try:
+                        from app.services.retention import run_retention
+                        await asyncio.to_thread(run_retention)
+                    except Exception as exc:  # pragma: no cover - defensive
+                        import logging
+                        logging.getLogger("uvicorn.error").warning(
+                            "[retention] middleware error: %s", exc,
+                        )
+
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(RetentionMiddleware)
 
 uploads_path = Path(settings.upload_dir)
 uploads_path.mkdir(parents=True, exist_ok=True)

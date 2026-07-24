@@ -25,6 +25,17 @@ class Settings(BaseSettings):
     # canned reply instead of calling Gemini. The value is read from the
     # ``GEMINI_API_KEY`` environment variable; never hard-code a real key here.
     gemini_api_key: str = ""
+    # How long chat conversations + messages are kept before the
+    # retention middleware hard-deletes them. Default 4 days — long
+    # enough that any support follow-up can still read history, short
+    # enough to keep the chat_messages table from growing without
+    # bound. Set to 0 to disable chat retention entirely. Override
+    # via the ``CHAT_RETENTION_DAYS`` env var.
+    chat_retention_days: int = 4
+    # Master switch for the retention middleware itself. Default True.
+    # Set ``RETENTION_ENABLED=false`` on Railway to disable in case
+    # retention needs to be paused for a migration or incident.
+    retention_enabled: bool = True
 
     @property
     def database_url_final(self) -> str:

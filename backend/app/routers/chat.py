@@ -339,21 +339,21 @@ async def start_conversation(
     payload: ChatStartRequest,
     db: Session = Depends(get_db),
 ):
-    """Start a new chat conversation from the website."""
+    """Start a new chat conversation from the website.
+
+    Every call creates a *fresh* conversation row — we deliberately do
+    NOT reuse an existing waiting conversation here. Two reasons:
+
+    1. The AI greeting is meant to fire on every "Bắt đầu trò chuyện"
+       click. If we returned the old conversation the greeting would
+       only land once per email and subsequent clicks would open a
+       half-finished thread instead of starting over.
+    2. Each new click is an explicit user intent to start fresh, and
+       support agents see every conversation as its own row in the
+       admin sidebar. Reusing old threads would mix unrelated
+       customer questions together.
+    """
     conv_id = str(uuid.uuid4())
-
-    # Check for existing waiting conversation from same email
-    existing = (
-        db.query(ChatConversation)
-        .filter(
-            ChatConversation.customer_email == payload.customer_email,
-            ChatConversation.status == "waiting",
-        )
-        .first()
-    )
-
-    if existing:
-        return _conversation_to_response(existing, db)
 
     conv = ChatConversation(
         id=conv_id,
