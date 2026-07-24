@@ -229,6 +229,7 @@ export default function Products() {
                 totalPages={totalPages}
                 onPageChange={(p) => setParam("page", String(p))}
                 baseUrl="/products"
+                searchParams={searchParams}
               />
             </div>
           )}

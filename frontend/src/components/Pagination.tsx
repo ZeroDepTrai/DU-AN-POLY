@@ -5,10 +5,18 @@ interface PaginationProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   baseUrl?: string;
+  searchParams?: URLSearchParams;
 }
 
-export default function Pagination({ currentPage, totalPages, onPageChange, baseUrl }: PaginationProps) {
+export default function Pagination({ currentPage, totalPages, onPageChange, baseUrl, searchParams }: PaginationProps) {
   if (totalPages <= 1) return null;
+
+  const buildHref = (page: number) => {
+    const params = new URLSearchParams(searchParams ?? undefined);
+    params.set("page", String(page));
+    const qs = params.toString();
+    return `${baseUrl ?? ""}${qs ? `?${qs}` : ""}`;
+  };
 
   const pages: (number | "...")[] = [];
   if (totalPages <= 7) {
@@ -43,7 +51,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange, base
           baseUrl ? (
             <Link
               key={page}
-              to={`${baseUrl}?page=${page}`}
+              to={buildHref(page)}
               onClick={() => onPageChange(page)}
               className={`flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-medium transition-colors ${
                 page === currentPage
