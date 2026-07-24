@@ -140,20 +140,32 @@ def _build_prompt(system_instruction: str, history: list[dict], last_user_messag
 
 
 async def _call_gemini(api_key: str, body: dict) -> str | None:
-    """POST ``body`` to Gemini and return the generated text, or None."""
+    """POST ``body`` to Gemini and return the generated text, or None.
+
+    Returns None on any failure (network, timeout, non-2xx, malformed
+    JSON, empty candidates). The caller treats that as "use fallback";
+    the failure reason is logged so operators can diagnose from the
+    Railway logs without needing to reproduce locally.
+
+    The API key is never included in the log line — only the status
+    code and a short, key-stripped body snippet.
+    """
     params = {"key": api_key}
     try:
         async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
             response = await client.post(GEMINI_URL, params=params, json=body)
     except httpx.HTTPError as exc:
-        logger.warning("[ai_agent] network error: %s", exc)
+        logger.warning("[ai_agent] network error talking to Gemini: %s", exc)
         return None
 
     if response.status_code >= 400:
+        # Strip any echoed key from the body before logging, just in
+        # case Gemini ever echoes the ?key= value back in an error.
+        safe_body = response.text[:400].replace(api_key, "<redacted>")
         logger.warning(
-            "[ai_agent] Gemini returned %s: %s",
+            "[ai_agent] Gemini HTTP %s: %s",
             response.status_code,
-            response.text[:300],
+            safe_body,
         )
         return None
 
@@ -163,13 +175,27 @@ async def _call_gemini(api_key: str, body: dict) -> str | None:
         logger.warning("[ai_agent] Gemini response was not valid JSON")
         return None
 
+    # Gemini sometimes returns 200 with no candidates because of safety
+    # filters; surface that so the operator can see WHY the bot fell
+    # back to the canned reply.
+    feedback = payload.get("promptFeedback") or {}
+    if feedback.get("blockReason"):
+        logger.warning(
+            "[ai_agent] Gemini blocked the prompt: %s",
+            feedback.get("blockReason"),
+        )
     candidates = payload.get("candidates") or []
     if not candidates:
         return None
+
     parts = (candidates[0].get("content") or {}).get("parts") or []
     text_chunks = [p.get("text", "") for p in parts if isinstance(p, dict)]
     text = "".join(text_chunks).strip()
-    return text or None
+    if not text:
+        finish = candidates[0].get("finishReason") or "?"
+        logger.warning("[ai_agent] Gemini returned empty text (finish=%s)", finish)
+        return None
+    return text
 
 
 def _should_reply(conv: ChatConversation | None) -> bool:
@@ -260,6 +286,18 @@ async def trigger_ai_reply(conversation_id: str) -> None:
         reply_text = None
 
     if not reply_text:
+        # Help the operator distinguish "no key configured" from
+        # "Gemini rejected the call" — both end up at this branch.
+        if not api_key:
+            logger.info(
+                "[ai_agent] %s: GEMINI_API_KEY is empty; replying with fallback",
+                conversation_id,
+            )
+        else:
+            logger.info(
+                "[ai_agent] %s: Gemini returned no text; replying with fallback",
+                conversation_id,
+            )
         reply_text = FALLBACK_REPLY
 
     # 2. Persist the AI reply. Re-check the conversation state once more
