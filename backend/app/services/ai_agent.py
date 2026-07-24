@@ -42,10 +42,10 @@ FALLBACK_REPLY = (
 )
 
 #: Gemini REST endpoint for the lightweight chat model.
-#: 1.5 Flash is fast, free-tier friendly, and supports Vietnamese.
+#: Gemini 3.6 Flash is fast, free-tier friendly, and supports Vietnamese.
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-1.5-flash:generateContent"
+    "gemini-3.6-flash:generateContent"
 )
 
 #: Cap on how many product rows we expose to the model. The full catalog
