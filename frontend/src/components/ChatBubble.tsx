@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import { useAuth } from "../context/AuthContext";
 
 interface Attachment {
@@ -15,6 +16,88 @@ interface Message {
   timestamp: string;
   read?: boolean;
   attachments?: Attachment[];
+}
+
+/**
+ * Render a chat-bubble message body.
+ *
+ * - Agent messages are rendered through react-markdown so that bold
+ *   (``**Product Name**``), italics, inline code, lists, and links all
+ *   display properly. The model frequently wraps product names in
+ *   ``**...**`` to draw the customer's eye, and we don't want the
+ *   literal asterisks leaking into the UI.
+ * - Customer messages are rendered as plain text. The chat input is a
+ *   single-line <input> so the customer can never type markdown, and
+ *   rendering it through react-markdown would still be safe but adds
+ *   pointless overhead.
+ *
+ * Custom renderers:
+ * - ``a`` uses the SPA router so links inside an AI reply navigate
+ *   without a full page reload. The product chips below the bubble
+ *   handle /products/:id navigation already; this is for any other
+ *   link the model may emit (e.g. ``/blog/foo``).
+ * - ``strong`` and ``em`` are styled to keep the bubble palette (the
+ *   bubble already sets a text color, so we just inherit it).
+ */
+function BubbleBody({ content, isAgent }: { content: string; isAgent: boolean }) {
+  const navigate = useNavigate();
+  if (!isAgent) {
+    return <p className="text-sm whitespace-pre-wrap">{content}</p>;
+  }
+  return (
+    <div className="chat-markdown text-sm">
+      <ReactMarkdown
+        components={{
+          // External links should open in a new tab; internal links
+          // (those that look like our SPA routes) should use the router.
+          a: ({ href, children, ...rest }) => {
+            const isInternal = !!href && /^\/(?!\/)/.test(href);
+            if (isInternal && href) {
+              return (
+                <a
+                  href={href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(href);
+                  }}
+                  className="underline underline-offset-2 hover:opacity-80"
+                  {...rest}
+                >
+                  {children}
+                </a>
+              );
+            }
+            return (
+              <a href={href} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:opacity-80" {...rest}>
+                {children}
+              </a>
+            );
+          },
+          p: ({ children }) => <p className="leading-snug">{children}</p>,
+          strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          ul: ({ children }) => <ul className="ml-4 list-disc">{children}</ul>,
+          ol: ({ children }) => <ol className="ml-4 list-decimal">{children}</ol>,
+          li: ({ children }) => <li className="mb-0.5">{children}</li>,
+          code: ({ children }) => (
+            <code className="rounded bg-black/30 px-1 py-0.5 font-mono text-[0.85em]">
+              {children}
+            </code>
+          ),
+          h1: ({ children }) => <h1 className="text-base font-bold">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-base font-bold">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-bold">{children}</h3>,
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-white/40 pl-2 italic opacity-80">
+              {children}
+            </blockquote>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
 }
 
 interface ChatBubbleProps {
@@ -608,7 +691,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
                               ? "bg-white/10 text-white rounded-bl-md"
                               : "bg-gradient-to-br from-crimson via-rose to-sakura text-white rounded-br-md shadow-glow"
                           }`}>
-                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                            <BubbleBody content={msg.content} isAgent={isAgent} />
                             {chips.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1.5">
                                 {chips.map((chip, idx) =>

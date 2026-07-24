@@ -214,6 +214,39 @@ def test_extract_product_buttons_respects_max_cap():
     assert len(chips) == ai_agent.MAX_PRODUCT_BUTTONS
 
 
+def test_extract_product_buttons_handles_markdown_bold():
+    # The model wraps product names in ``**...**`` to draw attention.
+    # The extractor must still match the inner product name.
+    products = [
+        _Product(1, "SMARTPHONE XIAOMI POCO M8 5G (8GB/256GB)", 5_000_000),
+        _Product(2, "iPhone 15 Pro Max", 30_000_000),
+    ]
+    reply = (
+        "CellZone đang có **SMARTPHONE XIAOMI POCO M8 5G (8GB/256GB)** "
+        "với giá tốt, và cả **iPhone 15 Pro Max**."
+    )
+    chips = _extract_product_buttons(reply, products)
+    assert [c["id"] for c in chips] == [1, 2]
+    assert chips[0]["label"] == "SMARTPHONE XIAOMI POCO M8 5G (8GB/256GB)"
+
+
+def test_extract_product_buttons_handles_line_breaks():
+    # The model sometimes inserts a newline between the asterisks and
+    # the product name. Whitespace normalization must bridge that gap.
+    products = [_Product(1, "Samsung Galaxy S24", 18_000_000)]
+    reply = "**\nSamsung Galaxy S24\n** đang giảm giá."
+    chips = _extract_product_buttons(reply, products)
+    assert [c["id"] for c in chips] == [1]
+
+
+def test_extract_product_buttons_handles_bold_italic():
+    # ``***Product***`` (bold + italic) should also match.
+    products = [_Product(1, "OPPO Reno 11", 9_000_000)]
+    reply = "Mời bạn xem ***OPPO Reno 11*** nhé."
+    chips = _extract_product_buttons(reply, products)
+    assert [c["id"] for c in chips] == [1]
+
+
 # ─── Handoff detection ───────────────────────────────────────────────────────
 
 
