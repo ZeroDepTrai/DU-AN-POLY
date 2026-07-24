@@ -453,6 +453,13 @@ class ChatMessageResponse(BaseModel):
     sender_type: str
     sender_name: str
     content: str
+    # List of structured UI affordances attached to this message, e.g.
+    #   [{"type": "product", "id": 12, "label": "Samsung Galaxy S24"},
+    #    {"type": "human_handoff", "label": "Liên hệ nhân viên"}]
+    # The frontend renders them as chips below the message body. Always
+    # serialized as a list (empty when no chips) so clients don't need
+    # to null-check.
+    attachments: list[dict] = []
     timestamp: str
     read: bool = False
 
@@ -467,6 +474,9 @@ class ChatConversationResponse(BaseModel):
     last_message: str | None = None
     last_message_at: str | None = None
     unread_count: int = 0
+    # True when the customer has asked to be connected to a human agent.
+    # The admin chat sidebar can use this to prioritize the queue.
+    requested_human: bool = False
     created_at: str
 
 

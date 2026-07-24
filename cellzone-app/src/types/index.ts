@@ -95,6 +95,12 @@ export interface ProductMediaItem {
 }
 
 // Chat types
+export interface ChatAttachment {
+  type: "product" | "human_handoff";
+  id?: number;
+  label: string;
+}
+
 export interface ChatMessage {
   id: string;
   conversation_id: string;
@@ -102,6 +108,7 @@ export interface ChatMessage {
   sender_type: "customer" | "agent";
   sender_name: string;
   content: string;
+  attachments?: ChatAttachment[];
   timestamp: string;
   read: boolean;
 }
@@ -116,6 +123,10 @@ export interface Conversation {
   last_message?: string;
   last_message_at?: string;
   unread_count: number;
+  // True when the customer clicked "Liên hệ nhân viên" (or the AI
+  // detected the handoff phrase). Surfaced in the sidebar so the
+  // support agent can prioritize the queue.
+  requested_human?: boolean;
   created_at: string;
 }
 

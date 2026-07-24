@@ -344,6 +344,12 @@ class ChatConversation(Base):
     status: Mapped[str] = mapped_column(String(20), default="waiting", nullable=False)  # waiting, active, closed
     assigned_to: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     unread_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Set to True when the customer asks to speak with a human agent.
+    # The Tauri admin chat tab can sort waiting conversations by this flag
+    # to put human-requested chats at the top of the queue. The column is
+    # nullable to make the runtime idempotent ALTER TABLE painless — older
+    # deployments will have NULL which we treat as False at the boundary.
+    requested_human: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -358,5 +364,10 @@ class ChatMessage(Base):
     sender_type: Mapped[str] = mapped_column(String(20), nullable=False)  # customer, agent
     sender_name: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    # Optional JSON-encoded list of rich-content attachments (e.g. product
+    # chips the customer can tap to jump to the product detail page, or
+    # the "Liên hệ nhân viên" handoff button). Stored as TEXT for
+    # cross-database compatibility; JSON-parse on read.
+    attachments: Mapped[str | None] = mapped_column(Text, nullable=True)
     read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(timezone.utc))

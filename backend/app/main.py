@@ -179,6 +179,10 @@ async def lifespan(app: FastAPI):
                        "ALTER TABLE users ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()")
             _force_add(conn, "users", "customer_support",
                        "ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'customer_support'")
+            _force_add(conn, "chat_conversations", "requested_human",
+                       "ALTER TABLE chat_conversations ADD COLUMN requested_human BOOLEAN")
+            _force_add(conn, "chat_messages", "attachments",
+                       "ALTER TABLE chat_messages ADD COLUMN attachments TEXT")
 
             # Existing columns whose declared length is too narrow for the
             # strings the runtime now produces (spin reward Vietnamese
@@ -369,16 +373,26 @@ async def chat_ws(websocket: WebSocket, token: str | None = None):
             "last_message": None,
             "last_message_at": c.updated_at.isoformat(),
             "unread_count": c.unread_count,
+            "requested_human": bool(c.requested_human),
             "created_at": c.created_at.isoformat(),
         }
 
     def _to_msg(m) -> dict:
+        attachments_raw = getattr(m, "attachments", None)
+        if attachments_raw:
+            try:
+                attachments = json.loads(attachments_raw)
+            except (TypeError, ValueError):
+                attachments = []
+        else:
+            attachments = []
         return {
             "id": m.id,
             "conversation_id": m.conversation_id,
             "sender_type": m.sender_type,
             "sender_name": m.sender_name,
             "content": m.content,
+            "attachments": attachments if isinstance(attachments, list) else [],
             "timestamp": m.created_at.isoformat(),
             "read": m.read,
         }

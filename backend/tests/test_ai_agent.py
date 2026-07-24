@@ -21,8 +21,11 @@ import pytest
 from app.services import ai_agent
 from app.services.ai_agent import (
     FALLBACK_REPLY,
+    HUMAN_HANDOFF_BUTTON,
+    _extract_product_buttons,
     _format_product_context,
     _history_to_gemini,
+    _is_human_handoff_request,
     _should_reply,
     schedule_ai_reply,
 )
@@ -157,3 +160,84 @@ def test_schedule_ai_reply_returns_none_without_event_loop(monkeypatch):
         lambda: (_ for _ in ()).throw(RuntimeError("no running loop")),
     )
     assert schedule_ai_reply("conv-id") is None
+
+
+# ─── Product chip extractor ─────────────────────────────────────────────────
+
+
+def test_extract_product_buttons_returns_empty_when_no_match():
+    products = [_Product(1, "iPhone 15", 20_000_000)]
+    assert _extract_product_buttons("Xin chào, mình giúp gì được cho bạn?", products) == []
+
+
+def test_extract_product_buttons_finds_mentioned_products():
+    products = [
+        _Product(1, "iPhone 15 Pro Max", 30_000_000),
+        _Product(2, "Samsung Galaxy S24", 18_000_000),
+        _Product(3, "Xiaomi Redmi Note 13", 5_000_000),
+    ]
+    reply = (
+        "CellZone đang có Samsung Galaxy S24 và Xiaomi Redmi Note 13. "
+        "iPhone 15 Pro Max cũng có sẵn."
+    )
+    chips = _extract_product_buttons(reply, products)
+    # Longest names come first so the chip label is the exact product
+    # the model cited (rather than a partial substring).
+    assert [c["id"] for c in chips] == [3, 2, 1]
+    assert all(c["type"] == "product" for c in chips)
+    assert chips[0]["label"] == "Xiaomi Redmi Note 13"
+
+
+def test_extract_product_buttons_case_insensitive_and_dedup():
+    products = [_Product(7, "iphone 15", 20_000_000)]
+    chips = _extract_product_buttons("IPHONE 15 đang giảm giá!", products)
+    assert len(chips) == 1
+    assert chips[0]["id"] == 7
+
+
+def test_extract_product_buttons_prefers_longest_name():
+    # Both products match because "samsung galaxy s24" is a substring
+    # of "samsung galaxy s24 ultra"; the extractor must pick the longer
+    # one first so the chip label is the exact product the model cited.
+    products = [
+        _Product(1, "Samsung Galaxy S24 Ultra", 30_000_000),
+        _Product(2, "Samsung Galaxy S24", 20_000_000),
+    ]
+    chips = _extract_product_buttons("Gợi ý Samsung Galaxy S24 Ultra cho bạn", products)
+    assert [c["id"] for c in chips] == [1, 2]
+
+
+def test_extract_product_buttons_respects_max_cap():
+    products = [_Product(i, f"Phone {i}", 1_000_000) for i in range(1, 10)]
+    reply = " ".join(f"Phone {i}" for i in range(1, 10))
+    chips = _extract_product_buttons(reply, products)
+    assert len(chips) == ai_agent.MAX_PRODUCT_BUTTONS
+
+
+# ─── Handoff detection ───────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "message, expected",
+    [
+        ("Cho mình gặp nhân viên tư vấn nhé", True),
+        ("Tôi muốn nói chuyện với người thật", True),
+        ("Có thể gặp tư vấn viên không?", True),
+        ("Cho mình gặp NHÂN VIÊN", True),
+        ("I want to talk to a real person", True),
+        ("Speak to a human agent please", True),
+        ("Giá iPhone 15 bao nhiêu?", False),
+        ("Bao giờ hàng về?", False),
+        ("", False),
+    ],
+)
+def test_is_human_handoff_request(message, expected):
+    assert _is_human_handoff_request(message) is expected
+
+
+def test_human_handoff_button_shape():
+    # The frontend relies on this exact shape to render the chip.
+    assert HUMAN_HANDOFF_BUTTON == {
+        "type": "human_handoff",
+        "label": "Liên hệ nhân viên",
+    }

@@ -1,7 +1,7 @@
 """AI customer-support agent for the live chat WebSocket.
 
 The agent runs as a background task scheduled after each customer message
-that arrives via the WebSocket in `backend/app/main.py`. It only replies
+that arrives via the WebSocket in ``backend/app/main.py``. It only replies
 when no support agent has taken the conversation yet (i.e. ``assigned_to``
 is still NULL and the conversation is still open). Once a human agent
 claims the conversation, the AI steps back silently.
@@ -11,6 +11,17 @@ pins ``httpx`` in ``requirements.txt``), so no extra Python dependency is
 required. If ``gemini_api_key`` is unset, or the API call fails for any
 reason, the agent falls back to a deterministic "system is busy" reply so
 the chat flow keeps working in local development.
+
+The agent also attaches structured UI buttons to its replies:
+
+* **product chips** — when the reply mentions a product whose name
+  matches one in the catalog handed to the model, the agent adds a
+  ``{type: "product", id, label}`` chip so the customer can tap it to
+  jump to that product's detail page;
+* **handoff chip** — when the customer asks to speak with a human, the
+  agent emits a ``{type: "human_handoff", label: "Liên hệ nhân viên"}``
+  chip and flips the conversation's ``requested_human`` flag so the
+  support pool sees the request.
 """
 
 import asyncio
@@ -41,6 +52,28 @@ FALLBACK_REPLY = (
     "vấn sẽ liên hệ lại ngay khi có mặt nhé."
 )
 
+#: Greeting that the AI sends automatically the moment a customer opens
+#: a new chat. We don't ask Gemini to generate this because the message
+#: must be deterministic and arrive instantly (no API latency), and the
+#: text content is short and on-brand.
+GREETING_REPLY = (
+    "Xin chào 👋 Mình là CellZone AI. Mình có thể hỗ trợ bạn tra cứu sản phẩm, "
+    "giá cả và tình trạng đơn hàng. Nếu cần trao đổi với nhân viên tư vấn, "
+    "bạn có thể bấm nút bên dưới nhé."
+)
+
+#: Structured chip rendered alongside the greeting so the customer can
+#: request a human agent without typing.
+HUMAN_HANDOFF_BUTTON: dict = {
+    "type": "human_handoff",
+    "label": "Liên hệ nhân viên",
+}
+
+#: Maximum number of product chips the agent attaches to a single reply.
+#: Keeping this small avoids cluttering the bubble when the model lists
+#: many SKUs at once.
+MAX_PRODUCT_BUTTONS = 5
+
 #: Gemini REST endpoint for the lightweight chat model.
 #: Gemini 3.6 Flash is fast, free-tier friendly, and supports Vietnamese.
 GEMINI_URL = (
@@ -59,6 +92,73 @@ HISTORY_TURN_LIMIT = 20
 #: Network timeout for the Gemini HTTP call. A short ceiling keeps the
 #: WebSocket open and limits the chance of overlapping background tasks.
 REQUEST_TIMEOUT = 12.0
+
+
+# Vietnamese + English phrases that indicate the customer wants a human.
+# Case-insensitive substring match keeps the detector resilient to
+# diacritics and minor wording variations the customer may type.
+HUMAN_HANDOFF_TRIGGERS = (
+    "nhân viên",
+    "nhan vien",
+    "người thật",
+    "nguoi that",
+    "tư vấn viên",
+    "tu van vien",
+    "gặp người",
+    "gap nguoi",
+    "human agent",
+    "speak to a human",
+    "speak to human",
+    "real person",
+    "talk to a real",
+    "live agent",
+)
+
+
+def _is_human_handoff_request(text: str) -> bool:
+    """True when the customer's message asks to speak with a human agent."""
+    if not text:
+        return False
+    lowered = text.lower()
+    return any(trigger in lowered for trigger in HUMAN_HANDOFF_TRIGGERS)
+
+
+def _extract_product_buttons(reply_text: str, products: Iterable[Product]) -> list[dict]:
+    """Find product names that appear in the AI's reply and emit chip dicts.
+
+    Matching strategy: case-insensitive substring scan, longest-name
+    first so that e.g. "Samsung Galaxy S24 Ultra" wins over "Samsung
+    Galaxy S24" when both are in the catalog and both match the reply.
+    Deduplicates by product id, and caps the result at
+    ``MAX_PRODUCT_BUTTONS`` so a chat bubble doesn't overflow with chips
+    when the model lists a full catalog.
+
+    Returns a list of ``{type: "product", id, label}`` dicts ready to be
+    JSON-serialized into ``ChatMessage.attachments``.
+    """
+    if not reply_text:
+        return []
+    reply_lower = reply_text.lower()
+    products_sorted = sorted(
+        (p for p in products if getattr(p, "name", None)),
+        key=lambda p: len(p.name),
+        reverse=True,
+    )
+    seen: set[int] = set()
+    chips: list[dict] = []
+    for product in products_sorted:
+        if product.id in seen:
+            continue
+        if product.name.lower() in reply_lower:
+            seen.add(product.id)
+            chips.append({
+                "type": "product",
+                "id": product.id,
+                "label": product.name,
+            })
+            if len(chips) >= MAX_PRODUCT_BUTTONS:
+                break
+    return chips
 
 
 SYSTEM_INSTRUCTION = (
@@ -228,12 +328,25 @@ def _should_reply(conv: ChatConversation | None) -> bool:
 
 def _serialize_message(msg: ChatMessage) -> dict:
     """Mirror the WS payload shape used by main.py for outbound messages."""
+    # Mirror main.py's safe JSON-decode of the attachments column. The
+    # duplication is intentional: importing ``_to_msg`` from main.py
+    # would pull the whole WebSocket module into the agent's import
+    # graph, slowing down the chat WS handler for every connection.
+    attachments_raw = getattr(msg, "attachments", None)
+    if attachments_raw:
+        try:
+            attachments = json.loads(attachments_raw)
+        except (TypeError, ValueError):
+            attachments = []
+    else:
+        attachments = []
     return {
         "id": msg.id,
         "conversation_id": msg.conversation_id,
         "sender_type": msg.sender_type,
         "sender_name": msg.sender_name,
         "content": msg.content,
+        "attachments": attachments if isinstance(attachments, list) else [],
         "timestamp": msg.created_at.isoformat(),
         "read": msg.read,
     }
@@ -285,37 +398,60 @@ async def trigger_ai_reply(conversation_id: str) -> None:
             .all()
         )
 
+    # Handoff detection runs on the raw customer message BEFORE we burn
+    # a Gemini round-trip. When the customer clearly wants a human, we
+    # bypass the model entirely, write a short deterministic reply,
+    # and flip ``requested_human`` so the support pool can prioritize.
+    handoff_requested = _is_human_handoff_request(last_user_message or "")
+
     history = _history_to_gemini(list(history_rows))
     # Always append the latest user turn so the model reacts to it even
     # if the history was collapsed to a smaller window.
     if not history or history[-1]["role"] != "user":
         if last_user_message:
             history.append({"role": "user", "parts": [{"text": last_user_message}]})
-    prompt = _build_prompt(
-        SYSTEM_INSTRUCTION + "\n\nSản phẩm đang bán:\n" + _format_product_context(products),
-        history,
-        last_user_message or "",
-    )
 
-    if api_key:
-        reply_text = await _call_gemini(api_key, prompt)
+    if handoff_requested:
+        # Skip the model: the answer is deterministic. Note we still
+        # attach the human-handoff chip so the customer can confirm
+        # the request with a single tap (and so the agent panel sees
+        # the same affordance the customer saw).
+        reply_text = (
+            "Được rồi, mình sẽ chuyển cuộc trò chuyện này cho nhân viên "
+            "tư vấn. Bạn vui lòng giữ máy trong giây lát nhé!"
+        )
+        attachments = [dict(HUMAN_HANDOFF_BUTTON)]
     else:
-        reply_text = None
+        prompt = _build_prompt(
+            SYSTEM_INSTRUCTION + "\n\nSản phẩm đang bán:\n" + _format_product_context(products),
+            history,
+            last_user_message or "",
+        )
 
-    if not reply_text:
-        # Help the operator distinguish "no key configured" from
-        # "Gemini rejected the call" — both end up at this branch.
-        if not api_key:
-            logger.info(
-                "[ai_agent] %s: GEMINI_API_KEY is empty; replying with fallback",
-                conversation_id,
-            )
+        if api_key:
+            reply_text = await _call_gemini(api_key, prompt)
         else:
-            logger.info(
-                "[ai_agent] %s: Gemini returned no text; replying with fallback",
-                conversation_id,
-            )
-        reply_text = FALLBACK_REPLY
+            reply_text = None
+
+        if not reply_text:
+            # Help the operator distinguish "no key configured" from
+            # "Gemini rejected the call" — both end up at this branch.
+            if not api_key:
+                logger.info(
+                    "[ai_agent] %s: GEMINI_API_KEY is empty; replying with fallback",
+                    conversation_id,
+                )
+            else:
+                logger.info(
+                    "[ai_agent] %s: Gemini returned no text; replying with fallback",
+                    conversation_id,
+                )
+            reply_text = FALLBACK_REPLY
+
+        # Scan the reply for products the model mentioned and emit chip
+        # buttons for them. The list is empty if the reply is a generic
+        # greeting / apology / out-of-scope answer.
+        attachments = _extract_product_buttons(reply_text, products)
 
     # 2. Persist the AI reply. Re-check the conversation state once more
     # before writing so the model can't answer a conversation that has
@@ -331,9 +467,14 @@ async def trigger_ai_reply(conversation_id: str) -> None:
             sender_type="agent",
             sender_name=AI_SENDER_NAME,
             content=reply_text,
+            attachments=json.dumps(attachments, ensure_ascii=False) if attachments else None,
             read=False,
         )
         db.add(ai_msg)
+        if handoff_requested and not conv.requested_human:
+            # Flip the flag so the admin chat sidebar can prioritize
+            # this conversation in the waiting queue.
+            conv.requested_human = True
         conv.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(ai_msg)
@@ -342,6 +483,14 @@ async def trigger_ai_reply(conversation_id: str) -> None:
             "message": _serialize_message(ai_msg),
             "conversation_id": conversation_id,
         }
+        # If the flag flipped, also push a conversation_update so any
+        # open chat sockets (agent + customer) refresh their sidebar
+        # status without needing to refetch.
+        if handoff_requested:
+            broadcast_payload["conversation_update"] = {
+                "id": conv.id,
+                "requested_human": True,
+            }
 
     # 3. Broadcast to every connected chat socket. Failures here are
     # non-fatal — the persisted message will still be visible on the
@@ -350,6 +499,68 @@ async def trigger_ai_reply(conversation_id: str) -> None:
         await manager.chat_broadcast(broadcast_payload)
     except Exception as exc:  # pragma: no cover - defensive
         logger.warning("[ai_agent] broadcast failed: %s", exc)
+
+
+async def send_greeting(conversation_id: str) -> None:
+    """Post the AI's first-turn greeting to a brand-new conversation.
+
+    Called from the ``/api/chat/start`` endpoint right after a
+    conversation row is created. We don't call Gemini here: the greeting
+    is a fixed on-brand string with a single human-handoff chip, and we
+    want it to render instantly without depending on the model or the
+    API key.
+
+    Failures are swallowed silently — the customer will simply see an
+    empty bubble until they type, which is no worse than the previous
+    behavior.
+    """
+    try:
+        with SessionLocal() as db:
+            conv = db.get(ChatConversation, conversation_id)
+            if conv is None or conv.status == "closed":
+                return
+            # If the customer has already sent a message before we got
+            # to schedule the greeting (race), don't insert a greeting
+            # on top of their text — that would feel like spam.
+            already_has_messages = (
+                db.query(ChatMessage)
+                .filter(ChatMessage.conversation_id == conversation_id)
+                .first()
+                is not None
+            )
+            if already_has_messages:
+                return
+
+            ai_msg = ChatMessage(
+                id=str(uuid.uuid4()),
+                conversation_id=conversation_id,
+                sender_type="agent",
+                sender_name=AI_SENDER_NAME,
+                content=GREETING_REPLY,
+                attachments=json.dumps([dict(HUMAN_HANDOFF_BUTTON)], ensure_ascii=False),
+                read=False,
+            )
+            db.add(ai_msg)
+            conv.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            db.refresh(ai_msg)
+            broadcast_payload = {
+                "type": "new_message",
+                "message": _serialize_message(ai_msg),
+                "conversation_id": conversation_id,
+            }
+        await manager.chat_broadcast(broadcast_payload)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("[ai_agent] greeting failed for %s: %s", conversation_id, exc)
+
+
+def schedule_greeting(conversation_id: str) -> asyncio.Task | None:
+    """Background-task wrapper for :func:`send_greeting`."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return None
+    return loop.create_task(send_greeting(conversation_id))
 
 
 def schedule_ai_reply(conversation_id: str) -> asyncio.Task | None:

@@ -219,7 +219,17 @@ export default function ChatTab() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-[#f0f0f5] text-sm truncate">{conv.customer_name}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium text-[#f0f0f5] text-sm truncate">{conv.customer_name}</span>
+                        {conv.requested_human && (
+                          <span
+                            className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-rose-500/20 text-rose-400 border border-rose-500/40 whitespace-nowrap"
+                            title="Khách hàng đã yêu cầu hỗ trợ từ nhân viên"
+                          >
+                            Ưu tiên
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] text-[#5a5a6a]">{conv.last_message_at ? formatTime(conv.last_message_at) : ""}</span>
                     </div>
                     <p className="text-xs text-[#5a5a6a] truncate">{conv.customer_email}</p>
@@ -271,7 +281,17 @@ export default function ChatTab() {
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-medium text-[#f0f0f5]">{activeConversation.customer_name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-[#f0f0f5]">{activeConversation.customer_name}</p>
+                    {activeConversation.requested_human && (
+                      <span
+                        className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-rose-500/20 text-rose-400 border border-rose-500/40"
+                        title="Khách hàng đã yêu cầu hỗ trợ từ nhân viên"
+                      >
+                        Ưu tiên
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-[#5a5a6a]">{activeConversation.customer_email}</p>
                 </div>
               </div>

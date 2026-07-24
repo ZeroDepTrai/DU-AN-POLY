@@ -20,6 +20,23 @@ from app.websocket import manager
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 
+def _parse_attachments(raw: str | None) -> list[dict]:
+    """Decode the JSON-encoded ``ChatMessage.attachments`` column safely.
+
+    Older messages (or rows written before the column existed) will have
+    NULL/empty here. A bad payload from a manual DB edit should never
+    break the whole response, so we silently fall back to an empty list
+    rather than 500-ing the chat widget.
+    """
+    if not raw:
+        return []
+    try:
+        decoded = json.loads(raw)
+    except (TypeError, ValueError):
+        return []
+    return decoded if isinstance(decoded, list) else []
+
+
 def _conversation_to_response(conv: ChatConversation, db: Session) -> ChatConversationResponse:
     """Convert a ChatConversation model to response schema."""
     last_msg = (
@@ -45,6 +62,9 @@ def _conversation_to_response(conv: ChatConversation, db: Session) -> ChatConver
         last_message=last_msg.content if last_msg else None,
         last_message_at=last_msg.created_at.isoformat() if last_msg else None,
         unread_count=conv.unread_count,
+        # The column is nullable for older deployments (added after the
+        # initial schema). Treat NULL as False at the boundary.
+        requested_human=bool(conv.requested_human),
         created_at=conv.created_at.isoformat(),
     )
 
@@ -57,6 +77,7 @@ def _message_to_response(msg: ChatMessage) -> ChatMessageResponse:
         sender_type=msg.sender_type,
         sender_name=msg.sender_name,
         content=msg.content,
+        attachments=_parse_attachments(msg.attachments),
         timestamp=msg.created_at.isoformat(),
         read=msg.read,
     )
@@ -167,6 +188,64 @@ def close_conversation(
     db.commit()
 
     return {"ok": True}
+
+
+@router.post("/conversations/{conversation_id}/request-human")
+async def request_human_agent(
+    conversation_id: str,
+    db: Session = Depends(get_db),
+):
+    """Customer-facing endpoint to request a human agent.
+
+    Called when the customer clicks the "Liên hệ nhân viên" chip in the
+    chat bubble. It flips ``requested_human`` on the conversation so the
+    admin sidebar can prioritize this chat, and posts a system message
+    into the transcript so a support agent reading the history knows
+    the customer explicitly asked for a human rather than just letting
+    the AI fail.
+    """
+    conv = db.get(ChatConversation, conversation_id)
+    if not conv:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if conv.status == "closed":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Conversation is closed")
+
+    conv.requested_human = True
+    conv.updated_at = datetime.now(timezone.utc)
+
+    notice = ChatMessage(
+        id=str(uuid.uuid4()),
+        conversation_id=conversation_id,
+        sender_type="customer",
+        sender_name=conv.customer_name,
+        content="Khách hàng yêu cầu hỗ trợ từ nhân viên tư vấn.",
+        read=False,
+    )
+    db.add(notice)
+    db.commit()
+    db.refresh(notice)
+
+    # Broadcast the flag flip + the system note to every connected
+    # chat socket (agent + customer) so both UIs update in real time.
+    try:
+        await manager.chat_broadcast({
+            "type": "new_message",
+            "message": _message_to_response(notice).model_dump(mode="json"),
+            "conversation_id": conversation_id,
+        })
+    except Exception:
+        pass
+    try:
+        await manager.chat_broadcast({
+            "type": "conversation_update",
+            "conversation": _conversation_to_response(conv, db).model_dump(mode="json"),
+        })
+    except Exception:
+        pass
+
+    return {"ok": True, "requested_human": True}
 
 
 @router.post("/conversations/{conversation_id}/messages", response_model=ChatMessageResponse)
@@ -294,6 +373,18 @@ async def start_conversation(
             "conversation": _conversation_to_response(conv, db).model_dump(mode="json"),
         })
     except Exception:
+        pass
+
+    # Schedule the AI's greeting so the customer sees an immediate
+    # on-brand welcome (with the "Liên hệ nhân viên" handoff chip)
+    # instead of staring at an empty bubble. The greeting is a
+    # background task; we don't wait for it before returning the
+    # conversation row to the client.
+    try:
+        from app.services.ai_agent import schedule_greeting
+        schedule_greeting(conv_id)
+    except Exception:
+        # Defensive: never let the greeting scheduler break /start.
         pass
 
     return _conversation_to_response(conv, db)

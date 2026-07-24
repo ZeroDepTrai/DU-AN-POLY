@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
+interface Attachment {
+  type: "product" | "human_handoff";
+  id?: number;
+  label: string;
+}
 
 interface Message {
   id: string;
@@ -7,6 +14,7 @@ interface Message {
   content: string;
   timestamp: string;
   read?: boolean;
+  attachments?: Attachment[];
 }
 
 interface ChatBubbleProps {
@@ -35,7 +43,13 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [closedStatus, setClosedStatus] = useState<"open" | "closed" | "by_agent">("open");
+  // True after the customer has clicked "Liên hệ nhân viên" (either via
+  // the chip or by typing a handoff request). Used to render the
+  // "Đang chờ nhân viên" status badge so the customer knows the request
+  // landed. Backend flips ``requested_human`` on the conversation row.
+  const [waitingForHuman, setWaitingForHuman] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // Determine URLs based on environment
   const isProduction = typeof window !== "undefined" && !window.location.hostname.includes("localhost");
@@ -61,6 +75,13 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
           if (status === "closed") {
             setClosedStatus("by_agent");
           }
+          // Backend pushes a conversation_update when the AI detects a
+          // handoff request (or when the customer clicks the chip).
+          // Mirror that into local state so the bubble header swaps to
+          // "Đang chờ nhân viên" without a hard refresh.
+          if (updatedConv.requested_human === true) {
+            setWaitingForHuman(true);
+          }
         }
         break;
       }
@@ -78,6 +99,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
         const m = (data.message ?? {}) as Record<string, unknown>;
         const serverId = (m.id as string) ?? `srv-${Date.now()}`;
         const clientId = data.client_id as string | undefined;
+        const attachments = (m.attachments as Attachment[] | undefined) ?? undefined;
         setMessages((prev) => {
           // Sender-side de-dup: when the broadcast round-trips back, replace
           // the optimistic placeholder (same client_id) with the server's
@@ -92,6 +114,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
                 content: (m.content as string) ?? prev[idx].content,
                 timestamp: (m.timestamp as string) ?? prev[idx].timestamp,
                 read: (m.read as boolean) ?? prev[idx].read,
+                attachments: attachments ?? prev[idx].attachments,
               };
               return next;
             }
@@ -108,6 +131,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
               content: (m.content as string) ?? "",
               timestamp: (m.timestamp as string) ?? new Date().toISOString(),
               read: (m.read as boolean) ?? false,
+              attachments,
             },
           ];
         });
@@ -120,6 +144,39 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
         break;
     }
   };
+
+  // Click handler for the structured attachment chips that ride along
+  // with AI messages. We route them by chip type:
+  //   - ``product``        → push the customer to the product page;
+  //   - ``human_handoff``  → call the public handoff endpoint and flip
+  //                          local UI state so the bubble header updates.
+  const handleAttachmentClick = useCallback(async (att: Attachment) => {
+    if (att.type === "product" && typeof att.id === "number") {
+      navigate(`/products/${att.id}`);
+      return;
+    }
+    if (att.type === "human_handoff") {
+      const convId = conversationIdRef.current;
+      if (!convId) return;
+      // Optimistic UI flip so the customer sees the status change
+      // before the server round-trip completes.
+      setWaitingForHuman(true);
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`${finalApiBase}/chat/conversations/${convId}/request-human`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+      } catch {
+        // Non-critical: the conversation_update broadcast is the
+        // authoritative source. If the request fails the AI's next
+        // detection will re-flip the flag anyway.
+      }
+    }
+  }, [navigate, finalApiBase]);
 
   // ── WebSocket lifecycle ────────────────────────────────────────────────
   //
@@ -470,7 +527,13 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
               <div>
                 <h3 className="font-semibold text-white">Hỗ trợ CellZone</h3>
                 <p className="text-xs text-white/70">
-                  {connected ? "Trực tuyến" : hasStarted ? "Đang kết nối..." : "Bắt đầu trò chuyện"}
+                  {waitingForHuman
+                    ? "Đang chờ nhân viên..."
+                    : connected
+                      ? "Trực tuyến"
+                      : hasStarted
+                        ? "Đang kết nối..."
+                        : "Bắt đầu trò chuyện"}
                 </p>
               </div>
             </div>
@@ -537,6 +600,7 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
                   <>
                     {messages.map((msg) => {
                       const isAgent = msg.sender === "agent";
+                      const chips = msg.attachments ?? [];
                       return (
                         <div key={msg.id} className={`flex ${isAgent ? "justify-start" : "justify-end"}`}>
                           <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${
@@ -544,7 +608,36 @@ export default function ChatBubble({ wsUrl, apiBase }: ChatBubbleProps) {
                               ? "bg-white/10 text-white rounded-bl-md"
                               : "bg-gradient-to-br from-crimson via-rose to-sakura text-white rounded-br-md shadow-glow"
                           }`}>
-                            <p className="text-sm">{msg.content}</p>
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                            {chips.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {chips.map((chip, idx) =>
+                                  chip.type === "product" ? (
+                                    <button
+                                      key={`${chip.type}-${chip.id ?? idx}`}
+                                      onClick={() => handleAttachmentClick(chip)}
+                                      className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-medium text-white transition-all hover:bg-white/20"
+                                    >
+                                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.15c0 .415.336.75.75.75z" />
+                                      </svg>
+                                      <span className="max-w-[160px] truncate">{chip.label}</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      key={`${chip.type}-${idx}`}
+                                      onClick={() => handleAttachmentClick(chip)}
+                                      className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-crimson to-rose px-2.5 py-1 text-xs font-medium text-white shadow transition-all hover:opacity-90"
+                                    >
+                                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                      </svg>
+                                      <span>{chip.label}</span>
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            )}
                             <div className={`flex items-center gap-1 mt-1 ${isAgent ? "justify-start" : "justify-end"}`}>
                               <span className={`text-[10px] ${isAgent ? "text-gray-400" : "text-white/60"}`}>
                                 {formatTime(msg.timestamp)}
