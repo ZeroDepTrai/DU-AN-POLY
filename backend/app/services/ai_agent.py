@@ -127,14 +127,20 @@ def _history_to_gemini(messages: list[ChatMessage]) -> list[dict]:
 
 
 def _build_prompt(system_instruction: str, history: list[dict], last_user_message: str) -> dict:
-    """Build the JSON body for the Gemini generateContent endpoint."""
+    """Build the JSON body for the Gemini generateContent endpoint.
+
+    ``maxOutputTokens`` is set high enough that a long product listing
+    (about 50 SKUs, multiple lines each) plus a 4-6 sentence reply fits
+    in one turn. The previous value of 512 clipped answers mid-sentence
+    after the first product, which the user saw as "message got cut".
+    """
     return {
         "systemInstruction": {"parts": [{"text": system_instruction}]},
         "contents": history,
         "generationConfig": {
             "temperature": 0.6,
             "topP": 0.9,
-            "maxOutputTokens": 512,
+            "maxOutputTokens": 2048,
         },
     }
 
@@ -191,9 +197,20 @@ async def _call_gemini(api_key: str, body: dict) -> str | None:
     parts = (candidates[0].get("content") or {}).get("parts") or []
     text_chunks = [p.get("text", "") for p in parts if isinstance(p, dict)]
     text = "".join(text_chunks).strip()
+    finish = candidates[0].get("finishReason")
+    # Surface truncation loudly: when ``finishReason`` is MAX_TOKENS the
+    # answer was clipped mid-stream, which is exactly the symptom the
+    # operator reported as "message got cut". Bumping maxOutputTokens
+    # is the fix; the warning here just makes future regressions obvious.
+    if finish == "MAX_TOKENS":
+        logger.warning(
+            "[ai_agent] Gemini hit MAX_TOKENS after %d chars; consider raising maxOutputTokens",
+            len(text),
+        )
     if not text:
-        finish = candidates[0].get("finishReason") or "?"
-        logger.warning("[ai_agent] Gemini returned empty text (finish=%s)", finish)
+        logger.warning(
+            "[ai_agent] Gemini returned empty text (finish=%s)", finish or "?"
+        )
         return None
     return text
 
