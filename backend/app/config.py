@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     upload_dir: str = "/data/uploads"
     resend_api_key: str = ""
     email_from: str = "Phone Store <onboarding@resend.dev>"
+    # Optional: enables the live-chat AI agent in backend/app/services/ai_agent.py.
+    # Leave empty in local development — the agent will then issue a friendly
+    # canned reply instead of calling Gemini. The value is read from the
+    # ``GEMINI_API_KEY`` environment variable; never hard-code a real key here.
+    gemini_api_key: str = ""
 
     @property
     def database_url_final(self) -> str:

@@ -330,6 +330,13 @@ def customer_send_message(
     db.commit()
     db.refresh(message)
 
+    # Schedule the AI agent if no support agent has claimed this
+    # conversation yet. ``schedule_ai_reply`` re-checks assignment
+    # inside the background task so this is safe to call speculatively.
+    if conv.assigned_to is None and conv.status != "closed":
+        from app.services.ai_agent import schedule_ai_reply
+        schedule_ai_reply(conversation_id)
+
     return _message_to_response(message)
 
 

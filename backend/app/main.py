@@ -471,6 +471,16 @@ async def chat_ws(websocket: WebSocket, token: str | None = None):
                         if client_id:
                             payload["client_id"] = client_id
                         await manager.chat_broadcast(payload)
+
+                        # Schedule the AI agent only when a customer is
+                        # chatting with a still-unassigned conversation.
+                        # The service re-checks the assignment before
+                        # persisting so a race with a support agent
+                        # claiming the chat can never produce a duplicate
+                        # reply.
+                        if sender_type == "customer" and conv.assigned_to is None and conv.status != "closed":
+                            from app.services.ai_agent import schedule_ai_reply
+                            schedule_ai_reply(conv_id)
                 except Exception as e:
                     # Don't kill the whole WS for one bad payload — log it and
                     # keep the connection open so subsequent messages still flow.
