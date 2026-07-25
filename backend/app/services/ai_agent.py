@@ -75,10 +75,10 @@ HUMAN_HANDOFF_BUTTON: dict = {
 MAX_PRODUCT_BUTTONS = 5
 
 #: Gemini REST endpoint for the lightweight chat model.
-#: Gemini 3.6 Flash is fast, free-tier friendly, and supports Vietnamese.
+#: Gemini 3.5 Flash-Lite is fast, cost-efficient, and supports Vietnamese.
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-3.6-flash:generateContent"
+    "gemini-3.5-flash-lite:generateContent"
 )
 
 #: Cap on how many product rows we expose to the model. The full catalog
