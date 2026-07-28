@@ -412,20 +412,28 @@ export default function Spin() {
     drawWheel(canvasRef.current, prizes, prizeImages);
   }, [prizes, prizeImages]);
 
+  // Keyed on the URL signature only — a refreshConfig() that returns the
+  // same images (e.g. just an updated user_credits after a spin) won't
+  // restart the preload and wipe the wheel back to emoji fallbacks.
+  const prizeImageSignature = prizes
+    .map((p) => p.image ?? "")
+    .join("|");
+
   useEffect(() => {
-    const urls = prizes
-      .map((p) => p.image)
-      .filter((u): u is string => typeof u === "string" && u.length > 0);
+    const urls = prizeImageSignature
+      .split("|")
+      .filter((u): u is string => u.length > 0);
     const unique = Array.from(new Set(urls));
     if (unique.length === 0) return;
     let cancelled = false;
     preloadImages(unique).then((loaded) => {
-      if (!cancelled) setPrizeImages(loaded);
+      if (cancelled) return;
+      setPrizeImages((prev) => ({ ...prev, ...loaded }));
     });
     return () => {
       cancelled = true;
     };
-  }, [prizes]);
+  }, [prizeImageSignature]);
 
   async function refreshConfig() {
     try {
