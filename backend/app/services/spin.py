@@ -22,11 +22,14 @@ Prize resolution rules:
 from __future__ import annotations
 
 import json
+import logging
 import secrets
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.models import (
     Coupon,
     Order,
@@ -37,19 +40,42 @@ from app.models import (
     SpinCredit,
     WheelConfig,
 )
+from app.services.images import resolve_uploads_url
 
 
 DEFAULT_PRIZES_JSON = (
     "["
-    '{"name":"Mã giảm giá 2%","image":"/uploads/case.png","weight":35,"jackpot":false,"icon":"🎟️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":2},'
-    '{"name":"Cường Lực miễn phí","image":"/uploads/screen.png","weight":25,"jackpot":false,"icon":"🛡️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":10},'
-    '{"name":"Ốp Iphone miễn phí","image":"/uploads/cable.png","weight":20,"jackpot":false,"icon":"📱","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
-    '{"name":"Dây sạc miễn phí","image":"/uploads/charger.png","weight":14,"jackpot":false,"icon":"🔌","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
-    '{"name":"Mã giảm giá 5%","image":"/uploads/airpod.png","weight":5,"jackpot":false,"icon":"🎁","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
-    '{"name":"Chúc bạn may mắn lần sau","image":"/uploads/smartwatch.png","weight":0.5,"jackpot":false,"icon":"🍀","coupon_id":null,"product_id":null},'
-    '{"name":"Apple Watch","image":"/uploads/watch.png","weight":0.4,"jackpot":true,"icon":"⌚","coupon_id":null,"product_id":null},'
-    '{"name":"IPhone 17 Pro Max","image":"/uploads/iphone.png","weight":0.1,"jackpot":true,"icon":"📱","coupon_id":null,"product_id":null}'
+    '{"name":"Mã giảm giá 2%","image":"","weight":35,"jackpot":false,"icon":"🎟️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":2},'
+    '{"name":"Cường Lực miễn phí","image":"","weight":25,"jackpot":false,"icon":"🛡️","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":10},'
+    '{"name":"Ốp Iphone miễn phí","image":"","weight":20,"jackpot":false,"icon":"📱","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
+    '{"name":"Dây sạc miễn phí","image":"","weight":14,"jackpot":false,"icon":"🔌","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
+    '{"name":"Mã giảm giá 5%","image":"","weight":5,"jackpot":false,"icon":"🎁","coupon_id":null,"product_id":null,"coupon_discount_type":"percent","coupon_discount_value":5},'
+    '{"name":"Chúc bạn may mắn lần sau","image":"","weight":0.5,"jackpot":false,"icon":"🍀","coupon_id":null,"product_id":null},'
+    '{"name":"Apple Watch","image":"","weight":0.4,"jackpot":true,"icon":"⌚","coupon_id":null,"product_id":null},'
+    '{"name":"IPhone 17 Pro Max","image":"","weight":0.1,"jackpot":true,"icon":"📱","coupon_id":null,"product_id":null}'
     "]"
+)
+
+
+# Names of the default prizes that ship without an image. Logged once on
+# import so it's obvious from the server log why the wheel falls back to
+# emojis instead of admin-uploaded photos.
+DEFAULT_PRIZES_WITHOUT_IMAGE = {
+    "Mã giảm giá 2%",
+    "Cường Lực miễn phí",
+    "Ốp Iphone miễn phí",
+    "Dây sạc miễn phí",
+    "Mã giảm giá 5%",
+    "Chúc bạn may mắn lần sau",
+    "Apple Watch",
+    "IPhone 17 Pro Max",
+}
+
+log = logging.getLogger(__name__)
+log.warning(
+    "Spin default prizes ship without an image URL — admins must set "
+    "prize images via /api/admin/wheel. Slots: %s",
+    ", ".join(sorted(DEFAULT_PRIZES_WITHOUT_IMAGE)),
 )
 
 
@@ -308,7 +334,18 @@ def perform_spin(db: Session, user_id: int) -> tuple[dict, Spin]:
             item = _fulfil_product_reward(db, user_id, chosen_product)
             free_order_id = item.order_id
             prize["product_name"] = chosen_product.name
-            prize["product_image_url"] = chosen_product.image_url
+            safe_url = resolve_uploads_url(
+                chosen_product.image_url, Path(settings.upload_dir)
+            )
+            if not safe_url and chosen_product.image_url:
+                log.warning(
+                    "spin.perform_spin: product %s image_url %r not found on "
+                    "disk; returning empty image for prize %r",
+                    chosen_product.id,
+                    chosen_product.image_url,
+                    prize.get("name"),
+                )
+            prize["product_image_url"] = safe_url or chosen_product.image_url or ""
     elif reward_type == "coupon":
         chosen_coupon, coupon_code = _fulfil_coupon_reward(db, prize)
         if chosen_coupon is None:

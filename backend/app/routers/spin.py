@@ -1,9 +1,12 @@
 """Spin / wheel endpoints (public for authenticated users; admin for config)."""
+import logging
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.deps import get_current_user, get_optional_user, require_admin
 from app.models import Coupon, Product, Spin, User, WheelConfig
@@ -13,6 +16,7 @@ from app.schemas import (
     WheelConfigUpdate,
     WheelPrize,
 )
+from app.services.images import resolve_uploads_url
 from app.services.spin import (
     DEFAULT_PRIZES_JSON,
     get_or_create_wheel,
@@ -24,9 +28,17 @@ from app.services.spin import (
 
 router = APIRouter(prefix="/api", tags=["spin"])
 
+log = logging.getLogger(__name__)
+
 
 def _decorate_prizes(prizes: list[dict], db: Session) -> list[WheelPrize]:
-    """Inject product_name + product_image_url into the prize response."""
+    """Inject product_name + product_image_url into the prize response.
+
+    Only inject ``product_image_url`` when the file actually exists on disk
+    so the frontend never sees a URL that will 404 — the wheel canvas and
+    prize modal both fall back to the prize emoji on an empty string.
+    """
+    upload_dir = Path(settings.upload_dir)
     out: list[WheelPrize] = []
     for p in prizes:
         pid = p.get("product_id")
@@ -34,7 +46,14 @@ def _decorate_prizes(prizes: list[dict], db: Session) -> list[WheelPrize]:
             prod = db.get(Product, pid)
             if prod is not None:
                 p["product_name"] = prod.name
-                p["product_image_url"] = prod.image_url
+                safe_url = resolve_uploads_url(prod.image_url, upload_dir)
+                if not safe_url and prod.image_url:
+                    log.warning(
+                        "spin: product %s image_url %r not found on disk; "
+                        "returning empty image for prize %r",
+                        pid, prod.image_url, p.get("name"),
+                    )
+                p["product_image_url"] = safe_url or prod.image_url or ""
         out.append(WheelPrize(**p))
     return out
 
@@ -80,7 +99,14 @@ def play_spin(
         product = db.get(Product, spin.product_id)
         if product:
             prize["product_name"] = product.name
-            prize["product_image_url"] = product.image_url
+            safe_url = resolve_uploads_url(product.image_url, Path(settings.upload_dir))
+            if not safe_url and product.image_url:
+                log.warning(
+                    "spin.play: product %s image_url %r not found on disk; "
+                    "returning empty image for prize %r",
+                    product.id, product.image_url, prize.get("name"),
+                )
+            prize["product_image_url"] = safe_url or product.image_url or ""
 
     coupon_code = spin.coupon_code
     discount_value: float | None = None
@@ -134,8 +160,14 @@ def spin_history(
             product = db.get(Product, s.product_id)
             if product is not None:
                 product_name = product.name
-                product_image_url = product.image_url
-                image = product.image_url
+                safe_url = resolve_uploads_url(product.image_url, Path(settings.upload_dir))
+                if not safe_url and product.image_url:
+                    log.warning(
+                        "spin.history: product %s image_url %r not found on disk",
+                        product.id, product.image_url,
+                    )
+                product_image_url = safe_url or product.image_url or ""
+                image = product_image_url
 
         result.append(
             SpinHistoryItem(

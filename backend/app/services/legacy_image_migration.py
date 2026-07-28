@@ -1,5 +1,6 @@
 """Idempotent migration for images created before local optimization existed."""
 
+import logging
 import re
 from pathlib import Path
 
@@ -7,6 +8,9 @@ from app.config import settings
 from app.database import SessionLocal
 from app.models import BlogPost, Product, ProductMedia
 from app.services.images import InvalidImageError, persist_inline_data_images, save_optimized_image
+
+
+log = logging.getLogger(__name__)
 
 
 _OPTIMIZED_URL_RE = re.compile(r"^/uploads/[0-9a-f]{32}\.webp$")
@@ -19,12 +23,27 @@ def _optimize_url(url: str, upload_dir: Path, cache: dict[str, str]) -> str:
         return cache[url]
     source = upload_dir / Path(url).name
     if not source.is_file():
+        log.warning(
+            "legacy_image_migration: skipping %r — file not found in %s. "
+            "The DB row keeps the broken URL; the spin wheel will fall back "
+            "to emoji placeholders until the file is restored or the row is "
+            "edited.",
+            url,
+            upload_dir,
+        )
         return url
     try:
         optimized = save_optimized_image(source.read_bytes(), upload_dir)
-    except (InvalidImageError, OSError):
+    except (InvalidImageError, OSError) as exc:
+        log.warning(
+            "legacy_image_migration: skipping %r — optimize failed (%s: %s)",
+            url, type(exc).__name__, exc,
+        )
         return url
     cache[url] = optimized
+    log.info(
+        "legacy_image_migration: optimized %r -> %r", url, optimized,
+    )
     return optimized
 
 
@@ -48,13 +67,14 @@ def optimize_legacy_images() -> None:
             post.content = persist_inline_data_images(post.content or "", upload_dir)
 
         db.commit()
-        print(
-            f"[IMAGE MIGRATION] optimized {len(converted_urls)} legacy files; "
-            f"scanned {len(products)} products"
+        log.warning(
+            "[IMAGE MIGRATION] optimized %d legacy files; scanned %d products",
+            len(converted_urls),
+            len(products),
         )
     except Exception as exc:
         db.rollback()
-        print(f"[IMAGE MIGRATION] skipped ({type(exc).__name__}: {exc})")
+        log.warning("[IMAGE MIGRATION] skipped (%s: %s)", type(exc).__name__, exc)
     finally:
         db.close()
 

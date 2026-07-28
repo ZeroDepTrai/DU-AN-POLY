@@ -8,11 +8,17 @@ select with ``srcset``.
 import base64
 import binascii
 import io
+import logging
 import re
 import uuid
 from pathlib import Path
 
 from PIL import Image, ImageOps, UnidentifiedImageError
+
+from app.config import settings
+
+
+log = logging.getLogger(__name__)
 
 
 MAX_IMAGE_PIXELS = 40_000_000
@@ -95,3 +101,25 @@ def persist_inline_data_images(html: str, upload_dir: Path) -> str:
         lambda match: f'<img loading="lazy" decoding="async"{match.group("attrs")}>',
         optimized,
     )
+
+
+def resolve_uploads_url(url: str | None, upload_dir: Path | None = None) -> str:
+    """Return ``url`` if it points at a file that exists on disk under
+    ``upload_dir``, otherwise return ``""``.
+
+    Used by the spin router/service to make sure we never hand the browser a
+    URL that will 404 (e.g. a stale ``/uploads/airpod.png`` from a deploy
+    whose upload volume was wiped, or a placeholder path that was never a
+    real file). An empty string is a safe sentinel — both the wheel canvas
+    and the prize modal fall back to the emoji in that case.
+    """
+    if not url or not isinstance(url, str):
+        return ""
+    if not url.startswith("/uploads/"):
+        # External / absolute URLs are returned as-is — we don't have a way
+        # to verify them from here, and the legacy migration only ever
+        # produces relative paths.
+        return url
+    base = upload_dir if upload_dir is not None else Path(settings.upload_dir)
+    target = base / Path(url).name
+    return url if target.is_file() else ""

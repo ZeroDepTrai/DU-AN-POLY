@@ -151,6 +151,10 @@ function drawWheel(
   ctx.stroke();
 }
 
+// 6s per-image cap so one slow / hung URL can't stall the whole wheel preload
+// (browsers don't time out image requests quickly enough on their own).
+const PRELOAD_TIMEOUT_MS = 6000;
+
 function preloadImages(urls: string[]): Promise<Record<string, HTMLImageElement>> {
   return Promise.all(
     urls.map(
@@ -161,9 +165,17 @@ function preloadImages(urls: string[]): Promise<Record<string, HTMLImageElement>
             return;
           }
           const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.onload = () => resolve({ url, img });
-          img.onerror = () => resolve({ url, img: null });
+          let settled = false;
+          const finish = (result: HTMLImageElement | null) => {
+            if (settled) return;
+            settled = true;
+            img.onload = null;
+            img.onerror = null;
+            resolve({ url, img: result });
+          };
+          img.onload = () => finish(img);
+          img.onerror = () => finish(null);
+          window.setTimeout(() => finish(null), PRELOAD_TIMEOUT_MS);
           img.src = url;
         }),
     ),
@@ -190,6 +202,19 @@ interface ModalPrize {
   spin_id?: number | null;
 }
 
+function PrizeModalImage({ src, alt, className, fallbackIcon }: { src: string; alt: string; className: string; fallbackIcon: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <span className="text-5xl">{fallbackIcon}</span>;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function PrizeModal({
   prize,
   onClose,
@@ -203,6 +228,9 @@ function PrizeModal({
   const isJackpot = prize.reward_type === "jackpot" || prize.jackpot;
   const isProduct = prize.reward_type === "free_product" || (!!prize.product_id && !prize.coupon_code);
   const isCoupon = prize.reward_type === "coupon" || (!!prize.coupon_code && !isProduct);
+  const fallbackIcon = prize.icon || "🎁";
+  const productImg = isProduct && prize.product_image_url ? prize.product_image_url : null;
+  const prizeImg = !productImg && prize.image ? prize.image : null;
 
   return (
     <div
@@ -233,16 +261,22 @@ function PrizeModal({
             isJackpot ? "ring-yellow-300/40 bg-yellow-500/10" : "ring-white/20 bg-white/5"
           }`}
         >
-          {isProduct && prize.product_image_url ? (
-            <img
-              src={prize.product_image_url}
+          {productImg ? (
+            <PrizeModalImage
+              src={productImg}
               alt={prize.product_name || ""}
               className="h-[78%] w-[78%] object-contain"
+              fallbackIcon={fallbackIcon}
             />
-          ) : prize.image ? (
-            <img src={prize.image} alt="" className="h-[70%] w-[70%] object-contain" />
+          ) : prizeImg ? (
+            <PrizeModalImage
+              src={prizeImg}
+              alt=""
+              className="h-[70%] w-[70%] object-contain"
+              fallbackIcon={fallbackIcon}
+            />
           ) : (
-            <span className="text-5xl">{prize.icon || "🎁"}</span>
+            <span className="text-5xl">{fallbackIcon}</span>
           )}
         </div>
         <h2
