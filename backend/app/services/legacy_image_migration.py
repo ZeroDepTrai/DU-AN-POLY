@@ -15,21 +15,44 @@ log = logging.getLogger(__name__)
 
 
 _OPTIMIZED_URL_RE = re.compile(r"^/uploads/[0-9a-f]{32}\.webp$")
+_LEGACY_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png"}
 
 
-def _optimize_url(url: str, upload_dir: Path, cache: dict[str, str]) -> str:
+def _optimize_url(
+    url: str,
+    upload_dir: Path,
+    cache: dict[str, str],
+    originals_to_delete: set[Path],
+) -> str:
+    """Resolve a legacy upload to WebP and queue its original for deletion."""
     if not url or not url.startswith("/uploads/") or _OPTIMIZED_URL_RE.match(url):
         return url
     if url in cache:
         return cache[url]
+
     source = upload_dir / Path(url).name
+    if source.suffix.lower() not in _LEGACY_IMAGE_SUFFIXES:
+        return url
+
+    # Older deployments sometimes created ``photo.webp`` but left the DB
+    # pointing at ``photo.jpg``/``photo.png``. Reuse it instead of generating
+    # another optimized image with a random name.
+    existing_webp = source.with_suffix(".webp")
+    if existing_webp.is_file():
+        optimized = f"/uploads/{existing_webp.name}"
+        cache[url] = optimized
+        if source.is_file():
+            originals_to_delete.add(source)
+        log.info(
+            "legacy_image_migration: found existing WebP %r -> %r", url, optimized,
+        )
+        return optimized
+
     if not source.is_file():
         log.warning(
-            "legacy_image_migration: skipping %r — file not found in %s. "
-            "The DB row keeps the broken URL; the spin wheel will fall back "
-            "to emoji placeholders until the file is restored or the row is "
-            "edited.",
+            "legacy_image_migration: skipping %r — neither %s nor source file exists in %s",
             url,
+            existing_webp.name,
             upload_dir,
         )
         return url
@@ -42,35 +65,64 @@ def _optimize_url(url: str, upload_dir: Path, cache: dict[str, str]) -> str:
         )
         return url
     cache[url] = optimized
+    originals_to_delete.add(source)
     log.info(
         "legacy_image_migration: optimized %r -> %r", url, optimized,
     )
     return optimized
 
 
+def _delete_migrated_originals(originals: set[Path]) -> int:
+    """Delete legacy files after their replacement URLs are safely committed."""
+    deleted = 0
+    for source in originals:
+        try:
+            source.unlink(missing_ok=True)
+            deleted += 1
+            log.info("legacy_image_migration: deleted original %s", source)
+        except OSError as exc:
+            log.warning(
+                "legacy_image_migration: could not delete original %s (%s: %s)",
+                source,
+                type(exc).__name__,
+                exc,
+            )
+    return deleted
+
+
 def optimize_legacy_images() -> None:
-    """Move legacy DB-backed images to optimized files without deleting originals."""
+    """Migrate DB image URLs to WebP, then delete committed legacy originals."""
     upload_dir = Path(settings.upload_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)
     db = SessionLocal()
     converted_urls: dict[str, str] = {}
+    originals_to_delete: set[Path] = set()
     try:
         products = db.query(Product).all()
         for product in products:
-            product.image_url = _optimize_url(product.image_url, upload_dir, converted_urls)
+            product.image_url = _optimize_url(
+                product.image_url, upload_dir, converted_urls, originals_to_delete
+            )
             product.description = persist_inline_data_images(product.description or "", upload_dir)
             product.specifications = persist_inline_data_images(product.specifications or "", upload_dir)
         for media in db.query(ProductMedia).filter(ProductMedia.media_type == "image").all():
-            media.url = _optimize_url(media.url, upload_dir, converted_urls)
+            media.url = _optimize_url(
+                media.url, upload_dir, converted_urls, originals_to_delete
+            )
 
         for post in db.query(BlogPost).all():
-            post.image_url = _optimize_url(post.image_url, upload_dir, converted_urls)
+            post.image_url = _optimize_url(
+                post.image_url, upload_dir, converted_urls, originals_to_delete
+            )
             post.content = persist_inline_data_images(post.content or "", upload_dir)
 
         db.commit()
+        originals_deleted = _delete_migrated_originals(originals_to_delete)
         log.warning(
-            "[IMAGE MIGRATION] optimized %d legacy files; scanned %d products",
+            "[IMAGE MIGRATION] migrated %d legacy URLs; deleted %d originals; "
+            "scanned %d products",
             len(converted_urls),
+            originals_deleted,
             len(products),
         )
     except Exception as exc:
@@ -215,23 +267,31 @@ def scrub_broken_image_urls() -> int:
     return rows_changed
 
 
-def scrub_broken_image_urls_async() -> None:
-    """Background wrapper: run the scrub on a daemon thread so it never
-    blocks the FastAPI lifespan from completing.
+def maintain_image_urls_async() -> None:
+    """Run WebP migration, then broken-link cleanup, on one daemon thread.
 
-    The scrub touches the DB and reads disk. On a healthy volume both are
-    fast, but we still don't want a slow IO to keep the API from binding
-    its port. Errors are caught and logged inside ``scrub_broken_image_urls``.
+    Ordering matters: legacy JPEG/PNG URLs are first repointed to an existing
+    or newly generated WebP file. Only after that transaction finishes do we
+    clear URLs whose files truly do not exist.
     """
     import threading
 
     def _run() -> None:
         try:
+            optimize_legacy_images()
             scrub_broken_image_urls()
         except Exception as exc:  # pragma: no cover - belt and braces
-            log.warning("[IMAGE SCRUB] async runner crashed (%s: %s)", type(exc).__name__, exc)
+            log.warning(
+                "[IMAGE MAINTENANCE] async runner crashed (%s: %s)",
+                type(exc).__name__,
+                exc,
+            )
 
-    threading.Thread(target=_run, name="image-scrub", daemon=True).start()
+    threading.Thread(
+        target=_run,
+        name="image-maintenance",
+        daemon=True,
+    ).start()
 
 
 if __name__ == "__main__":
