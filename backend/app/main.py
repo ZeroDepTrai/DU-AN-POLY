@@ -205,6 +205,15 @@ async def lifespan(app: FastAPI):
     # this guarantees ORM queries after this point see the latest columns.
     engine.dispose()
 
+    # Background: scan DB rows for image URLs whose files are missing on disk
+    # and blank them so the browser never sees a 404. Runs on a daemon thread
+    # so a slow volume can't keep the API from binding its port.
+    try:
+        from app.services.legacy_image_migration import scrub_broken_image_urls_async
+        scrub_broken_image_urls_async()
+    except Exception as e:
+        logger.warning(f"[IMAGE SCRUB] could not schedule: {e}")
+
     yield
 
 
