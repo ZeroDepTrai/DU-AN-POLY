@@ -216,7 +216,6 @@ export default function Products() {
   }
 
   // Paginate the client-side filtered results
-  const total = data?.total ?? filteredProducts.length;
   const paginatedProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const currentPage = Math.min(Math.max(1, page), totalPages);

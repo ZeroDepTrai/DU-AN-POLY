@@ -193,54 +193,6 @@ function formatDaysAgo(days: number) {
   return `${days} ngày trước`;
 }
 
-function PromoBannerCard({ banner }: { banner: typeof PROMO_BANNERS[0] }) {
-  const isWide = banner.size === "wide";
-  const isTall = banner.size === "tall";
-
-  return (
-    <Link
-      to={banner.href}
-      className={`group relative flex overflow-hidden rounded-fig-card ${isWide ? "col-span-2 aspect-[16/7]" : isTall ? "aspect-[4/5]" : "aspect-square"} bg-aurora-bg-mid`}
-    >
-      {/* Background image */}
-      <OptimizedImage
-        src={banner.img}
-        alt={banner.title}
-        sizes={isWide ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 50vw, 33vw"}
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-      />
-      {/* Gradient overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient} opacity-80 transition-opacity duration-300 group-hover:opacity-70`} />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-      {/* Tagline pill */}
-      <div className="absolute left-4 top-4">
-        <span className={`inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 backdrop-blur-xl px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur`}>
-          <span className={`h-1.5 w-1.5 rounded-full bg-current animate-pulse`} />
-          {banner.tagline}
-        </span>
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col justify-end p-5">
-        <h3 className={`font-bold text-white ${isWide ? "text-2xl" : "text-lg"} leading-tight`}>
-          {banner.title}
-        </h3>
-        <p className="mt-1 text-xs text-white/80">{banner.subtitle}</p>
-        <div className={`mt-3 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-xl transition-all group-hover:bg-white/35 ${isWide ? "w-fit" : ""}`}>
-          {banner.cta}
-          <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </div>
-      </div>
-
-      {/* Border glow on hover */}
-      <div className="absolute inset-0 rounded-fig-card ring-1 ring-white/0 transition-all duration-300 group-hover:ring-white/20" />
-    </Link>
-  );
-}
-
 function TestimonialCard({ t }: { t: typeof TESTIMONIALS[0] }) {
   const avatarStyle = getAvatarStyle(t.avatar.hue);
 
