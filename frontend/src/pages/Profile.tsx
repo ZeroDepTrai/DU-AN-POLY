@@ -499,7 +499,7 @@ export default function Profile() {
               </div>
               <div className="space-y-3">
                 {[
-                  { label: "Nhà riêng", address: "123 Đường Nguyễn Trãi, Quận 1, TP.HCM", default: true },
+                  { label: "Nhà riêng", address: "193 Đỗ Văn Thi, phường Trấn Biên, TP. Biên Hòa, Đồng Nai 700000", default: true },
                   { label: "Văn phòng", address: "456 Lê Lợi, Quận 3, TP.HCM", default: false },
                 ].map((addr, idx) => (
                   <GlassCard key={idx} intensity="low" hoverable className="flex items-start gap-4 p-4">

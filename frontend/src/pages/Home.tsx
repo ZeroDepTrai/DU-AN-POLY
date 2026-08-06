@@ -401,9 +401,74 @@ export default function Home() {
               </Link>
             }
           />
-          <div className="mt-8 grid aspect-[16/9] grid-cols-4 grid-rows-2 gap-4 lg:grid-cols-6 lg:grid-rows-2">
-            {PROMO_BANNERS.map((banner) => (
-              <PromoBannerCard key={banner.id} banner={banner} />
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Hero banner — spans full width on mobile and 2 cols on tablet */}
+            {PROMO_BANNERS[0] && (
+              <Link
+                to={PROMO_BANNERS[0].href}
+                className="group relative col-span-1 flex aspect-[16/7] overflow-hidden rounded-fig-card sm:col-span-2 lg:col-span-3 bg-aurora-bg-mid"
+              >
+                <OptimizedImage
+                  src={PROMO_BANNERS[0].img}
+                  alt={PROMO_BANNERS[0].title}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 66vw, 100vw"
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className={`absolute inset-0 bg-gradient-to-br ${PROMO_BANNERS[0].gradient} opacity-80`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute left-4 top-4">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 backdrop-blur-xl px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
+                    <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+                    {PROMO_BANNERS[0].tagline}
+                  </span>
+                </div>
+                <div className="relative z-10 flex flex-col justify-end p-5">
+                  <h3 className="font-bold text-white text-2xl leading-tight">{PROMO_BANNERS[0].title}</h3>
+                  <p className="mt-1 text-xs text-white/80">{PROMO_BANNERS[0].subtitle}</p>
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-xl transition-all group-hover:bg-white/35 w-fit">
+                    {PROMO_BANNERS[0].cta}
+                    <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="absolute inset-0 rounded-fig-card ring-1 ring-white/0 transition-all duration-300 group-hover:ring-white/20" />
+              </Link>
+            )}
+
+            {/* Remaining banners — auto grid, all equal size */}
+            {PROMO_BANNERS.slice(1).map((banner) => (
+              <Link
+                key={banner.id}
+                to={banner.href}
+                className="group relative flex aspect-[16/9] overflow-hidden rounded-fig-card bg-aurora-bg-mid"
+              >
+                <OptimizedImage
+                  src={banner.img}
+                  alt={banner.title}
+                  sizes="(max-width: 640px) 50vw, 33vw"
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient} opacity-80`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute left-3 top-3">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 backdrop-blur-xl px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
+                    <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+                    {banner.tagline}
+                  </span>
+                </div>
+                <div className="relative z-10 flex flex-col justify-end p-4">
+                  <h3 className="font-bold text-white text-base leading-tight">{banner.title}</h3>
+                  <p className="mt-1 text-[10px] text-white/80">{banner.subtitle}</p>
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-xl transition-all group-hover:bg-white/35">
+                    {banner.cta}
+                    <svg className="h-3 w-3 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="absolute inset-0 rounded-fig-card ring-1 ring-white/0 transition-all duration-300 group-hover:ring-white/20" />
+              </Link>
             ))}
           </div>
         </div>
@@ -626,13 +691,13 @@ export default function Home() {
                 <AuroraBadge tone="crimson" glow className="mb-3">
                   Trụ sở chính
                 </AuroraBadge>
-                <h3 className="mb-2 text-xl font-bold text-warmwhite">123 Đường Công Nghệ</h3>
+                <h3 className="mb-2 text-xl font-bold text-warmwhite">193 Đỗ Văn Thi, phường Trấn Biên, TP. Biên Hòa, Đồng Nai 700000</h3>
                 <p className="flex items-center gap-2 text-sm text-softgray">
                   <svg className="h-4 w-4 shrink-0 text-sakura" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  Quận 1, TP. HCM
+                  phường Trấn Biên, TP. Biên Hòa, Đồng Nai
                 </p>
               </div>
             </GlassCard>

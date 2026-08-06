@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { spinApi, type SpinHistoryItem, type WheelConfig, type WheelPrize } from "../api/client";
 import LoadingSpinner from "../components/LoadingSpinner";
+import GlassCard from "../components/aurora/GlassCard";
+import GlowButton from "../components/aurora/GlowButton";
 
 const FALLBACK_PRIZES: WheelPrize[] = [
   { name: "Mã giảm giá 2%", weight: 35, icon: "🎟️" },
@@ -151,8 +153,6 @@ function drawWheel(
   ctx.stroke();
 }
 
-// 6s per-image cap so one slow / hung URL can't stall the whole wheel preload
-// (browsers don't time out image requests quickly enough on their own).
 const PRELOAD_TIMEOUT_MS = 6000;
 
 function preloadImages(urls: string[]): Promise<Record<string, HTMLImageElement>> {
@@ -234,20 +234,22 @@ function PrizeModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div
-        className={`relative w-full max-w-sm overflow-hidden rounded-3xl border ${
-          isJackpot ? "border-yellow-400/60" : "border-white/[0.06]"
-        } bg-gradient-to-b from-[#0d1442] to-[#05070f] p-8 text-center`}
+      <GlassCard
+        intensity="high"
+        className={`relative w-full max-w-sm overflow-hidden p-8 text-center ${
+          isJackpot ? "ring-2 ring-yellow-400/50" : ""
+        }`}
         onClick={(e) => e.stopPropagation()}
-        style={isJackpot ? { boxShadow: "0 0 60px rgba(244,197,66,0.45)" } : undefined}
+        style={isJackpot ? { boxShadow: "0 0 60px rgba(244,197,66,0.45)" } as React.CSSProperties : undefined}
+        as="div"
       >
         <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-300">
-          {isJackpot ? "Jackpot" : "Vòng Quay May Mắn"}
+          {isJackpot ? "🎉 Jackpot" : "Vòng Quay May Mắn"}
         </p>
-        <p className="mb-6 text-xs font-medium tracking-wide text-white/70">
+        <p className="mb-6 text-xs font-medium tracking-wide text-softgray">
           {isJackpot
             ? "Phần quà cực giá trị"
             : isProduct
@@ -257,8 +259,8 @@ function PrizeModal({
                 : "Bạn đã tham gia vòng quay"}
         </p>
         <div
-          className={`mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full ring-2 ${
-            isJackpot ? "ring-yellow-300/40 bg-yellow-500/10" : "ring-white/20 bg-white/5"
+          className={`mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full ${
+            isJackpot ? "ring-2 ring-yellow-300/40 bg-yellow-500/10" : "ring-1 ring-white/20 bg-white/5"
           }`}
         >
           {productImg ? (
@@ -282,19 +284,19 @@ function PrizeModal({
         <h2
           className={`mb-4 text-2xl font-extrabold ${
             isJackpot
-              ? "text-yellow-300"
+              ? "aurora-text-rainbow"
               : isProduct
                 ? "text-emerald-300"
                 : isCoupon
-                  ? "text-pink-300"
-                  : "text-white"
+                  ? "text-sakura"
+                  : "text-warmwhite"
           }`}
         >
           {prize.name}
         </h2>
 
         {isProduct && (
-          <div className="mb-5 rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          <div className="mb-5 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
             Sản phẩm đã được thêm vào giỏ hàng — bạn không cần thanh toán cho sản phẩm này.
           </div>
         )}
@@ -308,31 +310,34 @@ function PrizeModal({
 
         {isCoupon && prize.coupon_code && (
           <div className="mb-5">
-            <p className="mb-1 text-[11px] uppercase tracking-wider text-white/60">Mã giảm giá của bạn</p>
-            <div className="rounded-xl border border-dashed border-pink-400/60 bg-pink-500/10 px-4 py-3 font-mono text-2xl font-bold tracking-[0.25em] text-pink-200">
+            <p className="mb-1 text-[11px] uppercase tracking-wider text-softgray">Mã giảm giá của bạn</p>
+            <div className="rounded-xl border border-dashed border-sakura/60 bg-sakura/10 px-4 py-3 font-mono text-2xl font-bold tracking-[0.25em] text-sakura">
               {prize.coupon_code}
             </div>
-            <p className="mt-2 text-[11px] text-white/50">
+            <p className="mt-2 text-[11px] text-steelgray">
               Nhập mã khi thanh toán để được giảm giá.
             </p>
           </div>
         )}
 
         <div className="flex flex-col gap-2">
-          <button
+          <GlowButton
+            variant="aurora"
+            size="lg"
+            className="w-full justify-center focus-aurora"
             onClick={onViewHistory}
-            className="w-full rounded-2xl bg-gradient-to-r from-rose to-crimson py-3 font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]"
           >
             XEM LỊCH SỬ TRÚNG THƯỞNG
-          </button>
-          <button
+          </GlowButton>
+          <GlowButton
+            variant="ghost"
+            className="w-full justify-center focus-aurora"
             onClick={onClose}
-            className="w-full rounded-2xl border border-white/15 bg-white/5 py-2 text-sm text-white/70 hover:bg-white/10"
           >
             Đóng
-          </button>
+          </GlowButton>
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 }
@@ -446,9 +451,6 @@ export default function Spin() {
     drawWheel(canvasRef.current, prizes, prizeImages);
   }, [prizes, prizeImages]);
 
-  // Keyed on the URL signature only — a refreshConfig() that returns the
-  // same images (e.g. just an updated user_credits after a spin) won't
-  // restart the preload and wipe the wheel back to emoji fallbacks.
   const prizeImageSignature = prizes
     .map((p) => p.image ?? "")
     .join("|");
@@ -525,9 +527,9 @@ export default function Spin() {
           spin_id: data.spin_id ?? null,
         });
 
-          if (prize.reward_type === "free_product" && prize.product_id) {
-            addFreeItem(prize.product_id);
-          }
+        if (prize.reward_type === "free_product" && prize.product_id) {
+          addFreeItem(prize.product_id);
+        }
 
         setSpinning(false);
         refreshConfig();
@@ -566,191 +568,250 @@ export default function Spin() {
   const totalWeight = prizes.reduce((s, x) => s + Number(x.weight || 0), 0) || 1;
 
   return (
-    <div className="container-padding section-padding">
-      <div className="mb-8 text-center">
-        <div className="mb-2 flex items-center justify-center gap-2">
-          <div className="h-px w-10 bg-crimson" />
-          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-rose">
-            Vòng Quay May Mắn
-          </span>
-          <div className="h-px w-10 bg-crimson" />
+    <div className="min-h-screen bg-aurora-bg-deep">
+      <div className="container mx-auto max-w-6xl px-4 py-10">
+
+        {/* ── Page header ─────────────────────────────────── */}
+        <div className="mb-8 text-center">
+          <div className="mb-3 flex items-center justify-center gap-3">
+            <div className="h-px w-12 bg-sakura/40" />
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-sakura">
+              CellZone
+            </span>
+            <div className="h-px w-12 bg-sakura/40" />
+          </div>
+          <h1 className="mb-3 text-3xl font-extrabold text-warmwhite sm:text-4xl">
+            <span className="aurora-text-gradient">{safeCfg.title || "Spin & Win"}</span>
+          </h1>
+          <p className="mx-auto max-w-xl text-sm text-softgray">
+            Mỗi {new Intl.NumberFormat("vi-VN").format(safeCfg.spend_per_spin_vnd)} VND đã mua (đơn hàng đã giao) = bạn nhận{" "}
+            <strong className="text-warmwhite">1 lượt quay</strong>. Quay ngay để trúng phần quà hấp dẫn!
+          </p>
+
+          {warning && (
+            <div className="mx-auto mt-4 max-w-md rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-xs text-amber-200">
+              {warning}
+            </div>
+          )}
+          {!hasToken && (
+            <div className="mx-auto mt-4 max-w-md rounded-xl border border-sakura/40 bg-sakura/10 px-4 py-2 text-xs text-sakura">
+              Bạn cần{" "}
+              <Link to="/login" onClick={() => setHasToken(!!localStorage.getItem("token"))} className="font-semibold underline">
+                đăng nhập
+              </Link>{" "}
+              để tham gia quay thưởng.
+            </div>
+          )}
+          {playError && (
+            <div className="mx-auto mt-4 max-w-md rounded-xl border border-crimson/40 bg-crimson/10 px-4 py-2 text-xs text-crimson">
+              {playError}
+            </div>
+          )}
         </div>
-        <h1 className="mb-2 text-3xl font-extrabold text-warmwhite sm:text-4xl">
-          {safeCfg.title || "CellZone · Spin & Win"}
-        </h1>
-        <p className="mx-auto max-w-2xl text-sm text-softgray">
-          Mỗi {new Intl.NumberFormat("vi-VN").format(safeCfg.spend_per_spin_vnd)} VND đã mua (đơn hàng đã
-          giao) = bạn nhận <strong className="text-warmwhite">1 lượt quay</strong>. Hãy quay để trúng ngay
-          phần quà hấp dẫn!
-        </p>
 
-        {warning && (
-          <div className="mx-auto mt-4 max-w-md rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-xs text-amber-200">
-            {warning}
-          </div>
-        )}
+        {/* ── Main layout: wheel + sidebar ─────────────────── */}
+        <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
 
-        {!hasToken && (
-          <div className="mx-auto mt-4 max-w-md rounded-xl border border-rose/40 bg-rose/10 px-4 py-2 text-xs text-rose">
-            Bạn cần{" "}
-            <Link
-              to="/login"
-              onClick={() => setHasToken(!!localStorage.getItem("token"))}
-              className="font-semibold underline"
+          {/* Wheel area */}
+          <GlassCard intensity="med" className="flex flex-col items-center p-6 sm:p-8">
+            {/* Aurora glow behind wheel */}
+            <div
+              className="relative mb-2 w-full max-w-[440px]"
+              style={{
+                background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(252,85,116,0.15), transparent 60%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(244,197,66,0.10), transparent 60%)",
+                borderRadius: "9999px",
+              }}
             >
-              đăng nhập
-            </Link>{" "}
-            để tham gia quay thưởng.
-          </div>
-        )}
+              <div className="relative mx-auto aspect-square w-full">
+                {/* Outer glow ring */}
+                <div className="pointer-events-none absolute -inset-3 rounded-full border border-sakura/20 shadow-glow-soft" />
 
-        {playError && (
-          <div className="mx-auto mt-4 max-w-md rounded-xl border border-rose/40 bg-rose/10 px-4 py-2 text-xs text-rose">
-            {playError}
-          </div>
-        )}
-      </div>
+                {/* Pointer */}
+                <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1 text-3xl text-sakura drop-shadow-md">
+                  ▼
+                </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <div className="flex flex-col items-center">
-          <div
-            className="relative w-full max-w-[520px] overflow-hidden rounded-3xl"
-            style={{
-              background:
-                "radial-gradient(ellipse 90% 60% at 50% 0%, rgba(47,111,237,0.28), transparent 60%), radial-gradient(ellipse 70% 50% at 50% 100%, rgba(244,197,66,0.10), transparent 60%), linear-gradient(180deg, #0d1442, #05070f 75%)",
-              padding: 24,
-            }}
-          >
-            <div className="relative mx-auto aspect-square w-full max-w-[440px]">
-              <div className="pointer-events-none absolute -inset-3 rounded-full border border-crimson/30" />
-              <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 text-3xl text-yellow-300 drop-shadow-md">
-                ▼
+                {/* Wheel canvas */}
+                <div className="absolute inset-0 overflow-hidden rounded-full">
+                  <canvas
+                    ref={canvasRef}
+                    width={640}
+                    height={640}
+                    className="h-full w-full"
+                    style={{
+                      transform: `rotate(${rotation}deg)`,
+                      transition: spinning ? "transform 5.6s cubic-bezier(0.16, 1, 0.3, 1)" : "none",
+                    }}
+                  />
+                </div>
+
+                {/* Center spin button */}
+                <button
+                  type="button"
+                  onClick={handleSpin}
+                  disabled={!canSpin}
+                  className={`aurora-glow-btn absolute left-1/2 top-1/2 z-20 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-lg font-bold focus-aurora disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  {spinning ? (
+                    <svg className="h-6 w-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : !hasToken ? (
+                    <Link to="/login" onClick={() => setHasToken(true)} className="text-sm">LOGIN</Link>
+                  ) : safeCfg.user_credits > 0 ? (
+                    "QUAY"
+                  ) : (
+                    "HẾT LƯỢT"
+                  )}
+                </button>
               </div>
-              <div className="absolute inset-0 overflow-hidden rounded-full">
-                <canvas
-                  ref={canvasRef}
-                  width={640}
-                  height={640}
-                  className="h-full w-full"
-                  style={{
-                    transform: `rotate(${rotation}deg)`,
-                    transition: spinning ? "transform 5.6s cubic-bezier(0.16, 1, 0.3, 1)" : "none",
-                  }}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleSpin}
-                disabled={!canSpin}
-                className="absolute left-1/2 top-1/2 z-20 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-xl font-bold transition-all disabled:cursor-not-allowed disabled:opacity-60"
-                style={
-                  canSpin
-                    ? {
-                        background: "linear-gradient(135deg,#ffedb0 0%,#f4c542 45%,#c8912a 100%)",
-                        color: "#241705",
-                        boxShadow:
-                          "0 0 0 4px #f4c54233, 0 10px 30px rgba(244,197,66,0.45), inset 0 -4px 0 rgba(0,0,0,0.15)",
-                      }
-                    : { background: "#b91c1c", color: "#fff", boxShadow: "0 6px 20px rgba(185,28,28,0.35)" }
-                }
-              >
-                {spinning ? "..." : !hasToken ? "LOGIN" : safeCfg.user_credits > 0 ? "QUAY" : "HẾT LƯỢT"}
-              </button>
             </div>
 
-            <div className="mt-6 text-center">
-              <p className="text-xs text-[#93a0c9]">
-                Còn <strong style={{ color: "#ffedb0" }}>{safeCfg.user_credits}</strong> lượt quay. Tổng
-                chi tiêu đã giao:{" "}
-                <strong className="text-white">
+            {/* Credits / spend info */}
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-softgray">
+              <div className="flex items-center gap-2 rounded-full border border-sakura/30 bg-sakura/10 px-4 py-1.5">
+                <span className="text-base">🎰</span>
+                <span>
+                  <strong className="text-warmwhite">{safeCfg.user_credits}</strong> lượt quay
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <svg className="h-4 w-4 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Tổng chi tiêu đã giao:{" "}
+                <strong className="text-warmwhite">
                   {new Intl.NumberFormat("vi-VN").format(safeCfg.lifetime_spend_vnd)} VND
                 </strong>
-              </p>
+              </div>
             </div>
-          </div>
-        </div>
+          </GlassCard>
 
-        <div className="space-y-6">
-          <div className="rounded-bento border border-rose/20 bg-cardtint/60 p-5">
-            <h2 className="mb-3 text-base font-bold text-warmwhite">Phần thưởng</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {prizes.map((p, i) => {
-                const r = classifyPrize(p);
-                const rewardLabel = REWARD_TYPE_LABEL[r];
-                return (
-                  <div
-                    key={`${p.name}-${i}`}
-                    className="flex items-center gap-2 rounded-lg border border-gunmetal/40 bg-charcoal p-2"
-                  >
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-graphite">
-                      {p.image ? (
-                        <img src={p.image} alt="" className="h-full w-full object-contain" />
-                      ) : (
-                        <span className="text-lg">{p.icon || "🎁"}</span>
-                      )}
+          {/* Sidebar: prizes + history */}
+          <div className="space-y-5">
+
+            {/* Prize list */}
+            <GlassCard intensity="med" className="p-5">
+              <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-warmwhite">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-aurora-gradient text-white shadow-glow-violet">
+                  🎁
+                </span>
+                Phần thưởng
+              </h2>
+              <div className="grid grid-cols-2 gap-2">
+                {prizes.map((p, i) => {
+                  const r = classifyPrize(p);
+                  const rewardLabel = REWARD_TYPE_LABEL[r];
+                  return (
+                    <div
+                      key={`${p.name}-${i}`}
+                      className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-charcoal p-2 transition-colors hover:bg-white/[0.03]"
+                    >
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-graphite">
+                        {p.image ? (
+                          <img src={p.image} alt="" className="h-full w-full object-contain" />
+                        ) : (
+                          <span className="text-base">{p.icon || "🎁"}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-warmwhite">{p.name}</p>
+                        <p className="truncate text-[10px] text-steelgray">
+                          <span
+                            className={
+                              r === "jackpot"
+                                ? "text-yellow-300"
+                                : r === "free_product"
+                                  ? "text-emerald-300"
+                                  : r === "coupon"
+                                    ? "text-sakura"
+                                    : "text-softgray"
+                            }
+                          >
+                            {rewardLabel}
+                          </span>
+                          {" · "}
+                          {((Number(p.weight) / totalWeight) * 100).toFixed(1)}%
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-medium text-warmwhite">{p.name}</p>
-                      <p className="truncate text-[10px] text-steelgray">
-                        <span
-                          className={
-                            r === "jackpot"
-                              ? "text-yellow-300"
-                              : r === "free_product"
-                                ? "text-emerald-300"
-                                : r === "coupon"
-                                  ? "text-pink-300"
-                                  : "text-softgray"
-                          }
-                        >
-                          {rewardLabel}
-                        </span>
-                        {" · "}
-                        {((Number(p.weight) / totalWeight) * 100).toFixed(2)}%
-                      </p>
+                  );
+                })}
+              </div>
+            </GlassCard>
+
+            {/* History */}
+            <GlassCard intensity="med" className="p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-base font-bold text-warmwhite">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-aurora-gradient text-white shadow-glow-violet">
+                    📋
+                  </span>
+                  Lịch sử quay
+                </h2>
+                {history.length > 5 && (
+                  <span className="text-[11px] text-steelgray">{history.length} lượt</span>
+                )}
+              </div>
+
+              {history.length === 0 ? (
+                <div className="py-6 text-center">
+                  <div className="mb-3 flex justify-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-graphite/60">
+                      <svg className="h-7 w-7 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="rounded-bento border border-rose/20 bg-cardtint/60 p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-warmwhite">Lịch sử quay</h2>
-              {history.length > 5 && (
-                <span className="text-[11px] text-steelgray">5 gần nhất / {history.length} lượt</span>
+                  <p className="text-xs text-steelgray">
+                    {hasToken ? "Bạn chưa quay lần nào." : "Đăng nhập để xem lịch sử."}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <ul className="space-y-2">
+                    {history.slice(0, 5).map((h) => (
+                      <li key={h.id}>
+                        <button
+                          type="button"
+                          onClick={() => navigate("/spin/history")}
+                          className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-charcoal p-3 text-left text-xs transition-colors hover:border-sakura/30 hover:bg-sakura/5 focus-rose"
+                        >
+                          <span className="truncate pr-2 text-warmwhite">{h.prize_label}</span>
+                          <span className="text-sakura shrink-0 font-medium hover:text-crimson">Xem →</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    to="/spin/history"
+                    className="mt-3 flex items-center justify-center gap-1 text-xs font-semibold text-sakura transition-colors hover:text-crimson focus-rose"
+                  >
+                    Xem tất cả lịch sử quay →
+                  </Link>
+                </>
               )}
-            </div>
-            <p className="mb-3 text-[11px] text-steelgray">
-              Mỗi lượt quay thành công sẽ được lưu ở đây — bấm "Xem tất cả" để xem chi tiết từng giải và mã giảm giá.
-            </p>
-            {history.length === 0 ? (
-              <p className="text-xs text-steelgray">
-                {hasToken ? "Bạn chưa quay lần nào." : "Đăng nhập để xem lịch sử quay thưởng của bạn."}
+            </GlassCard>
+
+            {/* How to earn credits */}
+            <GlassCard intensity="low" className="p-4">
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-steelgray">
+                Cách nhận lượt quay
+              </h3>
+              <p className="text-xs text-softgray">
+                Mỗi <strong className="text-warmwhite">{new Intl.NumberFormat("vi-VN").format(safeCfg.spend_per_spin_vnd)} VND</strong> đã thanh toán cho đơn hàng đã giao sẽ tự động tích lũy thành lượt quay. Lượt quay không có hạn sử dụng.
               </p>
-            ) : (
-              <ul className="space-y-2">
-                {history.slice(0, 5).map((h) => (
-                  <li key={h.id}>
-                    <button
-                      type="button"
-                      onClick={() => navigate("/spin/history")}
-                      className="flex w-full items-center justify-between rounded-lg bg-charcoal/60 p-2 text-left text-xs transition-colors hover:bg-charcoal"
-                    >
-                      <span className="truncate text-warmwhite">{h.prize_label}</span>
-                      <span className="text-rose hover:text-sakura">Xem chi tiết →</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Link
-              to="/spin/history"
-              className="mt-3 block text-center text-xs font-semibold text-rose hover:text-sakura"
-            >
-              Xem tất cả lịch sử quay →
-            </Link>
+              <Link
+                to="/products"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-sakura/40 bg-sakura/10 px-4 py-1.5 text-xs font-semibold text-sakura transition-colors hover:bg-sakura/20 focus-rose"
+              >
+                Mua sắm ngay
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            </GlassCard>
           </div>
         </div>
       </div>

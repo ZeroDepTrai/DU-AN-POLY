@@ -13,6 +13,7 @@ import AdminRatings from "./AdminRatings";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import AdminMapPicker from "../../components/AdminMapPicker";
 import RichTextEditor from "../../components/RichTextEditor";
+import GlassCard from "../../components/aurora/GlassCard";
 import type { Order, OrderStatus, Product } from "../../types";
 
 type Tab = "dashboard" | "products" | "orders" | "blog" | "media" | "coupons" | "spin" | "ratings" | "settings";
@@ -150,7 +151,13 @@ export default function AdminDashboard() {
                   : "admin-nav-item-inactive text-steelgray hover:bg-white/[0.04] hover:text-warmwhite"
               }`}
             >
-              {tab.icon}
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all ${
+                activeTab === tab.id
+                  ? "bg-aurora-gradient text-white"
+                  : "text-steelgray"
+              }`}>
+                {tab.icon}
+              </span>
               {tab.label}
             </button>
           ))}
@@ -171,7 +178,9 @@ export default function AdminDashboard() {
                   : "text-steelgray hover:bg-white/[0.04] hover:text-warmwhite"
               }`}
             >
-              {tab.icon}
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
+                {tab.icon}
+              </span>
               {tab.label}
             </button>
           ))}
@@ -205,70 +214,121 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
   const totalRevenue = orders.reduce((s, o) => s + o.items.reduce((acc, item) => acc + item.unit_price * item.quantity, 0), 0);
   const recentOrders = [...orders].sort((a, b) => b.id - a.id).slice(0, 8);
 
+  const kpiCards = [
+    {
+      label: "Tổng sản phẩm",
+      value: products.length,
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+      ),
+      color: "bg-crimson",
+    },
+    {
+      label: "Tổng đơn hàng",
+      value: orders.length,
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      ),
+      color: "bg-sakura",
+    },
+    {
+      label: "Tổng doanh thu",
+      value: new Intl.NumberFormat("vi-VN").format(totalRevenue) + " VND",
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      color: "bg-gold",
+    },
+    {
+      label: "Cảnh báo tồn kho",
+      value: lowStock.length,
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      ),
+      color: "bg-deeprose",
+    },
+  ];
+
   return (
     <div>
+      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-warmwhite">Xin chào, Admin</h1>
+        <h1 className="text-xl font-extrabold text-warmwhite">Xin chào, Admin</h1>
         <p className="mt-1 text-sm text-steelgray">Đây là bảng điều khiển của CellZone</p>
       </div>
 
+      {/* KPI cards */}
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Tổng sản phẩm", value: products.length, icon: "📱", color: "crimson" },
-          { label: "Tổng đơn hàng", value: orders.length, icon: "📋", color: "sakura" },
-          { label: "Tổng doanh thu", value: new Intl.NumberFormat("vi-VN").format(totalRevenue) + " VND", icon: "💰", color: "gold" },
-          { label: "Cảnh báo tồn kho", value: lowStock.length, icon: "⚠️", color: "deeprose" },
-        ].map((stat) => (
-          <div key={stat.label} className="admin-kpi-card fig-stat rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card transition-all hover:-translate-y-0.5 hover:shadow-fig-card-hover">
+        {kpiCards.map((stat) => (
+          <GlassCard key={stat.label} hoverable className="p-5">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm text-steelgray">{stat.label}</p>
-              <span className="text-xl">{stat.icon}</span>
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.color} bg-opacity-20`}>
+                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${stat.color}`}>
+                  <span className="text-white">{stat.icon}</span>
+                </div>
+              </div>
             </div>
             <p className="text-2xl font-extrabold text-warmwhite">{stat.value}</p>
-          </div>
+          </GlassCard>
         ))}
       </div>
 
+      {/* Stock alert */}
       {lowStock.length > 0 && (
-        <div className="mb-8 rounded-2xl border border-deeprose/30 bg-deeprose/10 p-5">
-          <h2 className="mb-3 flex items-center gap-2 font-bold text-deeprose">
-            ⚠️ Cảnh báo tồn kho thấp
+        <GlassCard intensity="low" className="mb-8 p-5">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold text-deeprose">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Cảnh báo tồn kho thấp
           </h2>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {lowStock.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 rounded-lg border border-deeprose/20 bg-charcoal p-3">
+              <div key={p.id} className="flex items-center gap-3 rounded-xl border border-deeprose/20 bg-charcoal p-3">
                 <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded-lg object-cover" />
                 <div>
-                  <p className="text-sm font-medium text-warmwhite truncate max-w-[150px]">{p.name}</p>
+                  <p className="truncate max-w-[150px] text-sm font-medium text-warmwhite">{p.name}</p>
                   <p className="text-xs text-deeprose">Chỉ còn {p.stock} sản phẩm</p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </GlassCard>
       )}
 
-      <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
+      {/* Recent orders */}
+      <GlassCard className="overflow-hidden">
         <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4">
-          <h2 className="font-bold text-warmwhite">Đơn hàng gần đây</h2>
+          <h2 className="text-base font-extrabold text-warmwhite">Đơn hàng gần đây</h2>
           <span className="text-sm text-steelgray">{orders.length} đơn hàng</span>
         </div>
         {recentOrders.length === 0 ? (
-          <div className="p-8 text-center text-steelgray">Chưa có đơn hàng nào.</div>
+          <GlassCard intensity="med" className="p-10 text-center">
+            <p className="text-sm text-steelgray">Chưa có đơn hàng nào.</p>
+          </GlassCard>
         ) : (
           <div className="overflow-x-auto">
           <table className="admin-table min-w-[680px] w-full text-sm">
-            <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
-              <tr className="text-left text-steelgray">
-                <th className="px-5 py-3">Mã theo dõi</th>
-                <th className="px-5 py-3">Trạng thái</th>
-                <th className="px-5 py-3">Địa chỉ</th>
-                <th className="px-5 py-3">Theo dõi</th>
+            <thead className="border-b border-white/[0.08] bg-white/[0.04]">
+              <tr className="text-left text-sm text-steelgray">
+                <th className="px-5 py-3 font-semibold">Mã theo dõi</th>
+                <th className="px-5 py-3 font-semibold">Trạng thái</th>
+                <th className="px-5 py-3 font-semibold">Địa chỉ</th>
+                <th className="px-5 py-3 font-semibold">Theo dõi</th>
               </tr>
             </thead>
             <tbody>
               {recentOrders.map((order) => (
-                <tr key={order.id} className="border-t border-white/[0.04] hover:bg-white/[0.04] transition-colors">
+                <tr key={order.id} className="border-t border-white/[0.06] hover:bg-white/[0.04] transition-colors">
                   <td className="px-5 py-3 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
                   <td className="px-5 py-3">
                     <span className="rounded-full bg-crimson/10 px-2.5 py-0.5 text-xs font-medium capitalize text-crimson">
@@ -287,7 +347,7 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
           </table>
           </div>
         )}
-      </div>
+      </GlassCard>
     </div>
   );
 }
@@ -634,7 +694,10 @@ function ProductsTab({ products }: { products: Product[] }) {
     <div>
       {/* Header + Search */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-extrabold text-warmwhite">Quản lý sản phẩm</h1>
+        <div>
+          <h1 className="text-xl font-extrabold text-warmwhite">Quản lý sản phẩm</h1>
+          <p className="mt-1 text-sm text-steelgray">Thêm, sửa, xóa và quản lý các sản phẩm trong cửa hàng</p>
+        </div>
         <input
           type="search"
           value={search}
@@ -788,56 +851,65 @@ function ProductsTab({ products }: { products: Product[] }) {
       {formTab === "quick" && (
         <form
           onSubmit={(e) => { e.preventDefault(); quickMutation.mutate(); }}
-          className="admin-form-card mb-6 space-y-4 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card"
+          className="mb-6"
         >
-          <h3 className="text-base font-bold text-sakura">Thêm sản phẩm nhanh</h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <input
-              required
-              placeholder="Tên sản phẩm (VD: iPhone 15 Pro)"
-              value={quickForm.name}
-              onChange={(e) => setQuickForm({ ...quickForm, name: e.target.value })}
-              className="input-field focus-aurora"
-            />
-            <input
-              required
-              type="number"
-              step="1000"
-              placeholder="Giá (VND)"
-              value={quickForm.price}
-              onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })}
-              className="input-field focus-aurora"
-            />
-            <div>
-              <label className="mb-1 block text-xs text-steelgray">Hình ảnh sản phẩm</label>
+          <GlassCard intensity="med" className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-aurora-gradient">
+                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <h3 className="text-base font-extrabold text-warmwhite">Thêm sản phẩm nhanh</h3>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <input
                 required
-                type="file"
-                accept="image/*"
-                onChange={(e) => setQuickImage(e.target.files?.[0] ?? null)}
-                className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-crimson file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+                placeholder="Tên sản phẩm (VD: iPhone 15 Pro)"
+                value={quickForm.name}
+                onChange={(e) => setQuickForm({ ...quickForm, name: e.target.value })}
+                className="input-field focus-aurora"
               />
+              <input
+                required
+                type="number"
+                step="1000"
+                placeholder="Giá (VND)"
+                value={quickForm.price}
+                onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })}
+                className="input-field focus-aurora"
+              />
+              <div>
+                <label className="mb-1 block text-xs text-steelgray">Hình ảnh sản phẩm</label>
+                <input
+                  required
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setQuickImage(e.target.files?.[0] ?? null)}
+                  className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-crimson file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+                />
+              </div>
             </div>
-          </div>
-          {/* Selected quick tags */}
-          <div>
-            <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
-            <div className="flex flex-wrap gap-1.5 min-h-[32px]">
-              {quickTagChips.map((t) => (
-                <span key={t} className="tag-badge flex items-center gap-1">
-                  {t}
-                  <button type="button" onClick={() => removeQuickTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
-                </span>
-              ))}
-              {quickTagChips.length === 0 && (
-                <span className="text-xs text-steelgray italic">Nhấn nhãn bên trên để chọn...</span>
-              )}
+            {/* Selected quick tags */}
+            <div>
+              <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
+              <div className="flex flex-wrap gap-1.5 min-h-[32px]">
+                {quickTagChips.map((t) => (
+                  <span key={t} className="tag-badge flex items-center gap-1">
+                    {t}
+                    <button type="button" onClick={() => removeQuickTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+                  </span>
+                ))}
+                {quickTagChips.length === 0 && (
+                  <span className="text-xs text-steelgray italic">Nhấn nhãn bên trên để chọn...</span>
+                )}
+              </div>
             </div>
-          </div>
-          {error && <p className="text-sm text-rose">{error}</p>}
-          <button type="submit" disabled={quickMutation.isPending} className="btn-primary focus-rose">
-            {quickMutation.isPending ? "Đang thêm..." : "Thêm sản phẩm"}
-          </button>
+            {error && <p className="text-sm text-rose">{error}</p>}
+            <button type="submit" disabled={quickMutation.isPending} className="aurora-glow-btn focus-aurora">
+              {quickMutation.isPending ? "Đang thêm..." : "Thêm sản phẩm"}
+            </button>
+          </GlassCard>
         </form>
       )}
 
@@ -845,157 +917,166 @@ function ProductsTab({ products }: { products: Product[] }) {
       {formTab === "full" && (
         <form
           onSubmit={(e) => { e.preventDefault(); fullMutation.mutate(); }}
-          className="admin-form-card mb-6 space-y-6 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card"
+          className="mb-6"
         >
-          <h3 className="text-base font-bold text-warmwhite flex items-center gap-2">
-            {editing ? `Sửa: ${editing.name}` : "Thêm sản phẩm đầy đủ"}
-            {editing && editQuery.isFetching && (
-              <span className="inline-flex items-center gap-1 text-xs font-normal text-steelgray">
-                <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          <GlassCard intensity="med" className="p-6 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-aurora-gradient">
+                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                đang tải mô tả + thông số…
-              </span>
-            )}
-            {editing && editQuery.isError && (
-              <span className="text-xs font-normal text-deeprose">
-                — Không tải được mô tả/thông số. Vẫn có thể lưu.
-              </span>
-            )}
-          </h3>
-
-          {/* Name, Price, Stock */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <input
-              required
-              placeholder="Tên sản phẩm"
-              value={fullForm.name}
-              onChange={(e) => setFullForm({ ...fullForm, name: e.target.value })}
-              className="input-field focus-aurora"
-            />
-            <input
-              required
-              type="number"
-              step="1000"
-              placeholder="Giá (VND)"
-              value={fullForm.price}
-              onChange={(e) => setFullForm({ ...fullForm, price: e.target.value })}
-              className="input-field focus-aurora"
-            />
-            <input
-              type="number"
-              placeholder="Số lượng tồn kho"
-              value={fullForm.stock}
-              onChange={(e) => setFullForm({ ...fullForm, stock: e.target.value })}
-              className="input-field focus-aurora"
-            />
-          </div>
-
-          {/* Selected full tags */}
-          <div>
-            <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
-            <div className="flex flex-wrap gap-1.5 min-h-[36px]">
-              {fullTagChips.map((t) => (
-                <span key={t} className="tag-badge flex items-center gap-1">
-                  {t}
-                  <button type="button" onClick={() => removeFullTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
+              </div>
+              <h3 className="text-base font-extrabold text-warmwhite">
+                {editing ? `Sửa: ${editing.name}` : "Thêm sản phẩm đầy đủ"}
+              </h3>
+              {editing && editQuery.isFetching && (
+                <span className="inline-flex items-center gap-1 text-xs font-normal text-steelgray">
+                  <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  đang tải mô tả + thông số…
                 </span>
-              ))}
-              {fullTagChips.length === 0 && (
-                <span className="text-xs text-steelgray italic self-center">Nhấn nhãn bên trên để chọn...</span>
+              )}
+              {editing && editQuery.isError && (
+                <span className="text-xs font-normal text-deeprose">
+                  — Không tải được mô tả/thông số. Vẫn có thể lưu.
+                </span>
               )}
             </div>
-          </div>
 
-          {/* Description — Tiptap + DOCX import */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm text-steelgray font-medium">Mô tả sản phẩm (hỗ trợ DOCX)</label>
-              <label className="btn-secondary focus-aurora cursor-pointer text-xs py-1.5 px-3">
-                <input
-                  type="file"
-                  accept=".docx"
-                  className="hidden"
-                  onChange={handleImportDocx}
-                  disabled={importing}
-                />
-                {importing ? (
-                  <span className="flex items-center gap-1">
-                    <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Đang nhập...
+            {/* Name, Price, Stock */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <input
+                required
+                placeholder="Tên sản phẩm"
+                value={fullForm.name}
+                onChange={(e) => setFullForm({ ...fullForm, name: e.target.value })}
+                className="input-field focus-aurora"
+              />
+              <input
+                required
+                type="number"
+                step="1000"
+                placeholder="Giá (VND)"
+                value={fullForm.price}
+                onChange={(e) => setFullForm({ ...fullForm, price: e.target.value })}
+                className="input-field focus-aurora"
+              />
+              <input
+                type="number"
+                placeholder="Số lượng tồn kho"
+                value={fullForm.stock}
+                onChange={(e) => setFullForm({ ...fullForm, stock: e.target.value })}
+                className="input-field focus-aurora"
+              />
+            </div>
+
+            {/* Selected full tags */}
+            <div>
+              <label className="mb-1.5 block text-xs text-steelgray">Nhãn đã chọn:</label>
+              <div className="flex flex-wrap gap-1.5 min-h-[36px]">
+                {fullTagChips.map((t) => (
+                  <span key={t} className="tag-badge flex items-center gap-1">
+                    {t}
+                    <button type="button" onClick={() => removeFullTag(t)} className="text-warmwhite/60 hover:text-warmwhite ml-0.5">×</button>
                   </span>
-                ) : "Nhập từ DOCX"}
-              </label>
+                ))}
+                {fullTagChips.length === 0 && (
+                  <span className="text-xs text-steelgray italic self-center">Nhấn nhãn bên trên để chọn...</span>
+                )}
+              </div>
             </div>
-            <RichTextEditor
-              value={fullForm.description}
-              onChange={(html) => setFullForm((prev) => ({ ...prev, description: html }))}
-              placeholder="Nhập mô tả sản phẩm... Hỗ trợ in đậm, in nghiêng, tiêu đề, danh sách, ảnh..."
-            />
-          </div>
 
-          {/* Specifications */}
-          <div>
-            <label className="block text-sm text-steelgray font-medium mb-3">Thông số kỹ thuật</label>
-            <div className="grid gap-3 md:grid-cols-2">
-              {SPEC_LABELS.map((label) => (
-                <div key={label} className="flex items-center gap-2">
-                  <label className="text-sm text-steelgray w-48 shrink-0">{label}</label>
+            {/* Description — Tiptap + DOCX import */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm text-steelgray font-medium">Mô tả sản phẩm (hỗ trợ DOCX)</label>
+                <label className="btn-secondary focus-aurora cursor-pointer text-xs py-1.5 px-3">
                   <input
-                    type="text"
-                    value={fullForm.specifications[label] || ""}
-                    onChange={(e) =>
-                      setFullForm((prev) => ({
-                        ...prev,
-                        specifications: { ...prev.specifications, [label]: e.target.value },
-                      }))
-                    }
-                    placeholder="—"
-                    className="input-field focus-aurora flex-1"
+                    type="file"
+                    accept=".docx"
+                    className="hidden"
+                    onChange={handleImportDocx}
+                    disabled={importing}
                   />
-                </div>
-              ))}
+                  {importing ? (
+                    <span className="flex items-center gap-1">
+                      <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Đang nhập...
+                    </span>
+                  ) : "Nhập từ DOCX"}
+                </label>
+              </div>
+              <RichTextEditor
+                value={fullForm.description}
+                onChange={(html) => setFullForm((prev) => ({ ...prev, description: html }))}
+                placeholder="Nhập mô tả sản phẩm... Hỗ trợ in đậm, in nghiêng, tiêu đề, danh sách, ảnh..."
+              />
             </div>
-          </div>
 
-          {/* Image */}
-          <div>
-            <label className="mb-1.5 block text-sm text-steelgray">
-              Hình ảnh {editing ? "(bỏ trống để giữ hình cũ)" : ""}
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setFullImage(e.target.files?.[0] ?? null)}
-              className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite"
-            />
-          </div>
-
-          {error && (
-            <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">
-              {error}
+            {/* Specifications */}
+            <div>
+              <label className="block text-sm text-steelgray font-medium mb-3">Thông số kỹ thuật</label>
+              <div className="grid gap-3 md:grid-cols-2">
+                {SPEC_LABELS.map((label) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <label className="text-sm text-steelgray w-48 shrink-0">{label}</label>
+                    <input
+                      type="text"
+                      value={fullForm.specifications[label] || ""}
+                      onChange={(e) =>
+                        setFullForm((prev) => ({
+                          ...prev,
+                          specifications: { ...prev.specifications, [label]: e.target.value },
+                        }))
+                      }
+                      placeholder="—"
+                      className="input-field focus-aurora flex-1"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
 
-          <div className="flex gap-3">
-            <button type="submit" disabled={fullMutation.isPending} className="btn-primary focus-rose">
-              {fullMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm sản phẩm"}
-            </button>
-            {editing && (
-              <button type="button" onClick={cancelEdit} className="btn-secondary focus-aurora">
-                Hủy
-              </button>
+            {/* Image */}
+            <div>
+              <label className="mb-1.5 block text-sm text-steelgray">
+                Hình ảnh {editing ? "(bỏ trống để giữ hình cũ)" : ""}
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFullImage(e.target.files?.[0] ?? null)}
+                className="text-sm text-steelgray file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gunmetal file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-warmwhite"
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">
+                {error}
+              </div>
             )}
-          </div>
+
+            <div className="flex gap-3">
+              <button type="submit" disabled={fullMutation.isPending} className="aurora-glow-btn focus-aurora">
+                {fullMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm sản phẩm"}
+              </button>
+              {editing && (
+                <button type="button" onClick={cancelEdit} className="btn-secondary focus-aurora">
+                  Hủy
+                </button>
+              )}
+            </div>
+          </GlassCard>
         </form>
       )}
 
       {/* Products table */}
-      <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
+      <GlassCard className="overflow-hidden">
         <div className="border-b border-white/[0.08] px-4 py-3">
           <span className="text-sm text-steelgray">{filtered.length} sản phẩm</span>
         </div>
@@ -1020,18 +1101,20 @@ function ProductsTab({ products }: { products: Product[] }) {
           </div>
         )}
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-steelgray">Không có sản phẩm nào.</div>
+          <GlassCard intensity="med" className="p-10 text-center">
+            <p className="text-sm text-steelgray">Không có sản phẩm nào.</p>
+          </GlassCard>
         ) : (
           <div className="overflow-x-auto">
           <table className="admin-table min-w-[680px] w-full text-sm">
-            <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
-              <tr className="text-left text-steelgray">
-                <th className="px-4 py-3">Hình ảnh</th>
-                <th className="px-4 py-3">Tên sản phẩm</th>
-                <th className="px-4 py-3">Giá</th>
-                <th className="px-4 py-3">Nhãn</th>
-                <th className="px-4 py-3">Tồn kho</th>
-                <th className="px-4 py-3">Thao tác</th>
+            <thead className="border-b border-white/[0.08] bg-white/[0.04]">
+              <tr className="text-left text-sm text-steelgray">
+                <th className="px-4 py-3 font-semibold">Hình ảnh</th>
+                <th className="px-4 py-3 font-semibold">Tên sản phẩm</th>
+                <th className="px-4 py-3 font-semibold">Giá</th>
+                <th className="px-4 py-3 font-semibold">Nhãn</th>
+                <th className="px-4 py-3 font-semibold">Tồn kho</th>
+                <th className="px-4 py-3 font-semibold">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -1042,7 +1125,7 @@ function ProductsTab({ products }: { products: Product[] }) {
                 return (
                   <tr
                     key={p.id}
-                    className="border-t border-white/[0.04] hover:bg-white/[0.04] transition-colors"
+                    className="border-t border-white/[0.06] hover:bg-white/[0.04] transition-colors"
                   >
                     <td className="px-4 py-3">
                       <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
@@ -1092,7 +1175,7 @@ function ProductsTab({ products }: { products: Product[] }) {
           </table>
           </div>
         )}
-      </div>
+      </GlassCard>
     </div>
   );
 }
@@ -1127,7 +1210,10 @@ function OrdersTab({ orders }: { orders: Order[] }) {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold text-warmwhite">Quản lý đơn hàng</h1>
+        <div>
+          <h1 className="text-xl font-extrabold text-warmwhite">Quản lý đơn hàng</h1>
+          <p className="mt-1 text-sm text-steelgray">Theo dõi và cập nhật trạng thái giao hàng</p>
+        </div>
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="input-field focus-aurora w-48">
           <option value="">Tất cả trạng thái</option>
           {ORDER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -1135,104 +1221,120 @@ function OrdersTab({ orders }: { orders: Order[] }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3 rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
-          <div className="border-b border-white/[0.08] px-4 py-3">
-            <span className="text-sm text-steelgray">{filtered.length} đơn hàng</span>
-          </div>
-          {filtered.length === 0 ? (
-            <div className="p-8 text-center text-steelgray">Chưa có đơn hàng nào.</div>
-          ) : (
-            <div className="overflow-x-auto">
-          <table className="admin-table min-w-[680px] w-full text-sm">
-              <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
-                <tr className="text-left text-steelgray">
-                  <th className="px-4 py-3">Mã</th>
-                  <th className="px-4 py-3">Trạng thái</th>
-                  <th className="px-4 py-3">Địa chỉ</th>
-                  <th className="px-4 py-3">Xem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((order) => (
-                  <tr
-                    key={order.id}
-                    onClick={() => selectOrder(order)}
-                    className={`cursor-pointer border-t border-white/[0.04] transition-colors focus-rose ${
-                      selectedOrder?.id === order.id ? "bg-crimson/10" : "hover:bg-white/[0.04]"
-                    }`}
-                  >
-                    <td className="px-4 py-3 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-crimson/10 px-2.5 py-0.5 text-xs font-medium capitalize text-crimson">
-                        {order.status.replace("_", " ")}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 max-w-xs truncate text-steelgray">{order.delivery_address}</td>
-                    <td className="px-4 py-3">
-                      <Link to={`/track/${order.tracking_code}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-crimson hover:text-sakura transition-colors focus-rose">
-                        Theo dõi →
-                      </Link>
-                    </td>
+        {/* Orders list */}
+        <div className="lg:col-span-3">
+          <GlassCard className="overflow-hidden">
+            <div className="border-b border-white/[0.08] px-4 py-3">
+              <span className="text-sm text-steelgray">{filtered.length} đơn hàng</span>
+            </div>
+            {filtered.length === 0 ? (
+              <GlassCard intensity="med" className="p-10 text-center">
+                <p className="text-sm text-steelgray">Chưa có đơn hàng nào.</p>
+              </GlassCard>
+            ) : (
+              <div className="overflow-x-auto">
+              <table className="admin-table min-w-[680px] w-full text-sm">
+                <thead className="border-b border-white/[0.08] bg-white/[0.04]">
+                  <tr className="text-left text-sm text-steelgray">
+                    <th className="px-4 py-3 font-semibold">Mã</th>
+                    <th className="px-4 py-3 font-semibold">Trạng thái</th>
+                    <th className="px-4 py-3 font-semibold">Địa chỉ</th>
+                    <th className="px-4 py-3 font-semibold">Xem</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          )}
+                </thead>
+                <tbody>
+                  {filtered.map((order) => (
+                    <tr
+                      key={order.id}
+                      onClick={() => selectOrder(order)}
+                      className={`cursor-pointer border-t border-white/[0.06] transition-colors focus-rose ${
+                        selectedOrder?.id === order.id ? "bg-crimson/10" : "hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <td className="px-4 py-3 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
+                      <td className="px-4 py-3">
+                        <span className="rounded-full bg-crimson/10 px-2.5 py-0.5 text-xs font-medium capitalize text-crimson">
+                          {order.status.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 max-w-xs truncate text-steelgray">{order.delivery_address}</td>
+                      <td className="px-4 py-3">
+                        <Link to={`/track/${order.tracking_code}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-sm text-crimson hover:text-sakura transition-colors focus-rose">
+                          Theo dõi →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            )}
+          </GlassCard>
         </div>
 
-        <div className="admin-form-card lg:col-span-2 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card space-y-4">
-          <h2 className="font-bold text-warmwhite">Cập nhật vị trí giao hàng</h2>
-          {selectedOrder ? (
-            <>
-              <div className="rounded-lg border border-white/[0.08] bg-charcoal p-3 text-sm">
-                <p className="font-medium text-warmwhite">Đơn: {selectedOrder.tracking_code}</p>
-                <p className="text-xs text-steelgray mt-0.5">{selectedOrder.delivery_address}</p>
-              </div>
-              <AdminMapPicker lat={lat} lng={lng} onChange={(l, g) => { setLat(l); setLng(g); }} />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs text-steelgray">Vĩ độ</label>
-                  <input type="number" step="any" value={lat}
-                    onChange={(e) => setLat(Number(e.target.value))} className="input-field focus-aurora text-xs" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-steelgray">Kinh độ</label>
-                  <input type="number" step="any" value={lng}
-                    onChange={(e) => setLng(Number(e.target.value))} className="input-field focus-aurora text-xs" />
-                </div>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-steelgray">Trạng thái</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)} className="input-field focus-aurora">
-                  {ORDER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
-              {success && (
-                <div className="flex items-center gap-2 rounded-lg border border-crimson/30 bg-crimson/10 p-3 text-sm text-sakura">
-                  <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Cập nhật thành công!
-                </div>
-              )}
-              <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
-                className="btn-primary focus-rose w-full">
-                {updateMutation.isPending ? "Đang cập nhật..." : "Gửi cập nhật vị trí"}
-              </button>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gunmetal/40">
-                <svg className="h-7 w-7 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        {/* Order detail / location updater */}
+        <div className="lg:col-span-2">
+          <GlassCard intensity="med" className="p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-aurora-gradient">
+                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <p className="text-sm text-steelgray">Chọn một đơn hàng để cập nhật vị trí giao hàng!!!!.</p>
+              <h2 className="font-extrabold text-warmwhite">Cập nhật vị trí giao hàng</h2>
             </div>
-          )}
+            {selectedOrder ? (
+              <>
+                <div className="rounded-xl border border-white/[0.08] bg-charcoal p-3 text-sm">
+                  <p className="font-medium text-warmwhite">Đơn: {selectedOrder.tracking_code}</p>
+                  <p className="mt-0.5 text-xs text-steelgray">{selectedOrder.delivery_address}</p>
+                </div>
+                <AdminMapPicker lat={lat} lng={lng} onChange={(l, g) => { setLat(l); setLng(g); }} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs text-steelgray">Vĩ độ</label>
+                    <input type="number" step="any" value={lat}
+                      onChange={(e) => setLat(Number(e.target.value))} className="input-field focus-aurora text-xs" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-steelgray">Kinh độ</label>
+                    <input type="number" step="any" value={lng}
+                      onChange={(e) => setLng(Number(e.target.value))} className="input-field focus-aurora text-xs" />
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-steelgray">Trạng thái</label>
+                  <select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)} className="input-field focus-aurora">
+                    {ORDER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                </div>
+                {success && (
+                  <div className="flex items-center gap-2 rounded-xl border border-sakura/30 bg-sakura/10 p-3 text-sm text-sakura">
+                    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Cập nhật thành công!
+                  </div>
+                )}
+                <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
+                  className="aurora-glow-btn focus-aurora w-full">
+                  {updateMutation.isPending ? "Đang cập nhật..." : "Gửi cập nhật vị trí"}
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-aurora-gradient/20">
+                  <svg className="h-7 w-7 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                </div>
+                <p className="text-sm text-steelgray">Chọn một đơn hàng để cập nhật vị trí giao hàng.</p>
+              </div>
+            )}
+          </GlassCard>
         </div>
       </div>
     </div>
@@ -1310,13 +1412,23 @@ function BlogTab() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold text-warmwhite">Quản lý Blog</h1>
+      <div className="mb-6">
+        <h1 className="text-xl font-extrabold text-warmwhite">Quản lý Blog</h1>
+        <p className="mt-1 text-sm text-steelgray">Viết và quản lý các bài viết trên CellZone</p>
+      </div>
 
       {/* Editor */}
-      <div className="admin-form-card mb-6 space-y-4 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card">
-        <h2 className="text-base font-bold text-warmwhite">
-          {editing ? `Sửa bài: ${editing.title}` : "Viết bài mới"}
-        </h2>
+      <GlassCard intensity="med" className="mb-6 p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-aurora-gradient">
+            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </div>
+          <h2 className="text-base font-extrabold text-warmwhite">
+            {editing ? `Sửa bài: ${editing.title}` : "Viết bài mới"}
+          </h2>
+        </div>
         <input required placeholder="Tiêu đề bài viết" value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           className="input-field focus-aurora text-lg font-semibold" />
@@ -1373,7 +1485,7 @@ function BlogTab() {
         </div>
         {error && <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">{error}</div>}
         <div className="flex gap-3">
-          <button onClick={handleSubmit} disabled={saveMutation.isPending} className="btn-primary focus-rose">
+          <button onClick={handleSubmit} disabled={saveMutation.isPending} className="aurora-glow-btn focus-aurora">
             {saveMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật bài viết" : "Đăng bài viết"}
           </button>
           {editing && (
@@ -1381,33 +1493,35 @@ function BlogTab() {
               className="btn-secondary focus-aurora">Hủy</button>
           )}
         </div>
-      </div>
+      </GlassCard>
 
       {/* Post list */}
-      <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
+      <GlassCard className="overflow-hidden">
         <div className="border-b border-white/[0.08] px-4 py-3">
           <span className="text-sm text-steelgray">{posts.length} bài viết</span>
         </div>
         {posts.length === 0 ? (
-          <div className="p-8 text-center text-steelgray">Chưa có bài viết nào.</div>
+          <GlassCard intensity="med" className="p-10 text-center">
+            <p className="text-sm text-steelgray">Chưa có bài viết nào.</p>
+          </GlassCard>
         ) : (
           <div className="overflow-x-auto">
           <table className="admin-table min-w-[680px] w-full text-sm">
-            <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
-              <tr className="text-left text-steelgray">
-                <th className="px-4 py-3">Ảnh</th>
-                <th className="px-4 py-3">Tiêu đề</th>
-                <th className="px-4 py-3">Tags</th>
-                <th className="px-4 py-3">Slug</th>
-                <th className="px-4 py-3">Tác giả</th>
-                <th className="px-4 py-3">Thao tác</th>
+            <thead className="border-b border-white/[0.08] bg-white/[0.04]">
+              <tr className="text-left text-sm text-steelgray">
+                <th className="px-4 py-3 font-semibold">Ảnh</th>
+                <th className="px-4 py-3 font-semibold">Tiêu đề</th>
+                <th className="px-4 py-3 font-semibold">Tags</th>
+                <th className="px-4 py-3 font-semibold">Slug</th>
+                <th className="px-4 py-3 font-semibold">Tác giả</th>
+                <th className="px-4 py-3 font-semibold">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {posts.map((post) => {
                 const postTags = post.tags ? post.tags.split(",").filter(Boolean) : [];
                 return (
-                  <tr key={post.id} className="border-t border-white/[0.04] hover:bg-white/[0.04] transition-colors">
+                  <tr key={post.id} className="border-t border-white/[0.06] hover:bg-white/[0.04] transition-colors">
                     <td className="px-4 py-3">
                       {post.image_url && <img src={post.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />}
                     </td>
@@ -1442,7 +1556,7 @@ function BlogTab() {
           </table>
           </div>
         )}
-      </div>
+      </GlassCard>
     </div>
   );
 }
@@ -1482,16 +1596,23 @@ function SettingsTab() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Cài đặt</h1>
-      <p className="mb-6 text-sm text-steelgray">Quản lý email nhận thông báo đơn hàng</p>
+      <div className="mb-6">
+        <h1 className="text-xl font-extrabold text-warmwhite">Cài đặt</h1>
+        <p className="mt-1 text-sm text-steelgray">Quản lý email nhận thông báo đơn hàng</p>
+      </div>
 
-      <div className="admin-form-card rounded-fig-card border border-white/[0.06] bg-graphite p-6 shadow-fig-card">
-        <h2 className="mb-4 text-base font-semibold text-warmwhite">Email nhận thông báo đơn hàng</h2>
+      <GlassCard intensity="med" className="p-6">
+        <div className="mb-4">
+          <h2 className="text-base font-extrabold text-warmwhite">Email nhận thông báo đơn hàng</h2>
+          <p className="mt-1 text-sm text-steelgray">Các email này sẽ nhận thông báo khi có đơn hàng mới.</p>
+        </div>
 
         {emails.length === 0 ? (
-          <p className="py-6 text-center text-sm text-steelgray">Chưa có email nào được thêm.</p>
+          <GlassCard intensity="low" className="p-6 text-center">
+            <p className="text-sm text-steelgray">Chưa có email nào được thêm.</p>
+          </GlassCard>
         ) : (
-          <ul className="mb-4 divide-y divide-gunmetal/40">
+          <ul className="mb-4 divide-y divide-white/[0.06]">
             {emails.map((e) => (
               <li key={e.id} className="flex items-center justify-between py-3">
                 <div>
@@ -1499,7 +1620,7 @@ function SettingsTab() {
                   <span className="ml-2 text-xs text-steelgray">{new Date(e.created_at).toLocaleDateString("vi-VN")}</span>
                 </div>
                 <button onClick={() => deleteMutation.mutate(e.id)}
-                  className="ml-4 flex-shrink-0 rounded-lg px-3 py-1.5 text-xs text-rose hover:bg-deeprose/10 transition-colors focus-rose">
+                  className="ml-4 flex-shrink-0 rounded-xl border border-deeprose/30 bg-deeprose/10 px-3 py-1.5 text-xs text-rose hover:bg-deeprose/20 transition-colors focus-rose">
                   Xóa
                 </button>
               </li>
@@ -1512,14 +1633,14 @@ function SettingsTab() {
           <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
             placeholder="admin@example.com" className="input-field focus-aurora flex-1" />
           <button type="submit" disabled={addMutation.isPending || !newEmail.trim()}
-            className="btn-primary focus-rose whitespace-nowrap disabled:opacity-60">
+            className="aurora-glow-btn focus-aurora whitespace-nowrap disabled:opacity-60">
             {addMutation.isPending ? "Đang thêm..." : "Thêm email"}
           </button>
         </form>
 
         {addError && <p className="mt-2 text-sm text-rose">{addError}</p>}
         {addSuccess && <p className="mt-2 text-sm text-sakura">{addSuccess}</p>}
-      </div>
+      </GlassCard>
     </div>
   );
 }
@@ -1537,13 +1658,16 @@ function MediaTab({ products }: { products: Product[] }) {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Hình ảnh & Video sản phẩm</h1>
-      <p className="mb-6 text-sm text-steelgray">
-        Chọn một sản phẩm để xem và quản lý gallery (ảnh + video). Ảnh đầu tiên (cover) sẽ được
-        dùng làm thumbnail sản phẩm trên toàn trang.
-      </p>
+      <div className="mb-6">
+        <h1 className="text-xl font-extrabold text-warmwhite">Hình ảnh & Video sản phẩm</h1>
+        <p className="mt-1 text-sm text-steelgray">
+          Chọn một sản phẩm để xem và quản lý gallery (ảnh + video). Ảnh đầu tiên (cover) sẽ được
+          dùng làm thumbnail sản phẩm trên toàn trang.
+        </p>
+      </div>
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card p-4">
+        {/* Product selector */}
+        <GlassCard className="p-4">
           <input
             type="search"
             value={filter}
@@ -1559,10 +1683,10 @@ function MediaTab({ products }: { products: Product[] }) {
                 <button
                   key={p.id}
                   onClick={() => setSelectedId(p.id)}
-                  className={`flex w-full items-center gap-2 rounded-lg border p-2 text-left transition-colors focus-rose ${
+                  className={`flex w-full items-center gap-2 rounded-xl border p-2 text-left transition-colors focus-rose ${
                     selectedId === p.id
                       ? "border-crimson bg-crimson/10"
-                      : "border-white/[0.08] bg-charcoal hover:border-silvergray/40"
+                      : "border-white/[0.06] bg-charcoal hover:border-white/[0.12]"
                   }`}
                 >
                   <img src={p.image_url} alt="" className="h-9 w-9 rounded-md object-cover" />
@@ -1574,15 +1698,15 @@ function MediaTab({ products }: { products: Product[] }) {
               ))
             )}
           </div>
-        </div>
+        </GlassCard>
 
         <div>
           {target ? (
             <ProductGalleryEditor product={target} />
           ) : (
-            <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card p-10 text-center text-steelgray">
-              Chọn một sản phẩm bên trái để bắt đầu.
-            </div>
+            <GlassCard intensity="med" className="p-10 text-center">
+              <p className="text-sm text-steelgray">Chọn một sản phẩm bên trái để bắt đầu.</p>
+            </GlassCard>
           )}
         </div>
       </div>
@@ -1634,10 +1758,10 @@ function ProductGalleryEditor({ product }: { product: Product }) {
   };
 
   return (
-    <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card p-5">
+    <GlassCard className="p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-warmwhite">{product.name}</h2>
+          <h2 className="text-lg font-extrabold text-warmwhite">{product.name}</h2>
           <p className="text-xs text-steelgray">Mã sản phẩm: #{product.id}</p>
         </div>
         <div className="text-xs text-steelgray">
@@ -1655,11 +1779,13 @@ function ProductGalleryEditor({ product }: { product: Product }) {
             fileInputRef.current?.click();
           }
         }}
-        className="mb-4 flex flex-col items-center justify-center gap-2 rounded-fig-showcase border-2 border-dashed border-white/[0.08] bg-white/[0.04] py-6 text-center hover:border-crimson cursor-pointer transition-colors focus-rose"
+        className="mb-4 flex flex-col items-center justify-center gap-2 rounded-aurora border-2 border-dashed border-white/[0.08] bg-white/[0.04] py-6 text-center hover:border-crimson/50 cursor-pointer transition-colors focus-rose"
       >
-        <svg className="h-6 w-6 text-rose" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-aurora-gradient">
+          <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+        </div>
         <span className="text-sm font-medium text-warmwhite">
           {uploading ? "Đang tải lên..." : "Kéo thả hoặc nhấn để chọn ảnh/video"}
         </span>
@@ -1691,9 +1817,9 @@ function ProductGalleryEditor({ product }: { product: Product }) {
       {isLoading ? (
         <LoadingSpinner label="Đang tải gallery..." />
       ) : media.length === 0 ? (
-        <div className="rounded-xl border border-white/[0.06] bg-charcoal p-8 text-center text-sm text-steelgray">
-          Sản phẩm này chưa có ảnh/video trong gallery. Hiện đang dùng ảnh thumbnail mặc định.
-        </div>
+        <GlassCard intensity="med" className="p-8 text-center">
+          <p className="text-sm text-steelgray">Sản phẩm này chưa có ảnh/video trong gallery. Hiện đang dùng ảnh thumbnail mặc định.</p>
+        </GlassCard>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {media.map((m) => (
@@ -1706,7 +1832,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
                 )}
               </div>
               {m.is_cover && (
-                <span className="absolute left-2 top-2 rounded-full bg-crimson px-2 py-0.5 text-[10px] font-semibold text-white shadow">
+                <span className="absolute left-2 top-2 rounded-full bg-aurora-gradient px-2 py-0.5 text-[10px] font-semibold text-white shadow-glow-violet">
                   Cover
                 </span>
               )}
@@ -1719,7 +1845,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
                 {!m.is_cover && (
                   <button
                     onClick={() => setCover(m)}
-                    className="rounded-lg bg-crimson px-2 py-1 text-[10px] font-semibold text-white hover:bg-raspberry focus-rose"
+                    className="rounded-lg bg-aurora-gradient px-2 py-1 text-[10px] font-semibold text-white hover:opacity-90 focus-rose"
                   >
                     Đặt làm cover
                   </button>
@@ -1735,7 +1861,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
           ))}
         </div>
       )}
-    </div>
+    </GlassCard>
   );
 }
 
@@ -1826,11 +1952,21 @@ function CouponsTab() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Quản lý mã giảm giá (Coupon)</h1>
-      <p className="mb-6 text-sm text-steelgray">Tạo và quản lý các mã giảm giá áp dụng ở bước thanh toán.</p>
+      <div className="mb-6">
+        <h1 className="text-xl font-extrabold text-warmwhite">Quản lý mã giảm giá (Coupon)</h1>
+        <p className="mt-1 text-sm text-steelgray">Tạo và quản lý các mã giảm giá áp dụng ở bước thanh toán.</p>
+      </div>
 
-      <div className="admin-form-card mb-6 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card space-y-3">
-        <h2 className="text-base font-bold text-warmwhite">{editing ? `Sửa: ${editing.code}` : "Tạo coupon mới"}</h2>
+      {/* Coupon form */}
+      <GlassCard intensity="med" className="mb-6 p-6 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-aurora-gradient">
+            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h6m-6 4h10M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+            </svg>
+          </div>
+          <h2 className="text-base font-extrabold text-warmwhite">{editing ? `Sửa: ${editing.code}` : "Tạo coupon mới"}</h2>
+        </div>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs text-steelgray">Mã (CODE)</label>
@@ -1932,43 +2068,44 @@ function CouponsTab() {
         <div className="flex gap-2">
           {editing ? (
             <>
-              <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="btn-primary focus-rose">
+              <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="aurora-glow-btn focus-aurora">
                 {updateMutation.isPending ? "Đang lưu..." : "Cập nhật"}
               </button>
               <button onClick={() => { setEditing(null); }} className="btn-secondary focus-aurora">Hủy</button>
             </>
           ) : (
-            <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.code} className="btn-primary focus-rose">
+            <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.code} className="aurora-glow-btn focus-aurora">
               {createMutation.isPending ? "Đang tạo..." : "Tạo coupon"}
             </button>
           )}
         </div>
-      </div>
+      </GlassCard>
 
+      {/* Coupons table */}
       {isLoading ? (
         <LoadingSpinner label="Đang tải coupon..." />
       ) : coupons.length === 0 ? (
-        <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card p-8 text-center text-sm text-steelgray">
-          Chưa có coupon nào.
-        </div>
+        <GlassCard intensity="med" className="p-8 text-center">
+          <p className="text-sm text-steelgray">Chưa có coupon nào.</p>
+        </GlassCard>
       ) : (
-        <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
+        <GlassCard className="overflow-hidden">
           <div className="overflow-x-auto">
           <table className="admin-table min-w-[680px] w-full text-sm">
-            <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
-              <tr className="text-left text-steelgray">
-                <th className="px-4 py-3">Mã</th>
-                <th className="px-4 py-3">Mô tả</th>
-                <th className="px-4 py-3">Giảm</th>
-                <th className="px-4 py-3">Tối thiểu</th>
-                <th className="px-4 py-3">Đã dùng / Giới hạn</th>
-                <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3">Thao tác</th>
+            <thead className="border-b border-white/[0.08] bg-white/[0.04]">
+              <tr className="text-left text-sm text-steelgray">
+                <th className="px-4 py-3 font-semibold">Mã</th>
+                <th className="px-4 py-3 font-semibold">Mô tả</th>
+                <th className="px-4 py-3 font-semibold">Giảm</th>
+                <th className="px-4 py-3 font-semibold">Tối thiểu</th>
+                <th className="px-4 py-3 font-semibold">Đã dùng / Giới hạn</th>
+                <th className="px-4 py-3 font-semibold">Trạng thái</th>
+                <th className="px-4 py-3 font-semibold">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {coupons.map((c) => (
-                <tr key={c.id} className="border-t border-white/[0.04] hover:bg-white/[0.04]">
+                <tr key={c.id} className="border-t border-white/[0.06] hover:bg-white/[0.04]">
                   <td className="px-4 py-3 font-mono font-bold text-warmwhite">{c.code}</td>
                   <td className="px-4 py-3 text-softgray max-w-[220px] truncate">{c.description || "—"}</td>
                   <td className="px-4 py-3 text-crimson font-semibold">
@@ -1981,7 +2118,11 @@ function CouponsTab() {
                     {c.usage_count}/{c.usage_limit ?? "∞"}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.active ? "bg-emerald/15 text-emerald" : "bg-deeprose/15 text-rose"}`}>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      c.active
+                        ? "bg-emerald-500/15 text-emerald"
+                        : "bg-deeprose/15 text-rose"
+                    }`}>
                       {c.active ? "Hoạt động" : "Tắt"}
                     </span>
                   </td>
@@ -1996,7 +2137,7 @@ function CouponsTab() {
             </tbody>
           </table>
           </div>
-        </div>
+        </GlassCard>
       )}
     </div>
   );

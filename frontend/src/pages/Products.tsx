@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { productsApi } from "../api/client";
@@ -34,6 +35,28 @@ const PRICE_FILTERS = [
   { label: "10 - 20 triệu", min: 10000000, max: 20000000 },
   { label: "Trên 20 triệu", min: 20000000, max: 0 },
 ];
+
+const ACCESSORY_CATEGORIES = [
+  { label: "Ốp lưng",     keywords: ["ốp lưng", "ốp", "case"] },
+  { label: "Tai nghe",    keywords: ["tai nghe", "earphone", "earbud", "airpod"] },
+  { label: "Sạc dự phòng", keywords: ["sạc dự phòng", "power bank", "powerbank"] },
+  { label: "Cáp sạc",    keywords: ["cáp sạc", "cáp", "cable", "dây sạc"] },
+  { label: "Miếng dán",  keywords: ["miếng dán", "cường lực", "kính"] },
+  { label: "Gậy selfie", keywords: ["gậy selfie", "gậy", "selfie"] },
+];
+
+const ACCESSORY_COMPAT = ["iPhone", "Samsung", "Xiaomi", "OPPO", "Universal"];
+
+function matchesAccessoryCategory(tags: string, cat: { keywords: string[] }) {
+  const t = tags.toLowerCase();
+  return cat.keywords.some((k) => t.includes(k));
+}
+
+function matchesAccessoryCompat(tags: string, c: string) {
+  const t = tags.toLowerCase();
+  if (c === "Universal") return true;
+  return t.includes(c.toLowerCase());
+}
 
 const PROMO_BANNERS = [
   {
@@ -151,25 +174,51 @@ export default function Products() {
     searchParams.get("priceMax") === "0" ? 0 : (searchParams.get("priceMax") ?? 0)
   );
 
+  // Accessory filter state
+  const [selectedAccessoryCats, setSelectedAccessoryCats] = useState<string[]>([]);
+  const [selectedAccessoryCompat, setSelectedAccessoryCompat] = useState<string[]>([]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["products-search", brand, sort, page, search, priceMin, priceMax],
+    queryKey: ["products-search", brand, sort, page, search, priceMin, priceMax, selectedAccessoryCats, selectedAccessoryCompat],
     queryFn: async () => {
       const resp = await productsApi.search({
         brand: brand || undefined,
         sort: sort || undefined,
         page,
-        limit: PAGE_SIZE,
+        limit: PAGE_SIZE * 3, // fetch more to allow client-side accessory filtering
         search: search || undefined,
         price_min: priceMin > 0 ? priceMin : undefined,
         price_max: priceMax > 0 ? priceMax : undefined,
+        tag: selectedAccessoryCats.length > 0 || selectedAccessoryCompat.length > 0 ? "accessory" : undefined,
       });
       return resp.data;
     },
   });
 
   const products = data?.products ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  let filteredProducts = products;
+
+  // Client-side accessory category + compatibility filtering
+  if (selectedAccessoryCats.length > 0 || selectedAccessoryCompat.length > 0) {
+    filteredProducts = products.filter((p: { tags: string }) => {
+      const tags = p.tags ?? "";
+      if (selectedAccessoryCats.length > 0) {
+        const cats = ACCESSORY_CATEGORIES.filter((c) => selectedAccessoryCats.includes(c.label));
+        const catMatch = cats.some((c) => matchesAccessoryCategory(tags, c));
+        if (!catMatch) return false;
+      }
+      if (selectedAccessoryCompat.length > 0) {
+        const compatMatch = selectedAccessoryCompat.some((c) => matchesAccessoryCompat(tags, c));
+        if (!compatMatch) return false;
+      }
+      return true;
+    });
+  }
+
+  // Paginate the client-side filtered results
+  const total = data?.total ?? filteredProducts.length;
+  const paginatedProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const currentPage = Math.min(Math.max(1, page), totalPages);
 
   const setParam = (key: string, value: string) => {
@@ -180,9 +229,9 @@ export default function Products() {
     setSearchParams(next);
   };
 
-  const [bentoProduct, ...gridProducts] = products;
+  const [bentoProduct, ...gridProducts] = paginatedProducts;
 
-  const hasActiveFilters = Boolean(brand) || priceMin > 0 || priceMax > 0;
+  const hasActiveFilters = Boolean(brand) || priceMin > 0 || priceMax > 0 || selectedAccessoryCats.length > 0 || selectedAccessoryCompat.length > 0;
 
   return (
     <div className="container-padding py-10">
@@ -201,7 +250,7 @@ export default function Products() {
         subtitle="Khám phá bộ sưu tập smartphone cao cấp mới nhất — tuyển chọn bởi CellZone."
         rightSlot={
           <div className="flex items-center gap-3">
-            <span className="text-sm text-softgray">{total} sản phẩm</span>
+            <span className="text-sm text-softgray">{filteredProducts.length} sản phẩm</span>
             <select
               value={sort}
               onChange={(e) => setParam("sort", e.target.value)}
@@ -305,6 +354,92 @@ export default function Products() {
               </div>
             </div>
 
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-sakura">
+                Danh mục phụ kiện
+              </p>
+              <div className="space-y-1.5">
+                {ACCESSORY_CATEGORIES.map((cat) => (
+                  <label
+                    key={cat.label}
+                    className="group flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 transition-all duration-200 focus-rose hover:bg-white/[0.04]"
+                  >
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-md border transition-all duration-200 ${
+                        selectedAccessoryCats.includes(cat.label)
+                          ? "border-sakura bg-sakura/20 shadow-[0_0_8px_rgba(252,85,116,0.35)]"
+                          : "border-white/15 bg-white/[0.04] group-hover:border-sakura/50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAccessoryCats.includes(cat.label)}
+                        onChange={() => {
+                          setSelectedAccessoryCats((prev) =>
+                            prev.includes(cat.label)
+                              ? prev.filter((x) => x !== cat.label)
+                              : [...prev, cat.label]
+                          );
+                        }}
+                        className="sr-only"
+                      />
+                      {selectedAccessoryCats.includes(cat.label) && (
+                        <svg className="h-3 w-3 text-sakura" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </span>
+                    <span className="text-sm text-softgray transition-colors duration-200 group-hover:text-warmwhite">
+                      {cat.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-sakura">
+                Tương thích
+              </p>
+              <div className="space-y-1.5">
+                {ACCESSORY_COMPAT.map((c) => (
+                  <label
+                    key={c}
+                    className="group flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 transition-all duration-200 focus-rose hover:bg-white/[0.04]"
+                  >
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-md border transition-all duration-200 ${
+                        selectedAccessoryCompat.includes(c)
+                          ? "border-sakura bg-sakura/20 shadow-[0_0_8px_rgba(252,85,116,0.35)]"
+                          : "border-white/15 bg-white/[0.04] group-hover:border-sakura/50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAccessoryCompat.includes(c)}
+                        onChange={() => {
+                          setSelectedAccessoryCompat((prev) =>
+                            prev.includes(c)
+                              ? prev.filter((x) => x !== c)
+                              : [...prev, c]
+                          );
+                        }}
+                        className="sr-only"
+                      />
+                      {selectedAccessoryCompat.includes(c) && (
+                        <svg className="h-3 w-3 text-sakura" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </span>
+                    <span className="text-sm text-softgray transition-colors duration-200 group-hover:text-warmwhite">
+                      {c}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             {hasActiveFilters && (
               <button
                 onClick={() => {
@@ -314,6 +449,8 @@ export default function Products() {
                   next.delete("priceMax");
                   next.delete("page");
                   setSearchParams(next);
+                  setSelectedAccessoryCats([]);
+                  setSelectedAccessoryCompat([]);
                 }}
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-softgray transition-all duration-200 hover:border-crimson/40 hover:bg-crimson/10 hover:text-crimson"
               >
@@ -329,7 +466,7 @@ export default function Products() {
         <div className="flex-1 min-w-0">
           {isLoading ? (
             <LoadingSpinner label="Đang tải sản phẩm..." />
-          ) : products.length === 0 ? (
+          ) : paginatedProducts.length === 0 ? (
             <GlassCard intensity="med" className="p-16 text-center">
               <div className="mb-4 flex justify-center">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-aurora-gradient shadow-glow-violet">
@@ -369,7 +506,7 @@ export default function Products() {
             </>
           )}
 
-          {totalPages > 1 && products.length > 0 && (
+          {totalPages > 1 && paginatedProducts.length > 0 && (
             <div className="mt-10">
               <Pagination
                 currentPage={currentPage}
