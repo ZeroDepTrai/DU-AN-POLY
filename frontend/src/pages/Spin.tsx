@@ -342,21 +342,6 @@ function PrizeModal({
   );
 }
 
-function classifyPrize(p: WheelPrize): "coupon" | "free_product" | "jackpot" | "consolation" {
-  if (p.reward_type) return p.reward_type as "coupon" | "free_product" | "jackpot" | "consolation";
-  if (p.product_id) return "free_product";
-  if (p.coupon_id || p.coupon_discount_type || p.coupon_discount_value != null) return "coupon";
-  if (p.jackpot) return "jackpot";
-  return "consolation";
-}
-
-const REWARD_TYPE_LABEL: Record<string, string> = {
-  coupon: "Mã giảm giá",
-  free_product: "Sản phẩm miễn phí",
-  jackpot: "Jackpot",
-  consolation: "An ủi",
-};
-
 export default function Spin() {
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
