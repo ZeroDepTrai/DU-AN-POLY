@@ -9,6 +9,7 @@ import { AuroraInput, AuroraTextarea } from "../components/aurora/AuroraInput";
 import AuroraBadge from "../components/aurora/AuroraBadge";
 import SectionHeading from "../components/aurora/SectionHeading";
 import OptimizedImage from "../components/OptimizedImage";
+import StarRating from "../components/aurora/StarRating";
 
 const HERO_GLOW =
   "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=1200&q=85&auto=format&fit=crop";
@@ -18,6 +19,138 @@ const BRANDS = [
   { name: "Samsung", path: "/products?brand=samsung" },
   { name: "Xiaomi", path: "/products?brand=xiaomi" },
   { name: "OPPO", path: "/products?brand=oppo" },
+];
+
+// ── Promotional banner ads (Figma ad units) ────────────────────────────────
+const PROMO_BANNERS = [
+  {
+    id: 1,
+    tagline: "Giảm 20%",
+    title: "iPhone 16 Series",
+    subtitle: "Flagship mới — đặt hàng ngay hôm nay",
+    cta: "Mua ngay",
+    href: "/products?brand=apple",
+    gradient: "from-crimson via-rose to-sakura",
+    accent: "from-crimson",
+    img: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&q=80&auto=format&fit=crop",
+    size: "wide",
+  },
+  {
+    id: 2,
+    tagline: "Flash Sale",
+    title: "Samsung Galaxy S25",
+    subtitle: "Giá chỉ từ 18.990.000đ",
+    cta: "Xem ngay",
+    href: "/products?brand=samsung",
+    gradient: "from-blue-700 via-blue-500 to-cyan-500",
+    accent: "from-blue-600",
+    img: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=600&q=80&auto=format&fit=crop",
+    size: "tall",
+  },
+  {
+    id: 3,
+    tagline: "Mới nhất",
+    title: "Xiaomi 15 Ultra",
+    subtitle: "Camera 200MP — flagship killer",
+    cta: "Khám phá",
+    href: "/products?brand=xiaomi",
+    gradient: "from-amber-600 via-orange-500 to-red-500",
+    accent: "from-amber-600",
+    img: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&q=80&auto=format&fit=crop",
+    size: "tall",
+  },
+  {
+    id: 4,
+    tagline: "OPPO Find X8",
+    title: "Chụp ảnh chuyên nghiệp",
+    subtitle: "Hasselblad — nghệ thuật trong tầm tay",
+    cta: "Đặt trước",
+    href: "/products?brand=oppo",
+    gradient: "from-emerald-700 via-teal-500 to-cyan-400",
+    accent: "from-emerald-600",
+    img: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600&q=80&auto=format&fit=crop",
+    size: "square",
+  },
+  {
+    id: 5,
+    tagline: "Trả góp 0%",
+    title: "Gậy selfie cao cấp",
+    subtitle: "Cho những khoảnh khắc đáng nhớ",
+    cta: "Xem phụ kiện",
+    href: "/accessories",
+    gradient: "from-purple-700 via-pink-500 to-rose-400",
+    accent: "from-purple-600",
+    img: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&q=80&auto=format&fit=crop",
+    size: "square",
+  },
+];
+
+// ── Customer testimonials (Figma ratings / reviews showcase) ───────────────
+const TESTIMONIAL_AVATARS = [
+  { initials: "NVA", hue: "crimson" },
+  { initials: "THL", hue: "rose" },
+  { initials: "MKB", hue: "sakura" },
+  { initials: "VDT", hue: "amber" },
+  { initials: "LHP", hue: "teal" },
+  { initials: "PTH", hue: "rose" },
+];
+
+// MOCK testimonials — in production these would come from ratingsApi.list per top-rated products
+const TESTIMONIALS = [
+  {
+    id: 1,
+    user_name: "Nguyễn Văn An",
+    stars: 5,
+    review: "CellZone giao hàng cực nhanh, đóng gói rất kỹ. Sản phẩm iPhone 16 Pro Max y như mô tả, máy mới 100%. Đội ngũ tư vấn nhiệt tình, sẽ ủng hộ dài dài!",
+    product: "iPhone 16 Pro Max",
+    daysAgo: 2,
+    avatar: TESTIMONIAL_AVATARS[0],
+  },
+  {
+    id: 2,
+    user_name: "Trần Hồng Linh",
+    stars: 5,
+    review: "Mình mua Samsung Galaxy S25 Ultra ở đây, giá tốt hơn nhiều cửa hàng khác. Bảo hành 1 đổi 1 thật sự yên tâm. Đã giới thiệu cho cả nhà rồi.",
+    product: "Samsung Galaxy S25 Ultra",
+    daysAgo: 5,
+    avatar: TESTIMONIAL_AVATARS[1],
+  },
+  {
+    id: 3,
+    user_name: "Mai Khánh Bảo",
+    stars: 5,
+    review: "Xiaomi 15 Ultra chụp ảnh quá đỉnh, camera 200MP không thua gì iPhone. CellZone tư vấn rất chuyên nghiệp, không quảng cáo thái quá. Highly recommended!",
+    product: "Xiaomi 15 Ultra",
+    daysAgo: 8,
+    avatar: TESTIMONIAL_AVATARS[2],
+  },
+  {
+    id: 4,
+    user_name: "Vũ Đức Thắng",
+    stars: 4,
+    review: "Mua OPPO Find X8 Pro rất hài lòng. Màn hình đẹp, pin trâu, sạc nhanh 80W. Giao hàng trong ngày tại TP.HCM. Chờ đợi chương trình tích điểm thêm.",
+    product: "OPPO Find X8 Pro",
+    daysAgo: 12,
+    avatar: TESTIMONIAL_AVATARS[3],
+  },
+  {
+    id: 5,
+    user_name: "Lê Hoàng Phúc",
+    stars: 5,
+    review: "Đã mua 3 chiếc điện thoại tại CellZone, lần nào cũng tuyệt vời. Nhân viên dễ thương, hỗ trợ 24/7. Giá cả phải chăng, khuyến mãi nhiều.",
+    product: "iPhone 15 Pro",
+    daysAgo: 15,
+    avatar: TESTIMONIAL_AVATARS[4],
+  },
+  {
+    id: 6,
+    user_name: "Phạm Thị Hương",
+    stars: 5,
+    review: "Lần đầu mua online mà an tâm như đến cửa hàng. Ship COD, kiểm tra hàng trước khi thanh toán. Phụ kiện đi kèm chính hãng. 5 sao cho CellZone!",
+    product: "Samsung Galaxy A55",
+    daysAgo: 20,
+    avatar: TESTIMONIAL_AVATARS[5],
+  },
 ];
 
 const VALUES = [
@@ -41,6 +174,108 @@ const VALUES = [
   },
 ];
 
+// Avatar color map
+const AVATAR_STYLES: Record<string, string> = {
+  crimson: "bg-crimson text-white",
+  rose: "bg-rose text-white",
+  sakura: "bg-sakura text-white",
+  amber: "bg-amber-600 text-white",
+  teal: "bg-teal-600 text-white",
+};
+
+function getAvatarStyle(hue: string) {
+  return AVATAR_STYLES[hue] ?? "bg-sakura text-white";
+}
+
+function formatDaysAgo(days: number) {
+  if (days === 0) return "Hôm nay";
+  if (days === 1) return "Hôm qua";
+  return `${days} ngày trước`;
+}
+
+function PromoBannerCard({ banner }: { banner: typeof PROMO_BANNERS[0] }) {
+  const isWide = banner.size === "wide";
+  const isTall = banner.size === "tall";
+
+  return (
+    <Link
+      to={banner.href}
+      className={`group relative flex overflow-hidden rounded-fig-card ${isWide ? "col-span-2 aspect-[16/7]" : isTall ? "aspect-[4/5]" : "aspect-square"} bg-aurora-bg-mid`}
+    >
+      {/* Background image */}
+      <OptimizedImage
+        src={banner.img}
+        alt={banner.title}
+        sizes={isWide ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 50vw, 33vw"}
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+      />
+      {/* Gradient overlay */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient} opacity-80 transition-opacity duration-300 group-hover:opacity-70`} />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+      {/* Tagline pill */}
+      <div className="absolute left-4 top-4">
+        <span className={`inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 backdrop-blur-xl px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur`}>
+          <span className={`h-1.5 w-1.5 rounded-full bg-current animate-pulse`} />
+          {banner.tagline}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col justify-end p-5">
+        <h3 className={`font-bold text-white ${isWide ? "text-2xl" : "text-lg"} leading-tight`}>
+          {banner.title}
+        </h3>
+        <p className="mt-1 text-xs text-white/80">{banner.subtitle}</p>
+        <div className={`mt-3 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-xl transition-all group-hover:bg-white/35 ${isWide ? "w-fit" : ""}`}>
+          {banner.cta}
+          <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Border glow on hover */}
+      <div className="absolute inset-0 rounded-fig-card ring-1 ring-white/0 transition-all duration-300 group-hover:ring-white/20" />
+    </Link>
+  );
+}
+
+function TestimonialCard({ t }: { t: typeof TESTIMONIALS[0] }) {
+  const avatarStyle = getAvatarStyle(t.avatar.hue);
+
+  return (
+    <GlassCard intensity="low" hoverable className="flex flex-col gap-4 p-6">
+      {/* Stars + product */}
+      <div className="flex items-center justify-between gap-2">
+        <StarRating value={t.stars} readonly size="sm" />
+        <span className="text-[10px] font-medium uppercase tracking-wider text-steelgray">
+          {t.product}
+        </span>
+      </div>
+
+      {/* Review text */}
+      <p className="flex-1 text-sm leading-relaxed text-softgray italic">
+        &ldquo;{t.review}&rdquo;
+      </p>
+
+      {/* Author */}
+      <div className="flex items-center gap-3 border-t border-white/[0.06] pt-4">
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${avatarStyle}`}>
+          {t.avatar.initials}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-warmwhite">{t.user_name}</p>
+          <p className="text-[10px] text-steelgray">{formatDaysAgo(t.daysAgo)}</p>
+        </div>
+        <AuroraBadge tone="sakura">
+          Đã xác nhận
+        </AuroraBadge>
+      </div>
+    </GlassCard>
+  );
+}
+
 export default function Home() {
   const contactRef = useRef<HTMLDivElement>(null);
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
@@ -55,7 +290,7 @@ export default function Home() {
   } = useQuery({
     queryKey: ["home-showcase"],
     queryFn: async () => {
-      const { data } = await productsApi.search({ tag: "featured", page: 1, limit: 3 });
+      const { data } = await productsApi.search({ tag: "featured", page: 1, limit: 6 });
       return data.products;
     },
     staleTime: 10 * 60_000,
@@ -147,6 +382,33 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Promotional banner ads (Figma ad units) ─────────────────── */}
+      <section className="border-y border-white/[0.06]">
+        <div className="container-padding section-padding">
+          <SectionHeading
+            eyebrow="Khuyến mãi"
+            title="Ưu đãi đặc biệt"
+            subtitle="Cập nhật khuyến mãi mới nhất từ CellZone — giảm giá flagship, flash sale, quà tặng hấp dẫn."
+            rightSlot={
+              <Link
+                to="/products"
+                className="inline-flex items-center gap-1 rounded-fig-pill border border-sakura/40 bg-sakura/10 px-4 py-2 text-sm font-semibold text-sakura transition-all hover:bg-sakura/20 focus-rose"
+              >
+                Xem tất cả
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            }
+          />
+          <div className="mt-8 grid aspect-[16/9] grid-cols-4 grid-rows-2 gap-4 lg:grid-cols-6 lg:grid-rows-2">
+            {PROMO_BANNERS.map((banner) => (
+              <PromoBannerCard key={banner.id} banner={banner} />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Brand categories ──────────────────────────────────────── */}
       <section className="border-y border-white/[0.06]">
         <div className="container-padding py-10">
@@ -200,7 +462,7 @@ export default function Home() {
         <div className="mt-10">
           {isLoading ? (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
-              {[0, 1, 2].map((item) => (
+              {[0, 1, 2, 3, 4, 5].map((item) => (
                 <GlassCard key={item} intensity="low" className="overflow-hidden p-0">
                   <div className="aspect-[4/3] animate-pulse bg-gradient-to-br from-white/[0.04] via-sakura/[0.08] to-crimson/[0.08]" />
                   <div className="space-y-3 p-5">
@@ -238,8 +500,50 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Core values ───────────────────────────────────────────── */}
+      {/* ── Customer testimonials / ratings showcase (Figma reviews) ─ */}
       <section className="border-y border-white/[0.06]">
+        <div className="container-padding section-padding">
+          <SectionHeading
+            eyebrow="Đánh giá"
+            title="Khách hàng nói gì về CellZone"
+            subtitle="Hàng nghìn khách hàng đã tin tưởng lựa chọn CellZone. Đọc những trải nghiệm thực tế từ cộng đồng."
+            rightSlot={
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <svg key={s} className="h-4 w-4 fill-sakura text-sakura" viewBox="0 0 24 24">
+                      <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-sm font-bold text-warmwhite">4.9 / 5.0</span>
+                <span className="text-xs text-steelgray">(2.847 đánh giá)</span>
+              </div>
+            }
+          />
+
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {TESTIMONIALS.map((t) => (
+              <TestimonialCard key={t.id} t={t} />
+            ))}
+          </div>
+
+          <div className="mt-8 flex justify-center">
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-2 rounded-fig-pill border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-warmwhite backdrop-blur-xl transition-all hover:border-white/30 hover:bg-white/[0.08] focus-rose"
+            >
+              Xem tất cả đánh giá
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Core values ───────────────────────────────────────────── */}
+      <section>
         <div className="container-padding section-padding">
           <SectionHeading
             align="center"
