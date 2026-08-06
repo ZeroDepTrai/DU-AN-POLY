@@ -128,33 +128,49 @@ export default function AdminDashboard() {
   const isLoading = loadingProducts || loadingOrders;
 
   return (
-    <div className="flex min-h-screen bg-charcoal text-warmwhite">
+    <div className="flex min-h-screen text-warmwhite" style={{ background: "#0B0C12" }}>
       {/* Sidebar */}
-      <aside className="admin-sidebar hidden w-60 shrink-0 flex-col border-r border-white/[0.08] bg-graphite md:flex">
-        <div className="admin-sidebar-header flex h-16 items-center gap-2.5 border-b border-white/[0.08] px-4">
-          <a href="/" className="admin-sidebar-logo focus-rose flex h-8 w-8 items-center justify-center rounded-lg bg-crimson">
-            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-          </a>
-          <a href="/" className="focus-rose font-bold text-warmwhite hover:text-sakura transition-colors">CellZone</a>
-          <span className="ml-auto rounded-full bg-crimson/10 px-2 py-0.5 text-xs font-semibold text-crimson">Admin</span>
+      <aside className="hidden w-[280px] shrink-0 flex-col border-r border-white/10 md:flex" style={{ background: "#0B0C12" }}>
+        {/* Logo */}
+        <div className="flex h-16 items-center gap-3 border-b border-white/10 px-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-violet-400 font-black text-lg text-violet-400" style={{ borderColor: "#8B5CF6", textShadow: "0 0 12px rgba(139, 92, 246, 0.8)" }}>
+            CZ
+          </div>
+          <div>
+            <p className="text-sm font-bold tracking-wide text-warmwhite">CellZone</p>
+            <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400" style={{ letterSpacing: "0.2em" }}>LUCKY SPIN</p>
+          </div>
         </div>
+
+        {/* Admin badge */}
+        <div className="mx-4 mt-4 mb-2">
+          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-violet-400/40 bg-violet-400/10 text-xs font-bold text-violet-300">
+              A
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-warmwhite">Admin</p>
+              <p className="text-[10px] text-slate-500">Toàn quyền</p>
+            </div>
+            <div className="ml-auto h-2 w-2 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(74, 222, 128, 0.8)" }} />
+          </div>
+        </div>
+
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`admin-nav-item focus-rose flex w-full items-center gap-3 rounded-fig-pill px-3 py-2 text-sm font-medium transition-all ${
+              className={`focus-rose flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                 activeTab === tab.id
-                  ? "admin-nav-item-active fig-pill-active"
-                  : "admin-nav-item-inactive text-steelgray hover:bg-white/[0.04] hover:text-warmwhite"
+                  ? "border border-violet-400/30 bg-violet-400/10 text-violet-300"
+                  : "border border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.03] hover:text-warmwhite"
               }`}
             >
               <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all ${
                 activeTab === tab.id
-                  ? "bg-aurora-gradient text-white"
-                  : "text-steelgray"
+                  ? "bg-violet-500/20 text-violet-300"
+                  : "text-slate-500"
               }`}>
                 {tab.icon}
               </span>
@@ -166,27 +182,41 @@ export default function AdminDashboard() {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile top tabs */}
-        <div className="flex h-16 items-center gap-1 overflow-x-auto border-b border-white/[0.08] bg-graphite px-3 md:hidden">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`focus-rose flex shrink-0 items-center gap-1.5 rounded-fig-pill px-3 py-2 text-xs font-medium transition-all ${
-                activeTab === tab.id
-                  ? "fig-pill-active"
-                  : "text-steelgray hover:bg-white/[0.04] hover:text-warmwhite"
-              }`}
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
-                {tab.icon}
-              </span>
-              {tab.label}
+        {/* Sticky top bar */}
+        <div className="sticky top-0 z-10 flex h-[72px] items-center justify-between gap-6 border-b border-white/10 px-6 backdrop-blur-xl" style={{ background: "rgba(11, 12, 18, 0.85)" }}>
+          {/* Search */}
+          <div className="relative flex flex-1 max-w-lg">
+            <div className="flex flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2.5 backdrop-blur-md transition-all focus-within:border-violet-500/50">
+              <svg className="h-4 w-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="search"
+                placeholder="Tìm kiếm sản phẩm, đơn hàng..."
+                className="flex-1 bg-transparent text-sm text-warmwhite placeholder-slate-500 outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Right actions */}
+          <div className="flex items-center gap-3">
+            {/* Notification bell */}
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.08]">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full bg-violet-500 text-[9px] font-bold text-white flex items-center justify-center">2</span>
             </button>
-          ))}
+
+            {/* User avatar */}
+            <button className="flex items-center gap-2 rounded-xl border border-violet-400/30 p-1.5 pr-3 transition hover:border-violet-400/50 hover:bg-white/[0.04]">
+              <div className="h-8 w-8 rounded-xl bg-violet-500/20 text-sm font-bold text-violet-300 flex items-center justify-center">A</div>
+              <span className="text-xs font-semibold text-warmwhite hidden sm:block">Admin</span>
+            </button>
+          </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+        <main className="flex-1 overflow-y-auto px-6 py-5 sm:px-6 sm:py-6">
           {isLoading ? (
             <LoadingSpinner label="Đang tải dashboard..." />
           ) : (
@@ -218,74 +248,114 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
     {
       label: "Tổng sản phẩm",
       value: products.length,
+      subtext: "items",
+      accentColor: "#89CEFF",
+      bgColor: "rgba(137, 206, 255, 0.08)",
+      borderColor: "rgba(137, 206, 255, 0.2)",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
       ),
-      color: "bg-crimson",
     },
     {
       label: "Tổng đơn hàng",
       value: orders.length,
+      subtext: "models",
+      accentColor: "#DDB7FF",
+      bgColor: "rgba(221, 183, 255, 0.08)",
+      borderColor: "rgba(221, 183, 255, 0.2)",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
       ),
-      color: "bg-sakura",
     },
     {
       label: "Tổng doanh thu",
-      value: new Intl.NumberFormat("vi-VN").format(totalRevenue) + " VND",
+      value: new Intl.NumberFormat("vi-VN").format(totalRevenue) + "₫",
+      subtext: "Đã bán",
+      accentColor: "#FFB690",
+      bgColor: "rgba(255, 182, 144, 0.08)",
+      borderColor: "rgba(255, 182, 144, 0.2)",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      color: "bg-gold",
     },
     {
       label: "Cảnh báo tồn kho",
       value: lowStock.length,
+      subtext: "sản phẩm",
+      accentColor: "#CFC2D6",
+      bgColor: "rgba(207, 194, 214, 0.06)",
+      borderColor: "rgba(207, 194, 214, 0.15)",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       ),
-      color: "bg-deeprose",
     },
   ];
 
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-xl font-extrabold text-warmwhite">Xin chào, Admin</h1>
-        <p className="mt-1 text-sm text-steelgray">Đây là bảng điều khiển của CellZone</p>
+      <div className="mb-8">
+        <h1 className="text-2xl font-extrabold text-warmwhite tracking-tight">Xin chào, Admin</h1>
+        <p className="mt-1 text-sm text-slate-400">Đây là bảng điều khiển của CellZone</p>
       </div>
 
       {/* KPI cards */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {kpiCards.map((stat) => (
-          <GlassCard key={stat.label} hoverable className="p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm text-steelgray">{stat.label}</p>
-              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.color} bg-opacity-20`}>
-                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${stat.color}`}>
-                  <span className="text-white">{stat.icon}</span>
-                </div>
+          <div
+            key={stat.label}
+            className="group relative overflow-hidden rounded-2xl border p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+            style={{
+              background: stat.bgColor,
+              borderColor: stat.borderColor,
+              backdropFilter: "blur(6px)",
+            }}
+          >
+            {/* Glow dot */}
+            <div
+              className="absolute right-4 top-4 h-2 w-2 rounded-full opacity-60"
+              style={{ background: stat.accentColor }}
+            />
+            <div className="mb-5 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400" style={{ letterSpacing: "0.05em" }}>{stat.label}</p>
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-xl border transition-all group-hover:scale-110"
+                style={{
+                  background: `${stat.accentColor}18`,
+                  borderColor: `${stat.accentColor}40`,
+                  color: stat.accentColor,
+                }}
+              >
+                {stat.icon}
               </div>
             </div>
-            <p className="text-2xl font-extrabold text-warmwhite">{stat.value}</p>
-          </GlassCard>
+            <div className="flex items-end gap-2">
+              <span className="text-4xl font-black text-warmwhite leading-none" style={{ letterSpacing: "-0.02em" }}>
+                {stat.value}
+              </span>
+              <span className="mb-1 text-sm font-medium" style={{ color: stat.accentColor, opacity: 0.7 }}>
+                {stat.subtext}
+              </span>
+            </div>
+          </div>
         ))}
       </div>
 
       {/* Stock alert */}
       {lowStock.length > 0 && (
-        <GlassCard intensity="low" className="mb-8 p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold text-deeprose">
+        <div
+          className="mb-8 rounded-2xl border border-violet-400/20 p-5 backdrop-blur-md"
+          style={{ background: "rgba(139, 92, 246, 0.06)" }}
+        >
+          <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-violet-300">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -293,51 +363,51 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
           </h2>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {lowStock.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 rounded-xl border border-deeprose/20 bg-charcoal p-3">
+              <div key={p.id} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-3">
                 <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded-lg object-cover" />
                 <div>
                   <p className="truncate max-w-[150px] text-sm font-medium text-warmwhite">{p.name}</p>
-                  <p className="text-xs text-deeprose">Chỉ còn {p.stock} sản phẩm</p>
+                  <p className="text-xs text-red-300">Chỉ còn {p.stock} sản phẩm</p>
                 </div>
               </div>
             ))}
           </div>
-        </GlassCard>
+        </div>
       )}
 
       {/* Recent orders */}
-      <GlassCard className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4">
-          <h2 className="text-base font-extrabold text-warmwhite">Đơn hàng gần đây</h2>
-          <span className="text-sm text-steelgray">{orders.length} đơn hàng</span>
+      <div className="rounded-2xl border border-white/10 overflow-hidden backdrop-blur-md" style={{ background: "rgba(255,255,255,0.03)" }}>
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+          <h2 className="text-base font-bold text-warmwhite">Đơn hàng gần đây</h2>
+          <span className="text-sm text-slate-400">{orders.length} đơn hàng</span>
         </div>
         {recentOrders.length === 0 ? (
-          <GlassCard intensity="med" className="p-10 text-center">
-            <p className="text-sm text-steelgray">Chưa có đơn hàng nào.</p>
-          </GlassCard>
+          <div className="p-10 text-center">
+            <p className="text-sm text-slate-500">Chưa có đơn hàng nào.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-          <table className="admin-table min-w-[680px] w-full text-sm">
-            <thead className="border-b border-white/[0.08] bg-white/[0.04]">
-              <tr className="text-left text-sm text-steelgray">
-                <th className="px-5 py-3 font-semibold">Mã theo dõi</th>
-                <th className="px-5 py-3 font-semibold">Trạng thái</th>
-                <th className="px-5 py-3 font-semibold">Địa chỉ</th>
-                <th className="px-5 py-3 font-semibold">Theo dõi</th>
+          <table className="min-w-[680px] w-full text-sm">
+            <thead className="border-b border-white/10">
+              <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <th className="px-6 py-4">Mã theo dõi</th>
+                <th className="px-6 py-4">Trạng thái</th>
+                <th className="px-6 py-4">Địa chỉ</th>
+                <th className="px-6 py-4">Theo dõi</th>
               </tr>
             </thead>
             <tbody>
               {recentOrders.map((order) => (
-                <tr key={order.id} className="border-t border-white/[0.06] hover:bg-white/[0.04] transition-colors">
-                  <td className="px-5 py-3 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
-                  <td className="px-5 py-3">
-                    <span className="rounded-full bg-crimson/10 px-2.5 py-0.5 text-xs font-medium capitalize text-crimson">
+                <tr key={order.id} className="border-t border-white/[0.04] hover:bg-white/[0.03] transition-colors">
+                  <td className="px-6 py-4 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
+                  <td className="px-6 py-4">
+                    <span className="rounded-full border border-violet-400/30 bg-violet-400/10 px-3 py-1 text-xs font-semibold text-violet-300">
                       {order.status.replace("_", " ")}
                     </span>
                   </td>
-                  <td className="px-5 py-3 max-w-xs truncate text-steelgray">{order.delivery_address}</td>
-                  <td className="px-5 py-3">
-                    <Link to={`/track/${order.tracking_code}`} className="text-sm text-crimson hover:text-sakura transition-colors focus-rose">
+                  <td className="px-6 py-4 max-w-xs truncate text-slate-400">{order.delivery_address}</td>
+                  <td className="px-6 py-4">
+                    <Link to={`/track/${order.tracking_code}`} className="text-sm text-violet-400 hover:text-violet-300 transition-colors focus-rose">
                       Theo dõi →
                     </Link>
                   </td>
@@ -347,7 +417,7 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
           </table>
           </div>
         )}
-      </GlassCard>
+      </div>
     </div>
   );
 }

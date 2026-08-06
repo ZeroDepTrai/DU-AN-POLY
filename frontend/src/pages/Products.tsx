@@ -265,6 +265,40 @@ export default function Products() {
         }
       />
 
+      {/* ── Mobile/Tablet Filter Strip (before bento grid) ── */}
+      <div className="mb-6 flex items-center gap-3 overflow-x-auto pb-1 scrollbar-thin lg:hidden">
+        {/* Brand quick-filters */}
+        {BRAND_FILTERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setParam("brand", brand === f.value ? "" : f.value)}
+            className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition-all ${
+              brand === f.value
+                ? "border-violet-500 bg-violet-500/20 text-violet-300"
+                : "border-white/15 bg-white/[0.04] text-slate-400 hover:border-white/25 hover:text-warmwhite"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+        {/* Clear filters */}
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete("brand"); next.delete("priceMin"); next.delete("priceMax");
+              setSearchParams(next);
+              setSelectedAccessoryCats([]); setSelectedAccessoryCompat([]);
+            }}
+            className="shrink-0 rounded-full border border-crimson/40 bg-crimson/10 px-4 py-2 text-xs font-semibold text-crimson"
+          >
+            Xóa lọc
+          </button>
+        )}
+      </div>
+
       {/* ── Active Filter Chips ────────────────────────────────────── */}
       <ActiveFilterChips
         brand={brand}
@@ -275,11 +309,10 @@ export default function Products() {
 
       {/* ── Main Layout ───────────────────────────────────────────── */}
       <div className="mt-10 flex gap-8">
+        {/* Desktop sidebar: full deep filter panel */}
         <aside className="hidden w-72 shrink-0 lg:block">
-          <GlassCard intensity="med" className="sticky top-24 p-6">
-            <h3 className="mb-6 text-lg font-bold uppercase tracking-wider text-warmwhite">
-              Bộ lọc
-            </h3>
+          <div className="sticky top-24 max-h-[calc(100vh-6rem)] space-y-4 overflow-y-auto pb-4 scrollbar-thin">
+            <GlassCard intensity="med" className="p-6">
 
             <div className="mb-6">
               <p className="mb-3 text-xs font-bold uppercase tracking-wider text-sakura">
@@ -459,7 +492,8 @@ export default function Products() {
                 Xóa bộ lọc
               </button>
             )}
-          </GlassCard>
+            </GlassCard>
+          </div>
         </aside>
 
         <div className="flex-1 min-w-0">

@@ -153,156 +153,144 @@ function ProductGallery({ product }: { product: Product }) {
 
   if (items.length === 0) {
     return (
-      <GlassCard className="mx-auto flex aspect-[4/3] w-full max-w-[560px] items-center justify-center lg:mx-0" intensity="med">
-        <p className="text-softgray">Chưa có hình ảnh</p>
-      </GlassCard>
+      <div className="mx-auto flex aspect-[4/3] w-full max-w-[560px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
+        <p className="text-slate-500">Chưa có hình ảnh</p>
+      </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-[560px] lg:mx-0">
-      {/* Main stage — clickable for lightbox */}
-      <div
-        ref={stageRef}
-        className="group relative aspect-[4/3] max-h-[480px] w-full cursor-zoom-in overflow-hidden rounded-aurora border border-white/[0.06] bg-aurora-bg-mid shadow-glow-soft"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => {
-          setIsHovered(false);
-          setZoomPos(null);
-        }}
-        onMouseMove={onStageMove}
-        onClick={() => {
-          setLightboxActive(safeIndex);
-          setLightboxOpen(true);
-        }}
-      >
-        {current?.media_type === "video" ? (
-          <video
-            key={current.url}
-            src={current.url}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            disablePictureInPicture
-            controlsList="nodownload nofullscreen noremoteplayback"
-            className="absolute inset-0 h-full w-full object-contain"
-            style={{ pointerEvents: "none" }}
-          />
-        ) : (
-          <OptimizedImage
-            key={current?.url}
-            src={current?.url ?? product.image_url}
-            alt={product.name}
-            priority
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            width={1200}
-            height={1200}
-            className="absolute inset-0 h-full w-full object-contain p-5 transition-opacity duration-500 sm:p-7"
-          />
-        )}
-
-        {current?.media_type === "image" && zoomPos && (
-          <div
-            aria-hidden
-            className="gallery-zoom-layer pointer-events-none absolute inset-0 z-20"
-            style={{
-              backgroundImage: `url(${current.url})`,
-              backgroundSize: "200%",
-              backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
-              backgroundRepeat: "no-repeat",
-              transition: "opacity 200ms ease",
-            }}
-          />
-        )}
-
-        {current?.media_type === "video" && (
-          <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
-            <span className="rounded-full border border-white/20 bg-charcoal/70 px-3 py-1 text-[11px] font-medium text-warmwhite backdrop-blur-md">
-              ▶ Click để xem toàn màn hình
-            </span>
-          </div>
-        )}
-
-        {current?.media_type === "image" && (
-          <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <span className="rounded-full border border-white/20 bg-charcoal/70 px-3 py-1 text-[11px] font-medium text-warmwhite backdrop-blur-md">
-              🔍 Hover để phóng to · Click để xem toàn màn hình
-            </span>
-          </div>
-        )}
-
-        {current?.media_type === "video" && (
-          <div className="absolute left-4 top-4 z-30">
-            <AuroraBadge tone="rose" glow>
-              Video
-            </AuroraBadge>
-          </div>
-        )}
-
-        {product.tags && (
-          <div className="absolute right-4 top-4 z-30">
-            <AuroraBadge tone="rose" glow>
-              {product.tags}
-            </AuroraBadge>
-          </div>
-        )}
-
-        {/* Dots pagination */}
-        {items.length > 1 && (
-          <div className="absolute inset-x-0 bottom-2 z-30 flex justify-center gap-1.5">
-            {items.map((_, i) => (
-              <button
-                key={i}
-                aria-label={`Slide ${i + 1}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleThumbClick(i);
-                }}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === safeIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/70"
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Thumbnail strip */}
+    <div className="flex gap-4">
+      {/* ── Left: Thumbnail strip ─────────────────────────────── */}
       {items.length > 1 && (
-        <div className="mt-4 flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
+        <div className="flex w-[72px] shrink-0 flex-col gap-2 overflow-y-auto pb-1 scrollbar-thin">
           {items.map((it, i) => (
             <button
               key={it.url + i}
               type="button"
               onClick={() => handleThumbClick(i)}
               aria-label={`Xem ${it.media_type === "video" ? "video" : "ảnh"} ${i + 1}`}
-              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border transition-all duration-200 ${
+              className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-xl border-2 transition-all duration-200 ${
                 i === safeIndex
-                  ? "border-sakura shadow-[0_0_0_1px_rgba(242,140,166,0.4),0_10px_24px_-10px_rgba(242,140,166,0.5)]"
-                  : "border-white/[0.06] hover:border-white/30"
+                  ? "border-violet-500 shadow-[0_0_0_2px_rgba(139,92,246,0.4),0_10px_24px_-10px_rgba(139,92,246,0.5)]"
+                  : "border-white/10 hover:border-white/25"
               }`}
             >
               {it.media_type === "video" ? (
-                <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-aurora-bg-mid">
-                  <svg className="h-5 w-5 text-sakura" fill="currentColor" viewBox="0 0 24 24">
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-white/[0.04]">
+                  <svg className="h-5 w-5 text-slate-500" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                   </svg>
-                  <span className="text-[9px] text-softgray">Video</span>
+                  <span className="text-[9px] text-slate-600">Video</span>
                 </div>
               ) : (
-                <OptimizedImage src={it.url} alt="" sizes="80px" width={80} height={80} className="h-full w-full object-cover" />
+                <OptimizedImage src={it.url} alt="" sizes="72px" width={72} height={72} className="h-full w-full object-cover" />
+              )}
+              {i === safeIndex && (
+                <div className="absolute inset-0 rounded-xl ring-2 ring-violet-400/40" />
               )}
             </button>
           ))}
         </div>
       )}
 
+      {/* ── Right: Main image ────────────────────────────────── */}
+      <div className="flex-1">
+        {/* Main stage */}
+        <div
+          ref={stageRef}
+          className="group relative aspect-[4/3] max-h-[560px] w-full cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-all"
+          style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)" }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => {
+            setIsHovered(false);
+            setZoomPos(null);
+          }}
+          onMouseMove={onStageMove}
+          onClick={() => {
+            setLightboxActive(safeIndex);
+            setLightboxOpen(true);
+          }}
+        >
+          {current?.media_type === "video" ? (
+            <video
+              key={current.url}
+              src={current.url}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              disablePictureInPicture
+              controlsList="nodownload nofullscreen noremoteplayback"
+              className="absolute inset-0 h-full w-full object-contain p-6"
+              style={{ pointerEvents: "none" }}
+            />
+          ) : (
+            <OptimizedImage
+              key={current?.url}
+              src={current?.url ?? product.image_url}
+              alt={product.name}
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              width={1200}
+              height={1200}
+              className="absolute inset-0 h-full w-full object-contain p-6 transition-opacity duration-500"
+            />
+          )}
+
+          {current?.media_type === "image" && zoomPos && (
+            <div
+              aria-hidden
+              className="gallery-zoom-layer pointer-events-none absolute inset-0 z-20"
+              style={{
+                backgroundImage: `url(${current.url})`,
+                backgroundSize: "200%",
+                backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
+                backgroundRepeat: "no-repeat",
+                transition: "opacity 200ms ease",
+              }}
+            />
+          )}
+
+          {current?.media_type === "video" && (
+            <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
+              <span className="rounded-full border border-white/20 bg-black/60 px-3 py-1 text-[11px] font-medium text-white backdrop-blur-md">
+                ▶ Click để xem toàn màn hình
+              </span>
+            </div>
+          )}
+
+          {current?.media_type === "image" && (
+            <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <span className="rounded-full border border-white/20 bg-black/60 px-3 py-1 text-[11px] font-medium text-white backdrop-blur-md">
+                🔍 Hover để phóng to · Click để xem toàn màn hình
+              </span>
+            </div>
+          )}
+
+          {current?.media_type === "video" && (
+            <div className="absolute left-4 top-4 z-30">
+              <span className="rounded-full border border-violet-400/30 bg-violet-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-violet-300 backdrop-blur-md">
+                Video
+              </span>
+            </div>
+          )}
+
+          {product.tags && (
+            <div className="absolute right-4 top-4 z-30">
+              <span className="rounded-full border border-sakura/30 bg-sakura/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-sakura backdrop-blur-md">
+                {product.tags}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Lightbox overlay */}
       {lightboxOpen && items[lightboxActive] && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-aurora-bg-deep/90 backdrop-blur-2xl"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-2xl"
           onClick={() => setLightboxOpen(false)}
         >
           <button
@@ -352,7 +340,7 @@ function ProductGallery({ product }: { product: Product }) {
               playsInline
               disablePictureInPicture
               controlsList="nodownload nofullscreen noremoteplayback"
-              className="max-h-[85vh] max-w-[90vw] rounded-aurora object-contain"
+              className="max-h-[85vh] max-w-[90vw] rounded-2xl object-contain"
               style={{ pointerEvents: "none" }}
               onClick={(e) => e.stopPropagation()}
             />
@@ -360,7 +348,7 @@ function ProductGallery({ product }: { product: Product }) {
             <img
               src={items[lightboxActive].url}
               alt={product.name}
-              className="max-h-[85vh] max-w-[90vw] rounded-aurora object-contain"
+              className="max-h-[85vh] max-w-[90vw] rounded-2xl object-contain"
               onClick={(e) => e.stopPropagation()}
             />
           )}
@@ -374,7 +362,7 @@ function ProductGallery({ product }: { product: Product }) {
                   setLightboxActive(i);
                 }}
                 className={`h-2 rounded-full transition-all ${
-                  i === lightboxActive ? "w-6 bg-sakura" : "w-2 bg-white/40 hover:bg-white/70"
+                  i === lightboxActive ? "w-6 bg-violet-400" : "w-2 bg-white/40 hover:bg-white/70"
                 }`}
               />
             ))}
@@ -533,38 +521,68 @@ function SpecsTable({ specs }: { specs: string }) {
   if (rows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-white/[0.06] bg-aurora-bg-mid">
-          <svg className="h-8 w-8 text-softgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
+          <svg className="h-8 w-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
-        <p className="text-softgray">Chưa có thông số kỹ thuật cho sản phẩm này.</p>
+        <p className="text-slate-500">Chưa có thông số kỹ thuật cho sản phẩm này.</p>
       </div>
     );
   }
 
+  // Group into rows of 4 for a horizontal grid
+  const COLS = 4;
+  const specGroups: { label: string; value: string }[][] = [];
+  for (let i = 0; i < rows.length; i += COLS) {
+    specGroups.push(rows.slice(i, i + COLS));
+  }
+
+  const SPEC_ICONS: Record<string, string> = {
+    "Hệ điều hành": "📱",
+    "Chipset": "💻",
+    "Bộ nhớ trong": "💾",
+    "Loại CPU": "⚙️",
+    GPU: "🎮",
+    "Kích thước màn hình": "🖥️",
+    "Công nghệ màn hình": "🖥️",
+    "Độ phân giải màn hình": "🔍",
+    "Camera Sau": "📸",
+    "Camera trước": "🤳",
+    "Hỗ trợ mạng": "📶",
+    "Thẻ SIM": "📋",
+    "Công nghệ NFC": "📡",
+    "Thời điểm ra mắt": "📅",
+    Pin: "🔋",
+    Sạc: "⚡",
+    "Bảo mật": "🔐",
+    RAM: "💾",
+    "Thẻ nhớ": "💽",
+  };
+
   return (
-    <GlassCard intensity="low" className="overflow-hidden p-0">
-      <table className="w-full">
-        <tbody>
-          {rows.map((row, i) => (
-            <tr
+    <div className="space-y-4">
+      {specGroups.map((group, gi) => (
+        <div key={gi} className="grid gap-4" style={{ gridTemplateColumns: `repeat(${group.length}, 1fr)` }}>
+          {group.map((row) => (
+            <div
               key={row.label}
-              className={`flex items-center justify-between transition-colors ${
-                i % 2 === 0
-                  ? "bg-white/[0.02]"
-                  : "bg-transparent"
-              }`}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-white/15"
             >
-              <td className="w-1/2 px-5 py-3.5 text-sm text-softgray">{row.label}</td>
-              <td className="w-1/2 px-5 py-3.5 text-right text-sm font-medium text-warmwhite">
-                {row.value}
-              </td>
-            </tr>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-base">{SPEC_ICONS[row.label] || "📋"}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{row.label}</span>
+              </div>
+              <p className="text-sm font-semibold leading-snug text-warmwhite">{row.value}</p>
+            </div>
           ))}
-        </tbody>
-      </table>
-    </GlassCard>
+          {/* Fill empty cells */}
+          {Array.from({ length: COLS - group.length }).map((_, ei) => (
+            <div key={`empty-${gi}-${ei}`} />
+          ))}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -1017,46 +1035,46 @@ export default function ProductDetail() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       {/* Breadcrumb */}
-      <nav className="mb-8 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-sm text-softgray scrollbar-none">
+      <nav className="mb-8 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-sm text-slate-400 scrollbar-none">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-1.5 shrink-0 transition-colors hover:text-sakura"
+          className="flex items-center gap-1.5 shrink-0 transition-colors hover:text-violet-400"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
           Trang chủ
         </button>
-        <svg className="h-4 w-4 shrink-0 text-softgray/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="h-4 w-4 shrink-0 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
         <button
           onClick={() => navigate("/")}
-          className="shrink-0 capitalize transition-colors hover:text-sakura"
+          className="shrink-0 capitalize transition-colors hover:text-violet-400"
         >
           Sản phẩm
         </button>
         {product.tags && (
           <>
-            <svg className="h-4 w-4 shrink-0 text-softgray/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-4 w-4 shrink-0 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
             <button
               onClick={() => navigate("/")}
-              className="shrink-0 capitalize transition-colors hover:text-sakura"
+              className="shrink-0 capitalize transition-colors hover:text-violet-400"
             >
               {product.tags.split(",")[0].trim()}
             </button>
           </>
         )}
-        <svg className="h-4 w-4 shrink-0 text-softgray/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="h-4 w-4 shrink-0 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
         <span className="shrink-0 font-medium text-warmwhite">{product.name}</span>
       </nav>
 
       {/* Hero Section */}
-      <div className="mb-16 grid items-start gap-8 lg:grid-cols-[minmax(0,560px)_minmax(380px,480px)] lg:justify-center lg:gap-10">
+      <div className="mb-16 grid gap-10 lg:grid-cols-[560px_1fr] lg:items-start">
         {/* Left: Gallery */}
         <div>
           <ProductGallery product={product} />

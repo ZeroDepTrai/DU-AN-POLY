@@ -568,252 +568,308 @@ export default function Spin() {
   const totalWeight = prizes.reduce((s, x) => s + Number(x.weight || 0), 0) || 1;
 
   return (
-    <div className="min-h-screen bg-aurora-bg-deep">
-      <div className="container mx-auto max-w-6xl px-4 py-10">
-
-        {/* ── Page header ─────────────────────────────────── */}
-        <div className="mb-8 text-center">
-          <div className="mb-3 flex items-center justify-center gap-3">
-            <div className="h-px w-12 bg-sakura/40" />
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-sakura">
-              CellZone
-            </span>
-            <div className="h-px w-12 bg-sakura/40" />
-          </div>
-          <h1 className="mb-3 text-3xl font-extrabold text-warmwhite sm:text-4xl">
-            <span className="aurora-text-gradient">{safeCfg.title || "Spin & Win"}</span>
-          </h1>
-          <p className="mx-auto max-w-xl text-sm text-softgray">
-            Mỗi {new Intl.NumberFormat("vi-VN").format(safeCfg.spend_per_spin_vnd)} VND đã mua (đơn hàng đã giao) = bạn nhận{" "}
-            <strong className="text-warmwhite">1 lượt quay</strong>. Quay ngay để trúng phần quà hấp dẫn!
-          </p>
-
-          {warning && (
-            <div className="mx-auto mt-4 max-w-md rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-xs text-amber-200">
-              {warning}
-            </div>
-          )}
-          {!hasToken && (
-            <div className="mx-auto mt-4 max-w-md rounded-xl border border-sakura/40 bg-sakura/10 px-4 py-2 text-xs text-sakura">
-              Bạn cần{" "}
-              <Link to="/login" onClick={() => setHasToken(!!localStorage.getItem("token"))} className="font-semibold underline">
-                đăng nhập
-              </Link>{" "}
-              để tham gia quay thưởng.
-            </div>
-          )}
-          {playError && (
-            <div className="mx-auto mt-4 max-w-md rounded-xl border border-crimson/40 bg-crimson/10 px-4 py-2 text-xs text-crimson">
-              {playError}
-            </div>
-          )}
+    <div
+      className="min-h-screen"
+      style={{
+        background: "radial-gradient(circle at 50% 0%, rgba(28, 18, 48, 1) 0%, rgba(10, 6, 18, 1) 60%)",
+      }}
+    >
+      {/* Top announcement strip */}
+      <div className="border-b border-violet-900/50" style={{ background: "#0D0916" }}>
+        <div className="mx-auto flex max-w-7xl items-center gap-8 overflow-x-auto px-4 py-2 scrollbar-none">
+          {["Miễn phí vận chuyển cho đơn từ 500K", "Đổi trả trong 30 ngày", "Thanh toán an toàn 100%", "Hỗ trợ 24/7"].map((msg) => (
+            <span key={msg} className="whitespace-nowrap text-[11px] text-violet-300/60">{msg}</span>
+          ))}
         </div>
+      </div>
 
-        {/* ── Main layout: wheel + sidebar ─────────────────── */}
-        <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
-
-          {/* Wheel area */}
-          <GlassCard intensity="med" className="flex flex-col items-center p-6 sm:p-8">
-            {/* Aurora glow behind wheel */}
-            <div
-              className="relative mb-2 w-full max-w-[440px]"
-              style={{
-                background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(252,85,116,0.15), transparent 60%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(244,197,66,0.10), transparent 60%)",
-                borderRadius: "9999px",
-              }}
-            >
-              <div className="relative mx-auto aspect-square w-full">
-                {/* Outer glow ring */}
-                <div className="pointer-events-none absolute -inset-3 rounded-full border border-sakura/20 shadow-glow-soft" />
-
-                {/* Pointer */}
-                <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1 text-3xl text-sakura drop-shadow-md">
-                  ▼
-                </div>
-
-                {/* Wheel canvas */}
-                <div className="absolute inset-0 overflow-hidden rounded-full">
-                  <canvas
-                    ref={canvasRef}
-                    width={640}
-                    height={640}
-                    className="h-full w-full"
-                    style={{
-                      transform: `rotate(${rotation}deg)`,
-                      transition: spinning ? "transform 5.6s cubic-bezier(0.16, 1, 0.3, 1)" : "none",
-                    }}
-                  />
-                </div>
-
-                {/* Center spin button */}
-                <button
-                  type="button"
-                  onClick={handleSpin}
-                  disabled={!canSpin}
-                  className={`aurora-glow-btn absolute left-1/2 top-1/2 z-20 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-lg font-bold focus-aurora disabled:cursor-not-allowed disabled:opacity-50`}
-                >
-                  {spinning ? (
-                    <svg className="h-6 w-6 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  ) : !hasToken ? (
-                    <Link to="/login" onClick={() => setHasToken(true)} className="text-sm">LOGIN</Link>
-                  ) : safeCfg.user_credits > 0 ? (
-                    "QUAY"
-                  ) : (
-                    "HẾT LƯỢT"
-                  )}
-                </button>
-              </div>
+      {/* Header */}
+      <div className="border-b border-violet-900/40" style={{ background: "rgba(13, 9, 22, 0.8)", backdropFilter: "blur(12px)" }}>
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border-2 font-black text-lg text-violet-400" style={{ borderColor: "rgba(139, 92, 246, 0.6)", textShadow: "0 0 16px rgba(139, 92, 246, 0.6)" }}>
+              CZ
             </div>
-
-            {/* Credits / spend info */}
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-softgray">
-              <div className="flex items-center gap-2 rounded-full border border-sakura/30 bg-sakura/10 px-4 py-1.5">
-                <span className="text-base">🎰</span>
-                <span>
-                  <strong className="text-warmwhite">{safeCfg.user_credits}</strong> lượt quay
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <svg className="h-4 w-4 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Tổng chi tiêu đã giao:{" "}
-                <strong className="text-warmwhite">
-                  {new Intl.NumberFormat("vi-VN").format(safeCfg.lifetime_spend_vnd)} VND
-                </strong>
-              </div>
+            <div>
+              <p className="text-base font-bold text-warmwhite">CellZone</p>
+              <p className="text-[10px] font-medium uppercase tracking-widest text-violet-400" style={{ letterSpacing: "0.2em" }}>LUCKY SPIN</p>
             </div>
-          </GlassCard>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.08]">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.08]">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500 text-[9px] font-bold text-white">2</span>
+            </button>
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.08]">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500 text-[9px] font-bold text-white">2</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
-          {/* Sidebar: prizes + history */}
+      {/* Main content */}
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        {warning && (
+          <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-xs text-amber-200">
+            {warning}
+          </div>
+        )}
+        {!hasToken && (
+          <div className="mb-4 rounded-xl border border-sakura/40 bg-sakura/10 px-4 py-2 text-xs text-sakura">
+            Bạn cần <Link to="/login" onClick={() => setHasToken(!!localStorage.getItem("token"))} className="font-semibold underline">đăng nhập</Link> để tham gia quay thưởng.
+          </div>
+        )}
+        {playError && (
+          <div className="mb-4 rounded-xl border border-red-400/40 bg-red-400/10 px-4 py-2 text-xs text-red-300">
+            {playError}
+          </div>
+        )}
+
+        {/* 3-column grid: odds | wheel | extras */}
+        <div
+          className="grid gap-7"
+          style={{ gridTemplateColumns: "350px 1fr 350px" }}
+        >
+          {/* ── LEFT: Prize odds ─────────────────────────── */}
           <div className="space-y-5">
-
-            {/* Prize list */}
-            <GlassCard intensity="med" className="p-5">
-              <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-warmwhite">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-aurora-gradient text-white shadow-glow-violet">
-                  🎁
-                </span>
-                Phần thưởng
+            {/* Odds section */}
+            <div className="rounded-2xl border border-white/8 p-5" style={{ background: "rgba(255,255,255,0.03)" }}>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-violet-300" style={{ letterSpacing: "0.05em" }}>
+                <span>◐</span> Tỷ lệ trúng thưởng
               </h2>
-              <div className="grid grid-cols-2 gap-2">
-                {prizes.map((p, i) => {
-                  const r = classifyPrize(p);
-                  const rewardLabel = REWARD_TYPE_LABEL[r];
+              <div className="space-y-3">
+                {prizes.slice(0, 6).map((p, i) => {
+                  const pct = ((Number(p.weight) / totalWeight) * 100).toFixed(1);
+                  const isJackpot = p.jackpot;
                   return (
-                    <div
-                      key={`${p.name}-${i}`}
-                      className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-charcoal p-2 transition-colors hover:bg-white/[0.03]"
-                    >
-                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-graphite">
-                        {p.image ? (
-                          <img src={p.image} alt="" className="h-full w-full object-contain" />
-                        ) : (
-                          <span className="text-base">{p.icon || "🎁"}</span>
-                        )}
+                    <div key={`${p.name}-${i}`} className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-300">{p.name}</span>
+                        <span className="text-xs font-bold" style={{ color: isJackpot ? "#89CEFF" : "#CFC2D6" }}>{pct}%</span>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-medium text-warmwhite">{p.name}</p>
-                        <p className="truncate text-[10px] text-steelgray">
-                          <span
-                            className={
-                              r === "jackpot"
-                                ? "text-yellow-300"
-                                : r === "free_product"
-                                  ? "text-emerald-300"
-                                  : r === "coupon"
-                                    ? "text-sakura"
-                                    : "text-softgray"
-                            }
-                          >
-                            {rewardLabel}
-                          </span>
-                          {" · "}
-                          {((Number(p.weight) / totalWeight) * 100).toFixed(1)}%
-                        </p>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${Math.max(parseFloat(pct), 1)}%`,
+                            background: isJackpot
+                              ? "linear-gradient(90deg, #7C3AED, #C084FC)"
+                              : `linear-gradient(90deg, #7C3AED, ${i % 2 === 0 ? "#A78BFA" : "#C4B5FD"})`,
+                          }}
+                        />
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </GlassCard>
+            </div>
 
-            {/* History */}
-            <GlassCard intensity="med" className="p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 text-base font-bold text-warmwhite">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-aurora-gradient text-white shadow-glow-violet">
-                    📋
-                  </span>
-                  Lịch sử quay
-                </h2>
-                {history.length > 5 && (
-                  <span className="text-[11px] text-steelgray">{history.length} lượt</span>
-                )}
-              </div>
-
-              {history.length === 0 ? (
-                <div className="py-6 text-center">
-                  <div className="mb-3 flex justify-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-graphite/60">
-                      <svg className="h-7 w-7 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
+            {/* How to earn more */}
+            <div className="rounded-2xl border border-white/8 p-5" style={{ background: "rgba(255,255,255,0.03)" }}>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-violet-300" style={{ letterSpacing: "0.05em" }}>
+                <span>⚡</span> Nhận thêm lượt
+              </h2>
+              <div className="space-y-2">
+                {[
+                  { icon: "↗", label: "Chia sẻ bạn bè", bonus: "+2 lượt", color: "#8B5CF6" },
+                  { icon: "📅", label: "Điểm danh hàng ngày", bonus: "+1 lượt", color: "#A78BFA" },
+                  { icon: "🛒", label: "Đơn hàng đầu tiên", bonus: "+3 lượt", color: "#C4B5FD" },
+                  { icon: "★", label: "Đánh giá sản phẩm", bonus: "+1 lượt", color: "#7C3AED" },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left transition hover:border-white/15 hover:bg-white/[0.06]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-8 w-8 items-center justify-center rounded-xl text-sm"
+                        style={{ background: `${item.color}20`, color: item.color }}
+                      >
+                        {item.icon}
+                      </div>
+                      <span className="text-sm font-medium text-slate-300">{item.label}</span>
                     </div>
-                  </div>
-                  <p className="text-xs text-steelgray">
+                    <span className="text-xs font-bold text-violet-300">{item.bonus}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── CENTER: Wheel ─────────────────────────────── */}
+          <div className="flex flex-col items-center">
+            {/* Credits pill */}
+            <div
+              className="mb-5 flex items-center gap-3 rounded-full border px-6 py-2.5 text-sm font-semibold"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                borderColor: "rgba(139, 92, 246, 0.3)",
+                color: "#C4B5FD",
+              }}
+            >
+              <span>▤</span>
+              Lượt quay còn lại:
+              <span className="text-xl font-black text-white" style={{ textShadow: "0 0 12px rgba(196, 181, 253, 0.6)" }}>
+                {safeCfg.user_credits}
+              </span>
+            </div>
+
+            {/* Wheel */}
+            <div className="relative" style={{ width: 480, height: 480 }}>
+              {/* Outer glow container */}
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: "rgba(155, 63, 240, 0.12)",
+                  boxShadow: "0 0 70px rgba(155, 63, 240, 0.35), 0 0 0 12px rgba(42, 33, 64, 0.9), 0 0 0 10px rgba(20, 16, 31, 0.9)",
+                }}
+              />
+              {/* Pointer */}
+              <div
+                className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-2"
+                style={{ filter: "drop-shadow(0 0 16px rgba(192, 132, 252, 1))" }}
+              >
+                <svg width="34" height="28" viewBox="0 0 34 28" fill="none">
+                  <path d="M17 28L2 4h30L17 28z" fill="url(#pointerGrad)" />
+                  <defs>
+                    <linearGradient id="pointerGrad" x1="17" y1="0" x2="17" y2="28" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#C084FC" />
+                      <stop offset="1" stopColor="#7C3AED" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              {/* Wheel canvas */}
+              <div className="absolute inset-0 overflow-hidden rounded-full">
+                <canvas
+                  ref={canvasRef}
+                  width={640}
+                  height={640}
+                  className="h-full w-full"
+                  style={{
+                    transform: `rotate(${rotation}deg)`,
+                    transition: spinning ? "transform 5.6s cubic-bezier(0.16, 1, 0.3, 1)" : "none",
+                  }}
+                />
+              </div>
+              {/* Center button */}
+              <button
+                type="button"
+                onClick={handleSpin}
+                disabled={!canSpin}
+                className="aurora-glow-btn absolute left-1/2 top-1/2 z-20 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-base font-black tracking-wider focus-aurora disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  background: "radial-gradient(circle at 35% 30%, #C084FC 0%, #9B3FD6 60%, #6B21A8 100%)",
+                  boxShadow: "0 0 34px rgba(192, 132, 252, 0.7), 0 0 0 7px rgba(20, 16, 31, 1)",
+                  color: "rgba(196, 181, 253, 1)",
+                }}
+              >
+                {spinning ? (
+                  <svg className="h-7 w-7 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : !hasToken ? (
+                  <Link to="/login" onClick={() => setHasToken(true)} className="text-sm font-bold tracking-wider">LOGIN</Link>
+                ) : safeCfg.user_credits > 0 ? (
+                  <span>QUAY</span>
+                ) : (
+                  <span className="text-xs">HẾT LƯỢT</span>
+                )}
+              </button>
+            </div>
+
+            {/* Footer note */}
+            <p className="mt-6 text-center text-xs text-slate-500">
+              Mỗi lượt quay là một cơ hội trúng thưởng độc lập
+            </p>
+          </div>
+
+          {/* ── RIGHT: History + Recent winners ───────────── */}
+          <div className="space-y-5">
+            {/* My history */}
+            <div className="rounded-2xl border border-white/8 p-5" style={{ background: "rgba(255,255,255,0.03)" }}>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-violet-300" style={{ letterSpacing: "0.05em" }}>
+                <span>↻</span> Lịch sử của tôi
+              </h2>
+              {history.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10">
+                  <p className="text-sm text-slate-500">
                     {hasToken ? "Bạn chưa quay lần nào." : "Đăng nhập để xem lịch sử."}
                   </p>
                 </div>
               ) : (
-                <>
-                  <ul className="space-y-2">
-                    {history.slice(0, 5).map((h) => (
-                      <li key={h.id}>
-                        <button
-                          type="button"
-                          onClick={() => navigate("/spin/history")}
-                          className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-charcoal p-3 text-left text-xs transition-colors hover:border-sakura/30 hover:bg-sakura/5 focus-rose"
-                        >
-                          <span className="truncate pr-2 text-warmwhite">{h.prize_label}</span>
-                          <span className="text-sakura shrink-0 font-medium hover:text-crimson">Xem →</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    to="/spin/history"
-                    className="mt-3 flex items-center justify-center gap-1 text-xs font-semibold text-sakura transition-colors hover:text-crimson focus-rose"
-                  >
-                    Xem tất cả lịch sử quay →
-                  </Link>
-                </>
+                <div className="space-y-2">
+                  {history.slice(0, 4).map((h) => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => navigate("/spin/history")}
+                      className="flex w-full items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left text-xs transition hover:border-violet-400/30 hover:bg-violet-400/5 focus-rose"
+                    >
+                      <span className="truncate pr-3 font-medium text-slate-300">{h.prize_label}</span>
+                      <span className="shrink-0 text-violet-400 hover:text-violet-300">Xem →</span>
+                    </button>
+                  ))}
+                  {history.length > 4 && (
+                    <Link
+                      to="/spin/history"
+                      className="mt-2 flex items-center justify-center gap-1 text-xs font-semibold text-violet-400 transition-colors hover:text-violet-300 focus-rose"
+                    >
+                      Xem tất cả lịch sử →
+                    </Link>
+                  )}
+                </div>
               )}
-            </GlassCard>
+            </div>
 
-            {/* How to earn credits */}
-            <GlassCard intensity="low" className="p-4">
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-steelgray">
-                Cách nhận lượt quay
-              </h3>
-              <p className="text-xs text-softgray">
-                Mỗi <strong className="text-warmwhite">{new Intl.NumberFormat("vi-VN").format(safeCfg.spend_per_spin_vnd)} VND</strong> đã thanh toán cho đơn hàng đã giao sẽ tự động tích lũy thành lượt quay. Lượt quay không có hạn sử dụng.
-              </p>
-              <Link
-                to="/products"
-                className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-sakura/40 bg-sakura/10 px-4 py-1.5 text-xs font-semibold text-sakura transition-colors hover:bg-sakura/20 focus-rose"
-              >
-                Mua sắm ngay
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
-            </GlassCard>
+            {/* Recent winners */}
+            <div className="rounded-2xl border border-white/8 p-5" style={{ background: "rgba(255,255,255,0.03)" }}>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-violet-300" style={{ letterSpacing: "0.05em" }}>
+                <span>🏆</span> Trúng thưởng mới
+              </h2>
+              <div className="space-y-3">
+                {[
+                  { initials: "QV", name: "Đỗ Quốc Việt", prize: "Voucher 1 triệu", time: "2m trước", color: "#EC4899" },
+                  { initials: "TĐ", name: "Nguyễn Thành Đạt", prize: "iPhone 15 Pro", time: "5m trước", color: "#8B5CF6" },
+                  { initials: "MK", name: "Lê Minh Khôi", prize: "AirPods Pro", time: "8m trước", color: "#A78BFA" },
+                ].map((w) => (
+                  <div key={w.name} className="flex items-center gap-3">
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                      style={{ background: `${w.color}20`, color: w.color }}
+                    >
+                      {w.initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-200">{w.name}</p>
+                      <p className="truncate text-xs text-violet-400">{w.prize}</p>
+                    </div>
+                    <span className="shrink-0 text-[11px] text-slate-500">{w.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Footer disclaimer */}
+      <div className="border-t border-white/5 py-6 text-center">
+        <p className="text-xs text-slate-600">
+          Mỗi lượt quay là một cơ hội trúng thưởng độc lập · Giải thưởng có giới hạn số lượng theo ngày · CellZone giữ quyền quyết định cuối cùng
+        </p>
       </div>
 
       <PrizeModal
