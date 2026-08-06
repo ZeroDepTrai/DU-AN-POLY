@@ -170,7 +170,7 @@ export default function Checkout() {
                   className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
                     payment === m.id
                       ? "border-sakura/60 bg-sakura/10 shadow-glow"
-                      : "border-white/10 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
+                      : "border-white/[0.06] bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
                   }`}
                 >
                   <input
@@ -236,7 +236,7 @@ export default function Checkout() {
               })}
             </div>
 
-            <div className="space-y-2 border-t border-white/10 pt-4">
+            <div className="space-y-2 border-t border-white/[0.06] pt-4">
               <div className="flex justify-between text-sm text-softgray">
                 <span>Tạm tính</span>
                 <span>{new Intl.NumberFormat("vi-VN").format(totalPrice)} VND</span>
@@ -258,7 +258,7 @@ export default function Checkout() {
                   <span>-{new Intl.NumberFormat("vi-VN").format(discount)} VND</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-white/10 pt-3 text-lg font-bold text-warmwhite">
+              <div className="flex justify-between border-t border-white/[0.06] pt-3 text-lg font-bold text-warmwhite">
                 <span>Tổng cộng</span>
                 <span className="aurora-text-rainbow">
                   {new Intl.NumberFormat("vi-VN").format(grand)} VND
@@ -266,7 +266,7 @@ export default function Checkout() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-3">
+            <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
               <p className="mb-1.5 text-xs text-sakura">Mã giảm giá</p>
               <div className="flex gap-2">
                 <input

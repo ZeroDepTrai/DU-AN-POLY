@@ -77,7 +77,7 @@ export default function BlogDetail() {
           />
         </GlassCard>
 
-        <div className="mt-10 flex items-center justify-between border-t border-white/10 pt-6">
+        <div className="mt-10 flex items-center justify-between border-t border-white/[0.06] pt-6">
           <GlowButton variant="ghost" onClick={() => window.history.back()}>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />

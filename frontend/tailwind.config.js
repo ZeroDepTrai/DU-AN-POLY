@@ -50,12 +50,37 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
       },
+      // Figma-derived typographic scale (display / heading / subheading / body / caption)
+      fontSize: {
+        "fig-display": ["clamp(2.5rem, 5vw, 4rem)", { lineHeight: "1.05", letterSpacing: "-0.02em", fontWeight: "800" }],
+        "fig-h1": ["clamp(2rem, 3.5vw, 2.75rem)", { lineHeight: "1.15", letterSpacing: "-0.015em", fontWeight: "700" }],
+        "fig-h2": ["clamp(1.5rem, 2.5vw, 2rem)", { lineHeight: "1.2", letterSpacing: "-0.01em", fontWeight: "700" }],
+        "fig-h3": ["1.25rem", { lineHeight: "1.3", fontWeight: "600" }],
+        "fig-body": ["0.9375rem", { lineHeight: "1.55" }],
+        "fig-caption": ["0.75rem", { lineHeight: "1.45", letterSpacing: "0.02em" }],
+      },
+      // Figma-derived spacing rhythm (4 / 8 / 12 / 16 / 24 / 32 / 48 / 64)
+      spacing: {
+        "fig-1": "0.25rem",
+        "fig-2": "0.5rem",
+        "fig-3": "0.75rem",
+        "fig-4": "1rem",
+        "fig-6": "1.5rem",
+        "fig-8": "2rem",
+        "fig-12": "3rem",
+        "fig-16": "4rem",
+      },
       borderRadius: {
         card: "0.75rem",
         bento: "0.75rem",
         showcase: "1rem",
         aurora: "1.25rem",
         "aurora-lg": "2rem",
+        // Figma-derived structural radii
+        "fig-card": "1rem",          // 16px — content cards
+        "fig-showcase": "1.25rem",   // 20px — product/bento cards
+        "fig-pill": "9999px",        // pill controls
+        "fig-modal": "1.5rem",       // 24px — modals & large surfaces
       },
       boxShadow: {
         "card-hover": "0 12px 36px -12px rgba(242, 140, 166, 0.35)",
@@ -65,6 +90,11 @@ export default {
         "glow-soft": "0 8px 32px -8px rgba(242, 140, 166, 0.25)",
         "aurora-card": "0 20px 60px -20px rgba(242, 140, 166, 0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
         "aurora-btn": "0 8px 24px -6px rgba(242, 140, 166, 0.55), inset 0 1px 0 rgba(255,255,255,0.20)",
+        // Figma-derived layered shadows (deep + soft)
+        "fig-card": "0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 24px -12px rgba(0,0,0,0.6)",
+        "fig-card-hover": "0 1px 0 0 rgba(255,255,255,0.06) inset, 0 16px 40px -16px rgba(217,74,99,0.35), 0 4px 12px -6px rgba(0,0,0,0.4)",
+        "fig-pill": "0 1px 0 0 rgba(255,255,255,0.06) inset, 0 4px 16px -8px rgba(0,0,0,0.5)",
+        "fig-glow": "0 0 0 1px rgba(242,140,166,0.25), 0 10px 30px -10px rgba(242,140,166,0.45)",
       },
       keyframes: {
         "aurora-pan": {

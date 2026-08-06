@@ -239,7 +239,7 @@ function PrizeModal({
     >
       <div
         className={`relative w-full max-w-sm overflow-hidden rounded-3xl border ${
-          isJackpot ? "border-yellow-400/60" : "border-white/10"
+          isJackpot ? "border-yellow-400/60" : "border-white/[0.06]"
         } bg-gradient-to-b from-[#0d1442] to-[#05070f] p-8 text-center`}
         onClick={(e) => e.stopPropagation()}
         style={isJackpot ? { boxShadow: "0 0 60px rgba(244,197,66,0.45)" } : undefined}

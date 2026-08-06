@@ -26,7 +26,9 @@ export default function OrderConfirmation() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center">
         <h2 className="mb-4 text-2xl font-bold text-warmwhite">Đơn hàng không tồn tại</h2>
-        <Link to="/" className="btn-primary">Quay về trang chủ</Link>
+        <Link to="/" className="btn-primary focus-rose">
+          Quay về trang chủ
+        </Link>
       </div>
     );
   }
@@ -83,7 +85,7 @@ export default function OrderConfirmation() {
             </div>
           ))}
         </div>
-        <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
+        <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-4">
           <span className="font-bold text-warmwhite">Tổng cộng</span>
           <span className="aurora-text-rainbow text-xl font-extrabold">
             {new Intl.NumberFormat("vi-VN").format(total)} VND
@@ -95,13 +97,13 @@ export default function OrderConfirmation() {
         <GlowButton
           variant="aurora"
           onClick={() => (window.location.href = `/track/${order.tracking_code}`)}
-          className="flex-1 justify-center py-3"
+          className="flex-1 justify-center py-3 focus-aurora"
         >
           Theo dõi giao hàng
         </GlowButton>
         <Link
           to="/"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 font-semibold text-warmwhite backdrop-blur-xl transition-colors hover:bg-white/[0.08]"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.04] px-5 py-3 font-semibold text-warmwhite backdrop-blur-xl transition-colors hover:bg-white/[0.08] focus-rose"
         >
           Tiếp tục mua sắm
         </Link>

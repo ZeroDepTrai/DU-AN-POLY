@@ -32,7 +32,7 @@ function SpinDetailModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#0d1442] to-[#05070f] p-7 text-left"
+        className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/[0.06] bg-gradient-to-b from-[#0d1442] to-[#05070f] p-7 text-left"
         onClick={(e) => e.stopPropagation()}
       >
         <p className={`mb-1 inline-block rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${meta.color}`}>

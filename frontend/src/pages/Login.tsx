@@ -111,7 +111,7 @@ export default function Login() {
               </div>
             )}
 
-            <GlowButton variant="aurora" size="lg" loading={loading} type="submit" className="w-full justify-center">
+            <GlowButton variant="aurora" size="lg" loading={loading} type="submit" className="w-full justify-center focus-aurora">
               Đăng nhập
             </GlowButton>
           </form>
@@ -123,7 +123,7 @@ export default function Login() {
           </div>
 
           <div className="space-y-2">
-            <button className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-warmwhite backdrop-blur-xl transition-all hover:bg-white/[0.08]">
+            <button className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-warmwhite backdrop-blur-xl transition-all hover:bg-white/[0.08] focus-rose">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -136,7 +136,7 @@ export default function Login() {
 
           <p className="mt-5 text-center text-sm text-softgray">
             Chưa có tài khoản?{" "}
-            <Link to="/register" className="aurora-text-rainbow font-medium hover:text-sakura transition-colors">
+            <Link to="/register" className="aurora-text-rainbow font-medium transition-colors hover:text-sakura focus-rose">
               Đăng ký ngay
             </Link>
           </p>

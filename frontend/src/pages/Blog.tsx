@@ -79,7 +79,7 @@ export default function Blog() {
     <div>
       <div className="container-padding py-10">
         <div className="mb-4 flex items-center gap-2 text-sm text-steelgray">
-          <Link to="/" className="hover:text-sakura transition-colors">Trang chủ</Link>
+          <Link to="/" className="transition-colors hover:text-sakura focus-rose">Trang chủ</Link>
           <span>/</span>
           <span className="text-warmwhite">Blog</span>
         </div>
@@ -92,7 +92,7 @@ export default function Blog() {
 
       <div className="container-padding pb-16">
         {!isLoading && featuredPost && (
-          <Link to={`/blog/${featuredPost.slug}`} className="group mb-10 block">
+          <Link to={`/blog/${featuredPost.slug}`} className="group mb-10 block focus-rose">
             <GlassCard intensity="med" hoverable className="flex flex-col overflow-hidden p-0 lg:flex-row">
               <div className="relative w-full overflow-hidden lg:w-1/2">
                 <OptimizedImage
@@ -143,10 +143,10 @@ export default function Blog() {
                   key={tab.value}
                   onClick={() => toggleTag(tab.value)}
                   className={[
-                    "rounded-full border px-5 py-2 text-sm font-medium transition-all",
+                    "rounded-fig-pill border px-5 py-2 text-sm font-medium transition-all focus-rose",
                     active
                       ? "border-transparent aurora-chip-active"
-                      : "border-white/10 bg-white/[0.04] text-softgray hover:border-white/30 hover:text-warmwhite",
+                      : "border-white/[0.06] bg-white/[0.04] text-softgray hover:border-white/30 hover:text-warmwhite",
                   ].join(" ")}
                 >
                   {tab.label}

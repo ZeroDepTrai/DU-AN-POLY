@@ -12,8 +12,8 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 
 const intensityClass: Record<Intensity, string> = {
   low: "bg-white/[0.03] backdrop-blur-md",
-  med: "bg-white/[0.05] backdrop-blur-xl",
-  high: "bg-white/[0.07] backdrop-blur-2xl",
+  med: "bg-white/[0.04] backdrop-blur-xl",
+  high: "bg-white/[0.06] backdrop-blur-2xl",
 };
 
 const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(function GlassCard(
@@ -33,11 +33,11 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(function GlassCard(
     <Tag
       ref={ref}
       className={[
-        "rounded-aurora border border-white/10 text-warmwhite",
+        "rounded-aurora border border-white/[0.06] text-warmwhite shadow-fig-card",
         intensityClass[intensity],
-        glow ? "shadow-aurora-card" : "shadow-glow-soft",
+        glow ? "shadow-fig-glow" : "",
         hoverable
-          ? "transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:shadow-aurora-card"
+          ? "transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12] hover:shadow-fig-card-hover"
           : "",
         className,
       ].join(" ")}

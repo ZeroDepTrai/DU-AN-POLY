@@ -80,6 +80,43 @@
     @apply mx-auto max-w-7xl px-4 sm:px-6;
   }
 
+  /* ── Figma-derived structural components ─────────────────────────────
+     These components adapt the Figma node's layout, spacing, hierarchy,
+     and glassmorphism patterns to the existing CellZone Aurora palette.
+     They preserve CellZone brand identity (crimson / rose / sakura) while
+     adopting Figma's information density and visual rhythm. */
+  .fig-surface {
+    @apply rounded-fig-card border border-white/[0.06] bg-graphite/70 backdrop-blur-xl shadow-fig-card;
+  }
+  .fig-surface-hover {
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.10] hover:shadow-fig-card-hover;
+  }
+  .fig-panel {
+    @apply rounded-fig-showcase border border-white/[0.06] bg-cardtint/40 backdrop-blur-xl shadow-fig-card;
+  }
+  .fig-pill {
+    @apply inline-flex items-center gap-1.5 rounded-fig-pill border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-xs font-medium text-warmwhite backdrop-blur-xl transition-all hover:border-sakura/40 hover:bg-white/[0.06];
+  }
+  .fig-pill-active {
+    background-image: linear-gradient(135deg, #D94A63 0%, #A82F49 100%);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 6px 18px -8px rgba(242, 140, 166, 0.7);
+  }
+  .fig-stat {
+    @apply rounded-fig-card border border-white/[0.06] bg-graphite/60 p-5 backdrop-blur-xl shadow-fig-card transition-all hover:border-rose/30;
+  }
+  .fig-divider {
+    background-image: linear-gradient(90deg, transparent, rgba(217, 74, 99, 0.45), rgba(242, 140, 166, 0.35), transparent);
+    height: 1px;
+  }
+  .fig-eyebrow {
+    @apply text-[10px] font-semibold uppercase tracking-[0.25em] text-sakura;
+  }
+  .fig-grid {
+    @apply grid gap-4 sm:gap-5;
+  }
+
   /* Title gradient — clean, high-contrast (no rainbow) */
   .title-gradient {
     @apply bg-clip-text text-transparent;
@@ -207,6 +244,25 @@
   /* Focus ring for buttons using aurora-glow-btn. */
   .focus-aurora:focus-visible {
     @apply outline-none ring-2 ring-sakura/60 ring-offset-2 ring-offset-charcoal;
+  }
+
+  /* ── Shimmer utilities (referenced by Header & ProductDetail) ─────── */
+  /* CellZone brand-tinted shimmer overlay. Was previously undefined and
+     silently inert; now a subtle rose sweep. */
+  .bg-aurora-shimmer {
+    background-image: linear-gradient(110deg, transparent 30%, rgba(242,140,166,0.20) 50%, transparent 70%);
+    background-size: 200% 100%;
+    animation: shimmer 2.6s linear infinite;
+  }
+  .animate-aurora-shimmer {
+    animation: shimmer 2.6s linear infinite;
+    background-image: linear-gradient(110deg, transparent 30%, rgba(242,140,166,0.25) 50%, transparent 70%);
+    background-size: 200% 100%;
+  }
+  .aurora-shimmer {
+    background-image: linear-gradient(90deg, transparent, rgba(217,74,99,0.5), rgba(242,140,166,0.45), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2.4s linear infinite;
   }
 
   /* ── Admin Dashboard specific ────────────────────────────────────────── */

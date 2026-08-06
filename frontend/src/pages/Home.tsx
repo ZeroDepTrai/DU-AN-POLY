@@ -73,34 +73,34 @@ export default function Home() {
     <div>
       {/* ── Hero ────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="container-padding pt-16 pb-20 lg:pt-24 lg:pb-28">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
+        <div className="container-padding pt-12 pb-16 lg:pt-20 lg:pb-24">
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
             <div className="relative z-10">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur-xl">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-sakura shadow-glow" />
-                <span className="text-xs font-semibold uppercase tracking-[0.25em] text-sakura">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-fig-pill border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur-xl">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sakura shadow-glow" />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-sakura">
                   CellZone · Aurora UI
                 </span>
               </div>
-              <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-balance sm:text-5xl lg:text-6xl">
+              <h1 className="mb-5 text-fig-display">
                 <span className="aurora-text-gradient">Trải nghiệm</span>
                 <br />
                 <span className="aurora-text-rainbow">không gian mua sắm</span>
                 <br />
                 <span className="aurora-text-gradient">thượng lưu</span>
               </h1>
-              <p className="mb-10 max-w-lg text-base leading-relaxed text-softgray text-pretty sm:text-lg">
+              <p className="mb-8 max-w-lg text-base leading-relaxed text-softgray text-pretty sm:text-lg">
                 Nơi công nghệ tối tân hội tụ cùng nghệ thuật thiết kế đỉnh cao.
                 Khám phá những thiết bị di động định hình tương lai.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link to="/products" className="aurora-glow-btn px-7 py-3.5 text-sm uppercase tracking-wider">
+                <Link to="/products" className="aurora-glow-btn px-7 py-3.5 text-sm uppercase tracking-wider focus-aurora">
                   Mua sắm ngay
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                 </Link>
-                <Link to="/accessories" className="rounded-xl border border-white/10 bg-white/[0.04] px-7 py-3.5 text-sm font-semibold uppercase tracking-wider text-warmwhite backdrop-blur-xl transition-all hover:border-white/30 hover:bg-white/[0.08]">
+                <Link to="/accessories" className="rounded-xl border border-white/10 bg-white/[0.04] px-7 py-3.5 text-sm font-semibold uppercase tracking-wider text-warmwhite backdrop-blur-xl transition-all hover:border-white/30 hover:bg-white/[0.08] focus-rose">
                   Phụ kiện cao cấp
                 </Link>
               </div>
@@ -113,7 +113,7 @@ export default function Home() {
                 ].map((b) => (
                   <GlassCard intensity="low" className="px-4 py-3" key={b.t}>
                     <p className="aurora-text-rainbow text-lg font-bold">{b.k}</p>
-                    <p className="text-[11px] uppercase tracking-wider text-steelgray">{b.t}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-steelgray">{b.t}</p>
                   </GlassCard>
                 ))}
               </div>
@@ -133,7 +133,7 @@ export default function Home() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-aurora-bg-deep via-transparent to-transparent" />
                 <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between gap-3">
-                  <div className="rounded-aurora border border-white/15 bg-aurora-bg-deep/70 px-3 py-2 backdrop-blur-xl">
+                  <div className="rounded-fig-card border border-white/15 bg-aurora-bg-deep/70 px-3 py-2 backdrop-blur-xl">
                     <p className="text-[10px] uppercase tracking-wider text-steelgray">Flagship mới</p>
                     <p className="text-sm font-semibold text-warmwhite">Khám phá ngay</p>
                   </div>
@@ -148,14 +148,14 @@ export default function Home() {
       </section>
 
       {/* ── Brand categories ──────────────────────────────────────── */}
-      <section className="border-y border-white/10">
+      <section className="border-y border-white/[0.06]">
         <div className="container-padding py-10">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {BRANDS.map((b, i) => (
               <Link
                 key={b.name}
                 to={b.path}
-                className="group"
+                className="group focus-rose"
               >
                 <GlassCard intensity="low" hoverable className="flex flex-col items-center justify-center gap-3 py-7">
                   <div
@@ -187,7 +187,7 @@ export default function Home() {
           rightSlot={
             <Link
               to="/products"
-              className="inline-flex items-center gap-1 rounded-full border border-sakura/40 bg-sakura/10 px-4 py-2 text-sm font-semibold text-sakura transition-all hover:bg-sakura/20"
+              className="inline-flex items-center gap-1 rounded-fig-pill border border-sakura/40 bg-sakura/10 px-4 py-2 text-sm font-semibold text-sakura transition-all hover:bg-sakura/20 focus-rose"
             >
               Xem tất cả
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -217,7 +217,7 @@ export default function Home() {
               <p className="mt-2 text-sm text-softgray">Máy chủ đang tạm thời không phản hồi.</p>
               <button
                 type="button"
-                className="mt-5 rounded-xl border border-sakura/40 bg-sakura/10 px-5 py-2.5 text-sm font-semibold text-sakura transition-all hover:bg-sakura/20 disabled:cursor-wait disabled:opacity-60"
+                className="mt-5 rounded-xl border border-sakura/40 bg-sakura/10 px-5 py-2.5 text-sm font-semibold text-sakura transition-all hover:bg-sakura/20 disabled:cursor-wait disabled:opacity-60 focus-rose"
                 disabled={isFetching}
                 onClick={() => void refetch()}
               >
@@ -239,7 +239,7 @@ export default function Home() {
       </section>
 
       {/* ── Core values ───────────────────────────────────────────── */}
-      <section className="border-y border-white/10">
+      <section className="border-y border-white/[0.06]">
         <div className="container-padding section-padding">
           <SectionHeading
             align="center"
@@ -301,7 +301,7 @@ export default function Home() {
       <section
         id="contact"
         ref={contactRef}
-        className="border-t border-white/10"
+        className="border-t border-white/[0.06]"
       >
         <div className="container-padding section-padding">
           <SectionHeading
@@ -350,7 +350,7 @@ export default function Home() {
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-warmwhite">Gửi thành công!</h3>
                   <p className="text-sm text-softgray">CellZone sẽ liên hệ với bạn trong thời gian sớm nhất.</p>
-                  <GlowButton variant="aurora" className="mt-6" onClick={() => setContactSent(false)}>
+                  <GlowButton variant="aurora" className="mt-6 focus-aurora" onClick={() => setContactSent(false)}>
                     Gửi thêm
                   </GlowButton>
                 </div>
@@ -379,7 +379,7 @@ export default function Home() {
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                     required
                   />
-                  <GlowButton variant="aurora" size="lg" className="w-full">
+                  <GlowButton variant="aurora" size="lg" className="w-full focus-aurora">
                     Gửi thông điệp
                   </GlowButton>
                 </form>

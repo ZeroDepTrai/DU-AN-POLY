@@ -127,27 +127,27 @@ export default function AdminDashboard() {
   const isLoading = loadingProducts || loadingOrders;
 
   return (
-    <div className="flex min-h-screen bg-charcoal">
+    <div className="flex min-h-screen bg-charcoal text-warmwhite">
       {/* Sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-gunmetal/40 bg-graphite md:flex">
-        <div className="flex h-16 items-center gap-2 border-b border-gunmetal/40 px-4">
-          <a href="/" className="flex h-8 w-8 items-center justify-center rounded-lg bg-crimson">
+      <aside className="admin-sidebar hidden w-60 shrink-0 flex-col border-r border-white/[0.08] bg-graphite md:flex">
+        <div className="admin-sidebar-header flex h-16 items-center gap-2.5 border-b border-white/[0.08] px-4">
+          <a href="/" className="admin-sidebar-logo focus-rose flex h-8 w-8 items-center justify-center rounded-lg bg-crimson">
             <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </a>
-          <a href="/" className="font-bold text-warmwhite hover:text-sakura transition-colors">CellZone</a>
+          <a href="/" className="focus-rose font-bold text-warmwhite hover:text-sakura transition-colors">CellZone</a>
           <span className="ml-auto rounded-full bg-crimson/10 px-2 py-0.5 text-xs font-semibold text-crimson">Admin</span>
         </div>
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`admin-nav-item focus-rose flex w-full items-center gap-3 rounded-fig-pill px-3 py-2 text-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? "bg-crimson/10 text-crimson"
-                  : "text-steelgray hover:bg-gunmetal/40 hover:text-warmwhite"
+                  ? "admin-nav-item-active fig-pill-active"
+                  : "admin-nav-item-inactive text-steelgray hover:bg-white/[0.04] hover:text-warmwhite"
               }`}
             >
               {tab.icon}
@@ -160,15 +160,15 @@ export default function AdminDashboard() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile top tabs */}
-        <div className="flex gap-1 overflow-x-auto border-b border-gunmetal/40 bg-graphite p-2 md:hidden">
+        <div className="flex h-16 items-center gap-1 overflow-x-auto border-b border-white/[0.08] bg-graphite px-3 md:hidden">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+              className={`focus-rose flex shrink-0 items-center gap-1.5 rounded-fig-pill px-3 py-2 text-xs font-medium transition-all ${
                 activeTab === tab.id
-                  ? "bg-crimson text-white"
-                  : "text-steelgray hover:bg-gunmetal/40"
+                  ? "fig-pill-active"
+                  : "text-steelgray hover:bg-white/[0.04] hover:text-warmwhite"
               }`}
             >
               {tab.icon}
@@ -177,7 +177,7 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
           {isLoading ? (
             <LoadingSpinner label="Đang tải dashboard..." />
           ) : (
@@ -219,7 +219,7 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
           { label: "Tổng doanh thu", value: new Intl.NumberFormat("vi-VN").format(totalRevenue) + " VND", icon: "💰", color: "gold" },
           { label: "Cảnh báo tồn kho", value: lowStock.length, icon: "⚠️", color: "deeprose" },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+          <div key={stat.label} className="admin-kpi-card fig-stat rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card transition-all hover:-translate-y-0.5 hover:shadow-fig-card-hover">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm text-steelgray">{stat.label}</p>
               <span className="text-xl">{stat.icon}</span>
@@ -248,16 +248,17 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
         </div>
       )}
 
-      <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
-        <div className="flex items-center justify-between border-b border-gunmetal/40 px-5 py-4">
+      <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
+        <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4">
           <h2 className="font-bold text-warmwhite">Đơn hàng gần đây</h2>
           <span className="text-sm text-steelgray">{orders.length} đơn hàng</span>
         </div>
         {recentOrders.length === 0 ? (
           <div className="p-8 text-center text-steelgray">Chưa có đơn hàng nào.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-gunmetal/40 bg-charcoal/50">
+          <div className="overflow-x-auto">
+          <table className="admin-table min-w-[680px] w-full text-sm">
+            <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
               <tr className="text-left text-steelgray">
                 <th className="px-5 py-3">Mã theo dõi</th>
                 <th className="px-5 py-3">Trạng thái</th>
@@ -267,7 +268,7 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
             </thead>
             <tbody>
               {recentOrders.map((order) => (
-                <tr key={order.id} className="border-t border-gunmetal/40 hover:bg-charcoal/40 transition-colors">
+                <tr key={order.id} className="border-t border-white/[0.04] hover:bg-white/[0.04] transition-colors">
                   <td className="px-5 py-3 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
                   <td className="px-5 py-3">
                     <span className="rounded-full bg-crimson/10 px-2.5 py-0.5 text-xs font-medium capitalize text-crimson">
@@ -276,7 +277,7 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
                   </td>
                   <td className="px-5 py-3 max-w-xs truncate text-steelgray">{order.delivery_address}</td>
                   <td className="px-5 py-3">
-                    <Link to={`/track/${order.tracking_code}`} className="text-sm text-crimson hover:text-sakura transition-colors">
+                    <Link to={`/track/${order.tracking_code}`} className="text-sm text-crimson hover:text-sakura transition-colors focus-rose">
                       Theo dõi →
                     </Link>
                   </td>
@@ -284,6 +285,7 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
@@ -310,10 +312,10 @@ function ChipButton({
     <button
       type="button"
       onClick={() => onToggle(tag)}
-      className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+      className={`focus-rose rounded-fig-pill px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${
         selected
-          ? "bg-crimson text-white"
-          : "border border-gunmetal/60 bg-graphite text-steelgray hover:border-silvergray hover:text-warmwhite"
+          ? "fig-pill-active"
+          : "border border-white/[0.06] bg-graphite text-steelgray hover:border-silvergray hover:text-warmwhite"
       }`}
     >
       {label ?? tag}
@@ -638,7 +640,7 @@ function ProductsTab({ products }: { products: Product[] }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Tìm sản phẩm..."
-          className="input-field w-full sm:w-64"
+          className="input-field focus-aurora w-full sm:w-64"
         />
       </div>
 
@@ -763,19 +765,19 @@ function ProductsTab({ products }: { products: Product[] }) {
       </div>
 
       {/* Form tabs */}
-      <div className="mb-4 flex gap-1 rounded-xl bg-charcoal p-1 border border-gunmetal/40 w-fit">
+      <div className="mb-4 flex w-fit gap-1 rounded-fig-pill border border-white/[0.08] bg-white/[0.04] p-1 shadow-fig-pill">
         <button
           onClick={() => { setFormTab("quick"); setEditing(null); setError(""); }}
-          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${
-            formTab === "quick" ? "bg-crimson text-white" : "text-steelgray hover:text-warmwhite"
+          className={`focus-rose rounded-fig-pill px-5 py-2 text-sm font-semibold transition-all ${
+            formTab === "quick" ? "fig-pill-active" : "text-steelgray hover:bg-white/[0.04] hover:text-warmwhite"
           }`}
         >
           Thêm nhanh
         </button>
         <button
           onClick={() => { setFormTab("full"); setEditing(null); setError(""); }}
-          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${
-            formTab === "full" ? "bg-crimson text-white" : "text-steelgray hover:text-warmwhite"
+          className={`focus-rose rounded-fig-pill px-5 py-2 text-sm font-semibold transition-all ${
+            formTab === "full" ? "fig-pill-active" : "text-steelgray hover:bg-white/[0.04] hover:text-warmwhite"
           }`}
         >
           Thêm đầy đủ
@@ -786,7 +788,7 @@ function ProductsTab({ products }: { products: Product[] }) {
       {formTab === "quick" && (
         <form
           onSubmit={(e) => { e.preventDefault(); quickMutation.mutate(); }}
-          className="mb-6 space-y-4 rounded-2xl border border-gunmetal/60 bg-graphite p-5"
+          className="admin-form-card mb-6 space-y-4 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card"
         >
           <h3 className="text-base font-bold text-sakura">Thêm sản phẩm nhanh</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -795,7 +797,7 @@ function ProductsTab({ products }: { products: Product[] }) {
               placeholder="Tên sản phẩm (VD: iPhone 15 Pro)"
               value={quickForm.name}
               onChange={(e) => setQuickForm({ ...quickForm, name: e.target.value })}
-              className="input-field"
+              className="input-field focus-aurora"
             />
             <input
               required
@@ -804,7 +806,7 @@ function ProductsTab({ products }: { products: Product[] }) {
               placeholder="Giá (VND)"
               value={quickForm.price}
               onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })}
-              className="input-field"
+              className="input-field focus-aurora"
             />
             <div>
               <label className="mb-1 block text-xs text-steelgray">Hình ảnh sản phẩm</label>
@@ -833,7 +835,7 @@ function ProductsTab({ products }: { products: Product[] }) {
             </div>
           </div>
           {error && <p className="text-sm text-rose">{error}</p>}
-          <button type="submit" disabled={quickMutation.isPending} className="btn-primary">
+          <button type="submit" disabled={quickMutation.isPending} className="btn-primary focus-rose">
             {quickMutation.isPending ? "Đang thêm..." : "Thêm sản phẩm"}
           </button>
         </form>
@@ -843,7 +845,7 @@ function ProductsTab({ products }: { products: Product[] }) {
       {formTab === "full" && (
         <form
           onSubmit={(e) => { e.preventDefault(); fullMutation.mutate(); }}
-          className="mb-6 space-y-6 rounded-2xl border border-gunmetal/60 bg-graphite p-5"
+          className="admin-form-card mb-6 space-y-6 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card"
         >
           <h3 className="text-base font-bold text-warmwhite flex items-center gap-2">
             {editing ? `Sửa: ${editing.name}` : "Thêm sản phẩm đầy đủ"}
@@ -870,7 +872,7 @@ function ProductsTab({ products }: { products: Product[] }) {
               placeholder="Tên sản phẩm"
               value={fullForm.name}
               onChange={(e) => setFullForm({ ...fullForm, name: e.target.value })}
-              className="input-field"
+              className="input-field focus-aurora"
             />
             <input
               required
@@ -879,14 +881,14 @@ function ProductsTab({ products }: { products: Product[] }) {
               placeholder="Giá (VND)"
               value={fullForm.price}
               onChange={(e) => setFullForm({ ...fullForm, price: e.target.value })}
-              className="input-field"
+              className="input-field focus-aurora"
             />
             <input
               type="number"
               placeholder="Số lượng tồn kho"
               value={fullForm.stock}
               onChange={(e) => setFullForm({ ...fullForm, stock: e.target.value })}
-              className="input-field"
+              className="input-field focus-aurora"
             />
           </div>
 
@@ -910,7 +912,7 @@ function ProductsTab({ products }: { products: Product[] }) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm text-steelgray font-medium">Mô tả sản phẩm (hỗ trợ DOCX)</label>
-              <label className="btn-secondary cursor-pointer text-xs py-1.5 px-3">
+              <label className="btn-secondary focus-aurora cursor-pointer text-xs py-1.5 px-3">
                 <input
                   type="file"
                   accept=".docx"
@@ -953,7 +955,7 @@ function ProductsTab({ products }: { products: Product[] }) {
                       }))
                     }
                     placeholder="—"
-                    className="input-field flex-1"
+                    className="input-field focus-aurora flex-1"
                   />
                 </div>
               ))}
@@ -980,11 +982,11 @@ function ProductsTab({ products }: { products: Product[] }) {
           )}
 
           <div className="flex gap-3">
-            <button type="submit" disabled={fullMutation.isPending} className="btn-primary">
+            <button type="submit" disabled={fullMutation.isPending} className="btn-primary focus-rose">
               {fullMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm sản phẩm"}
             </button>
             {editing && (
-              <button type="button" onClick={cancelEdit} className="btn-secondary">
+              <button type="button" onClick={cancelEdit} className="btn-secondary focus-aurora">
                 Hủy
               </button>
             )}
@@ -993,8 +995,8 @@ function ProductsTab({ products }: { products: Product[] }) {
       )}
 
       {/* Products table */}
-      <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
-        <div className="border-b border-gunmetal/40 px-4 py-3">
+      <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
+        <div className="border-b border-white/[0.08] px-4 py-3">
           <span className="text-sm text-steelgray">{filtered.length} sản phẩm</span>
         </div>
         {(info || deleteMutation.isError || error) && (
@@ -1020,8 +1022,9 @@ function ProductsTab({ products }: { products: Product[] }) {
         {filtered.length === 0 ? (
           <div className="p-8 text-center text-steelgray">Không có sản phẩm nào.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-gunmetal/40 bg-charcoal/50">
+          <div className="overflow-x-auto">
+          <table className="admin-table min-w-[680px] w-full text-sm">
+            <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
               <tr className="text-left text-steelgray">
                 <th className="px-4 py-3">Hình ảnh</th>
                 <th className="px-4 py-3">Tên sản phẩm</th>
@@ -1039,7 +1042,7 @@ function ProductsTab({ products }: { products: Product[] }) {
                 return (
                   <tr
                     key={p.id}
-                    className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors"
+                    className="border-t border-white/[0.04] hover:bg-white/[0.04] transition-colors"
                   >
                     <td className="px-4 py-3">
                       <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
@@ -1067,14 +1070,14 @@ function ProductsTab({ products }: { products: Product[] }) {
                       <div className="flex gap-3">
                         <button
                           onClick={() => startEdit(p)}
-                          className="text-sm text-crimson hover:text-sakura transition-colors"
+                          className="text-sm text-crimson hover:text-sakura transition-colors focus-rose"
                         >
                           Sửa
                         </button>
                         <button
                           onClick={() => handleDelete(p)}
                           disabled={deleteMutation.isPending}
-                          className="text-sm text-deeprose hover:text-rose transition-colors disabled:opacity-50"
+                          className="text-sm text-deeprose hover:text-rose transition-colors focus-rose disabled:opacity-50"
                         >
                           {deleteMutation.isPending && deleteMutation.variables === p.id
                             ? "Đang xóa..."
@@ -1087,6 +1090,7 @@ function ProductsTab({ products }: { products: Product[] }) {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
@@ -1124,22 +1128,23 @@ function OrdersTab({ orders }: { orders: Order[] }) {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-extrabold text-warmwhite">Quản lý đơn hàng</h1>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="input-field w-48">
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="input-field focus-aurora w-48">
           <option value="">Tất cả trạng thái</option>
           {ORDER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3 rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
-          <div className="border-b border-gunmetal/40 px-4 py-3">
+        <div className="lg:col-span-3 rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
+          <div className="border-b border-white/[0.08] px-4 py-3">
             <span className="text-sm text-steelgray">{filtered.length} đơn hàng</span>
           </div>
           {filtered.length === 0 ? (
             <div className="p-8 text-center text-steelgray">Chưa có đơn hàng nào.</div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b border-gunmetal/40 bg-charcoal/50">
+            <div className="overflow-x-auto">
+          <table className="admin-table min-w-[680px] w-full text-sm">
+              <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
                 <tr className="text-left text-steelgray">
                   <th className="px-4 py-3">Mã</th>
                   <th className="px-4 py-3">Trạng thái</th>
@@ -1152,8 +1157,8 @@ function OrdersTab({ orders }: { orders: Order[] }) {
                   <tr
                     key={order.id}
                     onClick={() => selectOrder(order)}
-                    className={`cursor-pointer border-t border-gunmetal/40 transition-colors ${
-                      selectedOrder?.id === order.id ? "bg-crimson/10" : "hover:bg-charcoal/40"
+                    className={`cursor-pointer border-t border-white/[0.04] transition-colors focus-rose ${
+                      selectedOrder?.id === order.id ? "bg-crimson/10" : "hover:bg-white/[0.04]"
                     }`}
                   >
                     <td className="px-4 py-3 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
@@ -1166,7 +1171,7 @@ function OrdersTab({ orders }: { orders: Order[] }) {
                     <td className="px-4 py-3">
                       <Link to={`/track/${order.tracking_code}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-crimson hover:text-sakura transition-colors">
+                        className="text-sm text-crimson hover:text-sakura transition-colors focus-rose">
                         Theo dõi →
                       </Link>
                     </td>
@@ -1174,14 +1179,15 @@ function OrdersTab({ orders }: { orders: Order[] }) {
                 ))}
               </tbody>
             </table>
+          </div>
           )}
         </div>
 
-        <div className="lg:col-span-2 rounded-2xl border border-gunmetal/60 bg-graphite p-5 space-y-4">
+        <div className="admin-form-card lg:col-span-2 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card space-y-4">
           <h2 className="font-bold text-warmwhite">Cập nhật vị trí giao hàng</h2>
           {selectedOrder ? (
             <>
-              <div className="rounded-lg border border-gunmetal/40 bg-charcoal p-3 text-sm">
+              <div className="rounded-lg border border-white/[0.08] bg-charcoal p-3 text-sm">
                 <p className="font-medium text-warmwhite">Đơn: {selectedOrder.tracking_code}</p>
                 <p className="text-xs text-steelgray mt-0.5">{selectedOrder.delivery_address}</p>
               </div>
@@ -1190,17 +1196,17 @@ function OrdersTab({ orders }: { orders: Order[] }) {
                 <div>
                   <label className="mb-1 block text-xs text-steelgray">Vĩ độ</label>
                   <input type="number" step="any" value={lat}
-                    onChange={(e) => setLat(Number(e.target.value))} className="input-field text-xs" />
+                    onChange={(e) => setLat(Number(e.target.value))} className="input-field focus-aurora text-xs" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs text-steelgray">Kinh độ</label>
                   <input type="number" step="any" value={lng}
-                    onChange={(e) => setLng(Number(e.target.value))} className="input-field text-xs" />
+                    onChange={(e) => setLng(Number(e.target.value))} className="input-field focus-aurora text-xs" />
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs text-steelgray">Trạng thái</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)} className="input-field">
+                <select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)} className="input-field focus-aurora">
                   {ORDER_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
@@ -1213,7 +1219,7 @@ function OrdersTab({ orders }: { orders: Order[] }) {
                 </div>
               )}
               <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
-                className="btn-primary w-full">
+                className="btn-primary focus-rose w-full">
                 {updateMutation.isPending ? "Đang cập nhật..." : "Gửi cập nhật vị trí"}
               </button>
             </>
@@ -1307,13 +1313,13 @@ function BlogTab() {
       <h1 className="mb-6 text-2xl font-extrabold text-warmwhite">Quản lý Blog</h1>
 
       {/* Editor */}
-      <div className="mb-6 space-y-4 rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+      <div className="admin-form-card mb-6 space-y-4 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card">
         <h2 className="text-base font-bold text-warmwhite">
           {editing ? `Sửa bài: ${editing.title}` : "Viết bài mới"}
         </h2>
         <input required placeholder="Tiêu đề bài viết" value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          className="input-field text-lg font-semibold" />
+          className="input-field focus-aurora text-lg font-semibold" />
 
         {/* Tags chips */}
         <div>
@@ -1333,9 +1339,9 @@ function BlogTab() {
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTagChip(tagInput); } }}
-              className="input-field flex-1"
+              className="input-field focus-aurora flex-1"
             />
-            <button type="button" onClick={() => addTagChip(tagInput)} className="btn-secondary">+ Thêm</button>
+            <button type="button" onClick={() => addTagChip(tagInput)} className="btn-secondary focus-aurora">+ Thêm</button>
             <datalist id="blog-tags-datalist">
               {["tech", "review", "tips", "news", "guide"].map((t) => <option key={t} value={t} />)}
             </datalist>
@@ -1346,7 +1352,7 @@ function BlogTab() {
         <div className="flex flex-wrap items-start gap-4">
           <div>
             <label className="mb-1.5 block text-sm text-steelgray">Nhập từ DOCX</label>
-            <label className="btn-secondary cursor-pointer">
+            <label className="btn-secondary focus-aurora cursor-pointer">
               <input type="file" accept=".docx" className="hidden" onChange={handleImportDocx} disabled={importing} />
               {importing ? "Đang nhập..." : "Chọn file DOCX"}
             </label>
@@ -1367,26 +1373,27 @@ function BlogTab() {
         </div>
         {error && <div className="rounded-lg border border-deeprose/30 bg-deeprose/10 p-3 text-sm text-rose">{error}</div>}
         <div className="flex gap-3">
-          <button onClick={handleSubmit} disabled={saveMutation.isPending} className="btn-primary">
+          <button onClick={handleSubmit} disabled={saveMutation.isPending} className="btn-primary focus-rose">
             {saveMutation.isPending ? "Đang lưu..." : editing ? "Cập nhật bài viết" : "Đăng bài viết"}
           </button>
           {editing && (
             <button onClick={() => { setEditing(null); setForm({ title: "", content: "", tags: "" }); setTagChips([]); setImage(null); setCoverPreview(null); }}
-              className="btn-secondary">Hủy</button>
+              className="btn-secondary focus-aurora">Hủy</button>
           )}
         </div>
       </div>
 
       {/* Post list */}
-      <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
-        <div className="border-b border-gunmetal/40 px-4 py-3">
+      <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
+        <div className="border-b border-white/[0.08] px-4 py-3">
           <span className="text-sm text-steelgray">{posts.length} bài viết</span>
         </div>
         {posts.length === 0 ? (
           <div className="p-8 text-center text-steelgray">Chưa có bài viết nào.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-gunmetal/40 bg-charcoal/50">
+          <div className="overflow-x-auto">
+          <table className="admin-table min-w-[680px] w-full text-sm">
+            <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
               <tr className="text-left text-steelgray">
                 <th className="px-4 py-3">Ảnh</th>
                 <th className="px-4 py-3">Tiêu đề</th>
@@ -1400,7 +1407,7 @@ function BlogTab() {
               {posts.map((post) => {
                 const postTags = post.tags ? post.tags.split(",").filter(Boolean) : [];
                 return (
-                  <tr key={post.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30 transition-colors">
+                  <tr key={post.id} className="border-t border-white/[0.04] hover:bg-white/[0.04] transition-colors">
                     <td className="px-4 py-3">
                       {post.image_url && <img src={post.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />}
                     </td>
@@ -1423,9 +1430,9 @@ function BlogTab() {
                           setTagChips(postTags);
                           setImage(null); setCoverPreview(null);
                         }}
-                          className="text-sm text-crimson hover:text-sakura transition-colors">Sửa</button>
+                          className="text-sm text-crimson hover:text-sakura transition-colors focus-rose">Sửa</button>
                         <button onClick={() => { if (confirm(`Xóa "${post.title}"?`)) deleteMutation.mutate(post.id); }}
-                          className="text-sm text-deeprose hover:text-rose transition-colors">Xóa</button>
+                          className="text-sm text-deeprose hover:text-rose transition-colors focus-rose">Xóa</button>
                       </div>
                     </td>
                   </tr>
@@ -1433,6 +1440,7 @@ function BlogTab() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
@@ -1477,7 +1485,7 @@ function SettingsTab() {
       <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Cài đặt</h1>
       <p className="mb-6 text-sm text-steelgray">Quản lý email nhận thông báo đơn hàng</p>
 
-      <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-6">
+      <div className="admin-form-card rounded-fig-card border border-white/[0.06] bg-graphite p-6 shadow-fig-card">
         <h2 className="mb-4 text-base font-semibold text-warmwhite">Email nhận thông báo đơn hàng</h2>
 
         {emails.length === 0 ? (
@@ -1491,7 +1499,7 @@ function SettingsTab() {
                   <span className="ml-2 text-xs text-steelgray">{new Date(e.created_at).toLocaleDateString("vi-VN")}</span>
                 </div>
                 <button onClick={() => deleteMutation.mutate(e.id)}
-                  className="ml-4 flex-shrink-0 rounded-lg px-3 py-1.5 text-xs text-rose hover:bg-deeprose/10 transition-colors">
+                  className="ml-4 flex-shrink-0 rounded-lg px-3 py-1.5 text-xs text-rose hover:bg-deeprose/10 transition-colors focus-rose">
                   Xóa
                 </button>
               </li>
@@ -1502,9 +1510,9 @@ function SettingsTab() {
         <form onSubmit={(e) => { e.preventDefault(); if (newEmail.trim()) addMutation.mutate(newEmail.trim()); }}
           className="mt-6 flex gap-3">
           <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
-            placeholder="admin@example.com" className="input-field flex-1" />
+            placeholder="admin@example.com" className="input-field focus-aurora flex-1" />
           <button type="submit" disabled={addMutation.isPending || !newEmail.trim()}
-            className="btn-primary whitespace-nowrap disabled:opacity-60">
+            className="btn-primary focus-rose whitespace-nowrap disabled:opacity-60">
             {addMutation.isPending ? "Đang thêm..." : "Thêm email"}
           </button>
         </form>
@@ -1535,13 +1543,13 @@ function MediaTab({ products }: { products: Product[] }) {
         dùng làm thumbnail sản phẩm trên toàn trang.
       </p>
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-4">
+        <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card p-4">
           <input
             type="search"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Tìm sản phẩm..."
-            className="input-field mb-3"
+            className="input-field focus-aurora mb-3"
           />
           <div className="max-h-[64vh] overflow-y-auto space-y-1.5">
             {filtered.length === 0 ? (
@@ -1551,10 +1559,10 @@ function MediaTab({ products }: { products: Product[] }) {
                 <button
                   key={p.id}
                   onClick={() => setSelectedId(p.id)}
-                  className={`flex w-full items-center gap-2 rounded-lg border p-2 text-left transition-colors ${
+                  className={`flex w-full items-center gap-2 rounded-lg border p-2 text-left transition-colors focus-rose ${
                     selectedId === p.id
                       ? "border-crimson bg-crimson/10"
-                      : "border-gunmetal/40 bg-charcoal hover:border-silvergray/40"
+                      : "border-white/[0.08] bg-charcoal hover:border-silvergray/40"
                   }`}
                 >
                   <img src={p.image_url} alt="" className="h-9 w-9 rounded-md object-cover" />
@@ -1572,7 +1580,7 @@ function MediaTab({ products }: { products: Product[] }) {
           {target ? (
             <ProductGalleryEditor product={target} />
           ) : (
-            <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-10 text-center text-steelgray">
+            <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card p-10 text-center text-steelgray">
               Chọn một sản phẩm bên trái để bắt đầu.
             </div>
           )}
@@ -1626,7 +1634,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
   };
 
   return (
-    <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-5">
+    <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-warmwhite">{product.name}</h2>
@@ -1647,7 +1655,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
             fileInputRef.current?.click();
           }
         }}
-        className="mb-4 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gunmetal/60 bg-charcoal/40 py-6 text-center hover:border-crimson cursor-pointer transition-colors"
+        className="mb-4 flex flex-col items-center justify-center gap-2 rounded-fig-showcase border-2 border-dashed border-white/[0.08] bg-white/[0.04] py-6 text-center hover:border-crimson cursor-pointer transition-colors focus-rose"
       >
         <svg className="h-6 w-6 text-rose" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -1662,7 +1670,7 @@ function ProductGalleryEditor({ product }: { product: Product }) {
         >
           <input
             type="checkbox"
-            className="accent-rose"
+            className="focus-aurora accent-rose"
             checked={nextIsCover}
             onChange={(e) => setNextIsCover(e.target.checked)}
             onClick={(e) => e.stopPropagation()}
@@ -1683,13 +1691,13 @@ function ProductGalleryEditor({ product }: { product: Product }) {
       {isLoading ? (
         <LoadingSpinner label="Đang tải gallery..." />
       ) : media.length === 0 ? (
-        <div className="rounded-xl border border-gunmetal/60 bg-charcoal p-8 text-center text-sm text-steelgray">
+        <div className="rounded-xl border border-white/[0.06] bg-charcoal p-8 text-center text-sm text-steelgray">
           Sản phẩm này chưa có ảnh/video trong gallery. Hiện đang dùng ảnh thumbnail mặc định.
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {media.map((m) => (
-            <div key={m.id} className="relative overflow-hidden rounded-xl border border-gunmetal/60 bg-charcoal">
+            <div key={m.id} className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-charcoal">
               <div className="aspect-square">
                 {m.media_type === "video" ? (
                   <video src={m.url} className="h-full w-full object-cover" muted />
@@ -1711,14 +1719,14 @@ function ProductGalleryEditor({ product }: { product: Product }) {
                 {!m.is_cover && (
                   <button
                     onClick={() => setCover(m)}
-                    className="rounded-lg bg-crimson px-2 py-1 text-[10px] font-semibold text-white hover:bg-raspberry"
+                    className="rounded-lg bg-crimson px-2 py-1 text-[10px] font-semibold text-white hover:bg-raspberry focus-rose"
                   >
                     Đặt làm cover
                   </button>
                 )}
                 <button
                   onClick={() => deleteMedia(m)}
-                  className="ml-auto rounded-lg bg-deeprose px-2 py-1 text-[10px] font-semibold text-white hover:bg-rose"
+                  className="ml-auto rounded-lg bg-deeprose px-2 py-1 text-[10px] font-semibold text-white hover:bg-rose focus-rose"
                 >
                   Xóa
                 </button>
@@ -1821,7 +1829,7 @@ function CouponsTab() {
       <h1 className="mb-2 text-2xl font-extrabold text-warmwhite">Quản lý mã giảm giá (Coupon)</h1>
       <p className="mb-6 text-sm text-steelgray">Tạo và quản lý các mã giảm giá áp dụng ở bước thanh toán.</p>
 
-      <div className="mb-6 rounded-2xl border border-gunmetal/60 bg-graphite p-5 space-y-3">
+      <div className="admin-form-card mb-6 rounded-fig-card border border-white/[0.06] bg-graphite p-5 shadow-fig-card space-y-3">
         <h2 className="text-base font-bold text-warmwhite">{editing ? `Sửa: ${editing.code}` : "Tạo coupon mới"}</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
@@ -1831,7 +1839,7 @@ function CouponsTab() {
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
               placeholder="VD: SALE10"
-              className="input-field font-mono uppercase"
+              className="input-field focus-aurora font-mono uppercase"
             />
           </div>
           <div>
@@ -1840,7 +1848,7 @@ function CouponsTab() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="VD: Giảm 10% cho đơn ≥3 triệu"
-              className="input-field"
+              className="input-field focus-aurora"
             />
           </div>
           <div>
@@ -1848,7 +1856,7 @@ function CouponsTab() {
             <select
               value={form.discount_type}
               onChange={(e) => setForm({ ...form, discount_type: e.target.value as "percent" | "fixed" })}
-              className="input-field"
+              className="input-field focus-aurora"
             >
               <option value="percent">Phần trăm (%)</option>
               <option value="fixed">Số tiền cố định (VND)</option>
@@ -1864,7 +1872,7 @@ function CouponsTab() {
               step={form.discount_type === "percent" ? 1 : 1000}
               value={form.discount_value}
               onChange={(e) => setForm({ ...form, discount_value: Number(e.target.value) })}
-              className="input-field"
+              className="input-field focus-aurora"
             />
           </div>
           <div>
@@ -1875,7 +1883,7 @@ function CouponsTab() {
               step={1000}
               value={form.min_order_total}
               onChange={(e) => setForm({ ...form, min_order_total: Number(e.target.value) })}
-              className="input-field"
+              className="input-field focus-aurora"
             />
           </div>
           <div>
@@ -1886,7 +1894,7 @@ function CouponsTab() {
               step={1000}
               value={form.max_discount ?? ""}
               onChange={(e) => setForm({ ...form, max_discount: e.target.value === "" ? null : Number(e.target.value) })}
-              className="input-field"
+              className="input-field focus-aurora"
             />
           </div>
           <div>
@@ -1896,7 +1904,7 @@ function CouponsTab() {
               min={0}
               value={form.usage_limit ?? ""}
               onChange={(e) => setForm({ ...form, usage_limit: e.target.value === "" ? null : Number(e.target.value) })}
-              className="input-field"
+              className="input-field focus-aurora"
             />
           </div>
           <div>
@@ -1906,7 +1914,7 @@ function CouponsTab() {
               value={form.starts_at}
               onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
               placeholder="2025-01-01"
-              className="input-field"
+              className="input-field focus-aurora"
             />
           </div>
           <div>
@@ -1916,7 +1924,7 @@ function CouponsTab() {
               value={form.expires_at}
               onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
               placeholder="2026-01-01"
-              className="input-field"
+              className="input-field focus-aurora"
             />
           </div>
         </div>
@@ -1924,13 +1932,13 @@ function CouponsTab() {
         <div className="flex gap-2">
           {editing ? (
             <>
-              <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="btn-primary">
+              <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="btn-primary focus-rose">
                 {updateMutation.isPending ? "Đang lưu..." : "Cập nhật"}
               </button>
-              <button onClick={() => { setEditing(null); }} className="btn-secondary">Hủy</button>
+              <button onClick={() => { setEditing(null); }} className="btn-secondary focus-aurora">Hủy</button>
             </>
           ) : (
-            <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.code} className="btn-primary">
+            <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.code} className="btn-primary focus-rose">
               {createMutation.isPending ? "Đang tạo..." : "Tạo coupon"}
             </button>
           )}
@@ -1940,13 +1948,14 @@ function CouponsTab() {
       {isLoading ? (
         <LoadingSpinner label="Đang tải coupon..." />
       ) : coupons.length === 0 ? (
-        <div className="rounded-2xl border border-gunmetal/60 bg-graphite p-8 text-center text-sm text-steelgray">
+        <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card p-8 text-center text-sm text-steelgray">
           Chưa có coupon nào.
         </div>
       ) : (
-        <div className="rounded-2xl border border-gunmetal/60 bg-graphite overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="border-b border-gunmetal/40 bg-charcoal/50">
+        <div className="rounded-fig-card border border-white/[0.06] bg-graphite shadow-fig-card overflow-hidden">
+          <div className="overflow-x-auto">
+          <table className="admin-table min-w-[680px] w-full text-sm">
+            <thead className="admin-table-header border-b border-white/[0.08] bg-white/[0.04]">
               <tr className="text-left text-steelgray">
                 <th className="px-4 py-3">Mã</th>
                 <th className="px-4 py-3">Mô tả</th>
@@ -1959,7 +1968,7 @@ function CouponsTab() {
             </thead>
             <tbody>
               {coupons.map((c) => (
-                <tr key={c.id} className="border-t border-gunmetal/40 hover:bg-charcoal/30">
+                <tr key={c.id} className="border-t border-white/[0.04] hover:bg-white/[0.04]">
                   <td className="px-4 py-3 font-mono font-bold text-warmwhite">{c.code}</td>
                   <td className="px-4 py-3 text-softgray max-w-[220px] truncate">{c.description || "—"}</td>
                   <td className="px-4 py-3 text-crimson font-semibold">
@@ -1978,14 +1987,15 @@ function CouponsTab() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <button onClick={() => startEdit(c)} className="text-sm text-crimson hover:text-sakura">Sửa</button>
-                      <button onClick={() => { if (confirm(`Xóa mã ${c.code}?`)) deleteMutation.mutate(c.id); }} className="text-sm text-deeprose hover:text-rose">Xóa</button>
+                      <button onClick={() => startEdit(c)} className="text-sm text-crimson hover:text-sakura focus-rose">Sửa</button>
+                      <button onClick={() => { if (confirm(`Xóa mã ${c.code}?`)) deleteMutation.mutate(c.id); }} className="text-sm text-deeprose hover:text-rose focus-rose">Xóa</button>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

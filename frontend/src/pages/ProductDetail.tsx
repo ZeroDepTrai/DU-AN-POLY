@@ -165,7 +165,7 @@ function ProductGallery({ product }: { product: Product }) {
       {/* Main stage */}
       <div
         ref={stageRef}
-        className="group relative aspect-[4/3] max-h-[480px] w-full overflow-hidden rounded-aurora border border-white/10 bg-aurora-bg-mid shadow-glow-soft"
+        className="group relative aspect-[4/3] max-h-[480px] w-full overflow-hidden rounded-aurora border border-white/[0.06] bg-aurora-bg-mid shadow-glow-soft"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => {
           setIsHovered(false);
@@ -285,7 +285,7 @@ function ProductGallery({ product }: { product: Product }) {
               className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border transition-all duration-200 ${
                 i === safeIndex
                   ? "border-sakura shadow-[0_0_0_1px_rgba(242,140,166,0.4),0_10px_24px_-10px_rgba(242,140,166,0.5)]"
-                  : "border-white/10 hover:border-white/30"
+                  : "border-white/[0.06] hover:border-white/30"
               }`}
             >
               {it.media_type === "video" ? (
@@ -586,7 +586,7 @@ export default function ProductDetail() {
       <div className="mx-auto max-w-3xl px-4 py-24 text-center">
         <GlassCard intensity="high" className="mx-auto max-w-md p-12" glow>
           <div className="mb-6 flex justify-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-aurora-bg-mid">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/[0.06] bg-aurora-bg-mid">
               <svg className="h-12 w-12 text-softgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -716,7 +716,7 @@ export default function ProductDetail() {
             <div>
               <label className="mb-2 block text-sm font-medium text-softgray">Số lượng</label>
               <div className="flex items-center gap-3">
-                <div className="flex items-center overflow-hidden rounded-aurora border border-white/10 bg-aurora-bg-deep">
+                <div className="flex items-center overflow-hidden rounded-aurora border border-white/[0.06] bg-aurora-bg-deep">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     className="flex h-11 w-11 items-center justify-center text-lg font-light text-warmwhite transition-colors hover:bg-white/10"
@@ -791,7 +791,7 @@ export default function ProductDetail() {
 
       {/* Tabs */}
       <GlassCard intensity="med" className="overflow-hidden p-0">
-        <div className="flex border-b border-white/10">
+        <div className="flex border-b border-white/[0.06]">
           <button
             onClick={() => setActiveTab("mota")}
             className={`relative flex-1 px-6 py-4 text-sm font-semibold transition-colors sm:flex-none sm:px-8 ${

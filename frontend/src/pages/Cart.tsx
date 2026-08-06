@@ -26,7 +26,7 @@ export default function CartPage() {
         </div>
         <h1 className="mb-2 text-2xl font-bold aurora-text-gradient">Giỏ hàng trống</h1>
         <p className="mb-8 text-steelgray">Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
-        <GlowButton variant="aurora" size="lg" onClick={() => (window.location.href = "/")}>
+        <GlowButton variant="aurora" size="lg" onClick={() => (window.location.href = "/")} className="focus-aurora">
           Tiếp tục mua sắm
         </GlowButton>
       </div>
@@ -55,7 +55,7 @@ export default function CartPage() {
             const isFree = item.source === "free";
             return (
               <GlassCard intensity="med" key={item.id} className="flex items-center gap-4 p-4">
-                <Link to={`/products/${item.product_id}`} className="relative shrink-0 overflow-hidden rounded-xl">
+                <Link to={`/products/${item.product_id}`} className="focus-rose relative shrink-0 overflow-hidden rounded-xl">
                   <OptimizedImage
                     src={item.product_image_url}
                     alt={item.product_name}
@@ -69,7 +69,7 @@ export default function CartPage() {
                   <div>
                     <Link
                       to={`/products/${item.product_id}`}
-                      className="font-semibold text-warmwhite hover:text-sakura transition-colors"
+                      className="focus-rose font-semibold text-warmwhite hover:text-sakura transition-colors"
                     >
                       {item.product_name}
                     </Link>
@@ -90,7 +90,7 @@ export default function CartPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-warmwhite hover:bg-white/10 transition-colors text-lg font-light"
+                          className="focus-rose flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/5 text-warmwhite hover:bg-white/10 transition-colors text-lg font-light"
                         >
                           −
                         </button>
@@ -99,7 +99,7 @@ export default function CartPage() {
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-warmwhite hover:bg-white/10 transition-colors text-lg font-light"
+                          className="focus-rose flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/5 text-warmwhite hover:bg-white/10 transition-colors text-lg font-light"
                         >
                           +
                         </button>
@@ -109,7 +109,7 @@ export default function CartPage() {
                     )}
                     <button
                       onClick={() => removeItem(item.id)}
-                      className="flex items-center gap-1 text-sm text-steelgray hover:text-lightpink transition-colors"
+                      className="focus-rose flex items-center gap-1 text-sm text-steelgray hover:text-lightpink transition-colors"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -146,7 +146,7 @@ export default function CartPage() {
                 <span>Thuế (VAT 10%)</span>
                 <span>{new Intl.NumberFormat("vi-VN").format(tax)} VND</span>
               </div>
-              <div className="border-t border-white/10 pt-3">
+              <div className="border-t border-white/[0.06] pt-3">
                 <div className="flex justify-between text-base font-bold text-warmwhite">
                   <span>Tổng cộng</span>
                   <span className="aurora-text-rainbow">
@@ -156,13 +156,13 @@ export default function CartPage() {
               </div>
             </div>
 
-            <Link to="/checkout" className="aurora-glow-btn w-full justify-center py-3 text-base">
+            <Link to="/checkout" className="aurora-glow-btn focus-aurora w-full justify-center py-3 text-base">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               Thanh toán ngay
             </Link>
-            <Link to="/" className="mt-2 inline-flex w-full justify-center rounded-xl border border-white/10 bg-white/5 px-5 py-2 text-sm text-softgray transition-colors hover:text-warmwhite">
+            <Link to="/" className="focus-rose mt-2 inline-flex w-full justify-center rounded-xl border border-white/[0.06] bg-white/5 px-5 py-2 text-sm text-softgray transition-colors hover:text-warmwhite">
               Tiếp tục mua sắm
             </Link>
           </GlassCard>

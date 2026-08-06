@@ -114,7 +114,7 @@ export default function Products() {
               </p>
               <div className="space-y-2">
                 {BRAND_FILTERS.map((f) => (
-                  <label key={f.value} className="flex cursor-pointer items-center gap-3 group">
+                  <label key={f.value} className="flex cursor-pointer items-center gap-3 group rounded-lg px-1 py-1 transition-colors focus-rose">
                     <span
                       className={`flex h-5 w-5 items-center justify-center rounded-md border transition-all ${
                         brand === f.value
@@ -164,7 +164,7 @@ export default function Products() {
                         }
                         setSearchParams(next);
                       }}
-                      className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-all ${
+                      className={`block w-full rounded-lg px-3 py-2 text-left text-sm transition-all focus-rose ${
                         isActive
                           ? "border border-sakura/50 bg-sakura/15 text-sakura"
                           : "border border-transparent text-softgray hover:bg-white/5 hover:text-warmwhite"

@@ -104,14 +104,14 @@ export default function Accessories() {
               if (selectedCategories.includes(f)) toggleCategory(f);
               else toggleCompat(f);
             }}
-            className="rounded-full border border-sakura/40 bg-sakura/10 px-3 py-1 text-sakura hover:bg-sakura/20 transition-colors"
+            className="focus-rose rounded-fig-pill border border-sakura/40 bg-sakura/10 px-3 py-1 text-sakura hover:bg-sakura/20 transition-colors"
           >
             {f} ×
           </button>
         ))}
         <button
           onClick={clearAll}
-          className="rounded-full border border-white/15 px-3 py-1 text-softgray hover:text-warmwhite transition-colors"
+          className="focus-rose rounded-fig-pill border border-white/15 px-3 py-1 text-softgray hover:text-warmwhite transition-colors"
         >
           Xóa hết
         </button>
@@ -132,7 +132,7 @@ export default function Accessories() {
                 type="checkbox"
                 checked={selectedCategories.includes(cat.label)}
                 onChange={() => toggleCategory(cat.label)}
-                className="h-4 w-4 accent-sakura"
+                className="h-4 w-4 accent-sakura focus-rose"
               />
               <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
                 {cat.label}
@@ -153,7 +153,7 @@ export default function Accessories() {
                 type="checkbox"
                 checked={selectedCompatibility.includes(c)}
                 onChange={() => toggleCompat(c)}
-                className="h-4 w-4 accent-sakura"
+                className="h-4 w-4 accent-sakura focus-rose"
               />
               <span className="text-sm text-softgray group-hover:text-warmwhite transition-colors">
                 {c}
@@ -172,7 +172,7 @@ export default function Accessories() {
             <button
               key={p.label}
               onClick={() => setSelectedPrice(p)}
-              className={`block w-full text-left rounded-lg px-3 py-2 text-sm transition-all ${
+              className={`focus-rose block w-full rounded-fig-pill text-left px-3 py-2 text-sm transition-all ${
                 selectedPrice.label === p.label
                   ? "border border-sakura/50 bg-sakura/15 text-sakura"
                   : "border border-transparent text-softgray hover:bg-white/5 hover:text-warmwhite"
@@ -205,7 +205,7 @@ export default function Accessories() {
         <FilterChips />
 
         <div className="mb-4 lg:hidden">
-          <GlowButton variant="ghost" onClick={() => setFilterOpen(true)} className="w-full justify-center">
+          <GlowButton variant="ghost" onClick={() => setFilterOpen(true)} className="focus-rose w-full justify-center">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
@@ -220,7 +220,7 @@ export default function Accessories() {
               {hasFilters && (
                 <button
                   onClick={clearAll}
-                  className="mt-6 w-full rounded-lg border border-white/15 bg-white/5 py-2 text-sm text-softgray hover:text-warmwhite transition-colors"
+                  className="focus-rose mt-6 w-full rounded-fig-pill border border-white/15 bg-white/5 py-2 text-sm text-softgray hover:text-warmwhite transition-colors"
                 >
                   Xóa bộ lọc
                 </button>
@@ -238,7 +238,7 @@ export default function Accessories() {
                   {hasFilters ? "Thử thay đổi bộ lọc." : "Hãy quay lại sau."}
                 </p>
                 {hasFilters && (
-                  <GlowButton variant="ghost" onClick={clearAll} className="mt-4">
+                  <GlowButton variant="ghost" onClick={clearAll} className="focus-rose mt-4">
                     Xóa bộ lọc
                   </GlowButton>
                 )}
@@ -268,17 +268,17 @@ export default function Accessories() {
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setFilterOpen(false)}
           />
-          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto border-l border-white/10 bg-aurora-bg-deep/95 p-6 backdrop-blur-2xl">
+          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto border-l border-white/[0.06] bg-aurora-bg-deep/95 p-6 backdrop-blur-2xl">
             <div className="mb-6 flex items-center justify-between">
               <h3 className="font-bold text-warmwhite">Bộ lọc</h3>
-              <button onClick={() => setFilterOpen(false)} className="btn-ghost p-2">
+              <button onClick={() => setFilterOpen(false)} className="btn-ghost focus-rose p-2">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
             <Sidebar />
-            <GlowButton variant="aurora" onClick={() => setFilterOpen(false)} className="mt-6 w-full justify-center">
+            <GlowButton variant="aurora" onClick={() => setFilterOpen(false)} className="focus-aurora mt-6 w-full justify-center">
               Áp dụng ({filtered.length})
             </GlowButton>
           </div>

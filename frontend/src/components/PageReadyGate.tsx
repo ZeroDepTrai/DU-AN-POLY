@@ -81,16 +81,20 @@ function PagePreparingScreen() {
       role="status"
       aria-live="polite"
     >
-      <div className="flex flex-col items-center gap-5">
+      <div className="flex flex-col items-center gap-6">
         <div className="relative h-20 w-20">
           <div className="absolute inset-0 animate-spin-slow rounded-full bg-aurora-gradient opacity-80 blur-sm" />
           <div className="absolute inset-1 rounded-full bg-aurora-bg-deep" />
-          <div className="absolute inset-3 rounded-full border border-sakura/30 bg-white/[0.04] shadow-glow" />
+          <div className="absolute inset-3 rounded-full border border-sakura/30 bg-white/[0.04] shadow-fig-glow" />
         </div>
-        <span className="aurora-text-gradient text-xl font-extrabold uppercase tracking-[0.32em]">
-          CellZone
-        </span>
-        <span className="sr-only">Đang chuẩn bị trang</span>
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="aurora-text-gradient text-2xl font-extrabold uppercase tracking-[0.32em]">
+            CellZone
+          </span>
+          <span className="text-xs uppercase tracking-[0.25em] text-steelgray">
+            Đang chuẩn bị
+          </span>
+        </div>
       </div>
     </div>
   );

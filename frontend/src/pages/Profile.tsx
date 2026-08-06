@@ -38,7 +38,7 @@ export default function Profile() {
     return (
       <div className="container-padding section-padding text-center">
         <p className="text-softgray">Bạn cần đăng nhập.</p>
-        <Link className="btn-primary mt-4 inline-block" to="/login">Đăng nhập</Link>
+        <Link className="btn-primary focus-rose mt-4 inline-block" to="/login">Đăng nhập</Link>
       </div>
     );
   }
@@ -67,21 +67,27 @@ export default function Profile() {
               <h1 className="aurora-text-gradient text-2xl font-extrabold">{user.name}</h1>
               <p className="text-sm text-softgray">{user.email}</p>
             </div>
-            <GlowButton variant="ghost" onClick={logout}>
+            <GlowButton variant="ghost" onClick={logout} className="focus-rose">
               Đăng xuất
             </GlowButton>
           </div>
         </GlassCard>
 
-        <div className="mb-8 inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1 backdrop-blur-xl">
+        <div
+          className="mb-8 inline-flex rounded-fig-pill border border-white/[0.06] bg-white/[0.04] p-1 backdrop-blur-xl"
+          role="tablist"
+          aria-label="Tài khoản"
+        >
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
+              role="tab"
+              aria-selected={tab === t.key}
               className={[
-                "rounded-full px-5 py-2 text-sm font-medium transition-all",
+                "rounded-full px-5 py-2 text-sm font-medium transition-all focus-rose",
                 tab === t.key
-                  ? "aurora-chip-active"
+                  ? "bg-rose-gradient text-white shadow-glow-violet"
                   : "text-softgray hover:text-warmwhite",
               ].join(" ")}
             >
@@ -110,7 +116,7 @@ export default function Profile() {
                 <p className="mt-2 text-4xl font-bold text-warmwhite">{ordersLoading ? "..." : orders.length}</p>
                 <button
                   onClick={() => setTab("orders")}
-                  className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-sakura"
+                  className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow transition-colors hover:text-sakura focus-rose"
                 >
                   Xem đơn →
                 </button>
@@ -122,7 +128,7 @@ export default function Profile() {
                 </p>
                 <button
                   onClick={() => setTab("favorites")}
-                  className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-sakura"
+                  className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow transition-colors hover:text-sakura focus-rose"
                 >
                   Xem →
                 </button>
@@ -136,7 +142,7 @@ export default function Profile() {
                 <p className="mt-1 text-xs text-softgray">
                   Cứ mỗi {new Intl.NumberFormat("vi-VN").format(spendPerSpin)} VND đã mua bạn được cộng 1 lượt.
                 </p>
-                <Link to="/spin" className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-sakura">
+                <Link to="/spin" className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow transition-colors hover:text-sakura focus-rose">
                   Quay ngay →
                 </Link>
               </GlassCard>
@@ -144,7 +150,7 @@ export default function Profile() {
                 <AuroraBadge tone="sakura" className="mb-2">📜 Lịch sử</AuroraBadge>
                 <p className="text-lg font-bold text-warmwhite">Lịch sử vòng quay</p>
                 <p className="mt-1 text-xs text-softgray">Xem tất cả giải thưởng bạn từng trúng và mã giảm giá nhận được.</p>
-                <Link to="/spin/history" className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow hover:text-sakura">
+                <Link to="/spin/history" className="mt-3 inline-block text-xs font-semibold aurora-text-rainbow transition-colors hover:text-sakura focus-rose">
                   Xem →
                 </Link>
               </GlassCard>
@@ -159,7 +165,7 @@ export default function Profile() {
             ) : orders.length === 0 ? (
               <p className="py-12 text-center text-sm text-softgray">Bạn chưa có đơn hàng nào.</p>
             ) : (
-              <ul className="divide-y divide-white/10">
+              <ul className="divide-y divide-white/[0.06]">
                 {(orders as Order[]).map((o) => (
                   <li key={o.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
                     <div>
@@ -172,7 +178,7 @@ export default function Profile() {
                       </AuroraBadge>
                       <Link
                         to={`/track/${o.tracking_code}`}
-                        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-warmwhite transition-all hover:bg-white/[0.08]"
+                        className="rounded-xl border border-white/[0.06] bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-warmwhite transition-all hover:bg-white/[0.08] focus-rose"
                       >
                         Theo dõi
                       </Link>
@@ -197,7 +203,7 @@ export default function Profile() {
                 </div>
                 <h3 className="mb-2 text-xl font-bold aurora-text-gradient">Chưa có sản phẩm yêu thích</h3>
                 <p className="mb-6 text-sm text-softgray">Nhấn ♥ trên sản phẩm để lưu vào danh sách yêu thích của bạn.</p>
-                <Link to="/products" className="aurora-glow-btn inline-flex justify-center">
+                <Link to="/products" className="aurora-glow-btn inline-flex justify-center focus-aurora">
                   Khám phá sản phẩm
                 </Link>
               </GlassCard>
