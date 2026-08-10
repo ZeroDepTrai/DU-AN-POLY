@@ -153,7 +153,7 @@ function ProductGallery({ product }: { product: Product }) {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto flex aspect-[4/3] w-full max-w-[560px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
+      <div className="mx-auto flex aspect-[1/1] w-full items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
         <p className="text-slate-500">Chưa có hình ảnh</p>
       </div>
     );
@@ -195,11 +195,11 @@ function ProductGallery({ product }: { product: Product }) {
       )}
 
       {/* ── Right: Main image ────────────────────────────────── */}
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         {/* Main stage */}
         <div
           ref={stageRef}
-          className="group relative aspect-[4/3] max-h-[560px] w-full cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-all"
+          className="group relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-all"
           style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)" }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => {
@@ -223,7 +223,7 @@ function ProductGallery({ product }: { product: Product }) {
               preload="metadata"
               disablePictureInPicture
               controlsList="nodownload nofullscreen noremoteplayback"
-              className="absolute inset-0 h-full w-full object-contain p-6"
+              className="absolute inset-0 h-full w-full object-contain p-3 sm:p-4"
               style={{ pointerEvents: "none" }}
             />
           ) : (
@@ -235,7 +235,7 @@ function ProductGallery({ product }: { product: Product }) {
               sizes="(max-width: 1024px) 100vw, 50vw"
               width={1200}
               height={1200}
-              className="absolute inset-0 h-full w-full object-contain p-6 transition-opacity duration-500"
+              className="absolute inset-0 h-full w-full object-contain p-3 sm:p-4 transition-opacity duration-500"
             />
           )}
 
@@ -1074,7 +1074,7 @@ export default function ProductDetail() {
       </nav>
 
       {/* Hero Section */}
-      <div className="mb-16 grid gap-10 lg:grid-cols-[560px_1fr] lg:items-start">
+      <div className="mb-12 grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start xl:gap-10">
         {/* Left: Gallery */}
         <div>
           <ProductGallery product={product} />

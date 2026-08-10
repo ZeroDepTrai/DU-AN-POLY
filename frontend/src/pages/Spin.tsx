@@ -90,12 +90,14 @@ function drawWheel(
       const gx = cx + r * Math.cos(mid);
       const gy = cy + r * Math.sin(mid);
       const g = ctx.createLinearGradient(cx, cy, gx, gy);
-      g.addColorStop(0, "#5a3d0a");
-      g.addColorStop(0.55, "#f4c542");
-      g.addColorStop(1, "#fff3cf");
+      // Brand jackpot ramp — lightpink → sakura → rose
+      g.addColorStop(0, "#F4A2B7");
+      g.addColorStop(0.55, "#F28CA6");
+      g.addColorStop(1, "#E36A86");
       ctx.fillStyle = g;
     } else {
-      ctx.fillStyle = i % 2 === 0 ? "#101a4d" : "#16225e";
+      // Alternating rose / deeprose segments — on-brand with the rest of CellZone
+      ctx.fillStyle = i % 2 === 0 ? "#A82F49" : "#7D2438";
     }
     ctx.fill();
 
@@ -106,7 +108,8 @@ function drawWheel(
     ctx.fill();
 
     ctx.lineWidth = 3;
-    ctx.strokeStyle = "rgba(244,197,66,0.4)";
+    // Brand rim — soft sakura instead of gold
+    ctx.strokeStyle = "rgba(242, 140, 166, 0.4)";
     ctx.stroke();
 
     if (p.jackpot) {
@@ -149,7 +152,8 @@ function drawWheel(
   ctx.beginPath();
   ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
   ctx.lineWidth = 4;
-  ctx.strokeStyle = "rgba(244,197,66,0.55)";
+  // Brand outer rim — sakura instead of gold
+  ctx.strokeStyle = "rgba(242, 140, 166, 0.55)";
   ctx.stroke();
 }
 
@@ -240,13 +244,13 @@ function PrizeModal({
       <GlassCard
         intensity="high"
         className={`relative w-full max-w-sm overflow-hidden p-8 text-center ${
-          isJackpot ? "ring-2 ring-yellow-400/50" : ""
+          isJackpot ? "ring-2 ring-sakura/50" : ""
         }`}
         onClick={(e) => e.stopPropagation()}
-        style={isJackpot ? { boxShadow: "0 0 60px rgba(244,197,66,0.45)" } as React.CSSProperties : undefined}
+        style={isJackpot ? { boxShadow: "0 0 60px rgba(242, 140, 166, 0.45)" } as React.CSSProperties : undefined}
         as="div"
       >
-        <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-300">
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-crimson">
           {isJackpot ? "🎉 Jackpot" : "Vòng Quay May Mắn"}
         </p>
         <p className="mb-6 text-xs font-medium tracking-wide text-softgray">
@@ -260,7 +264,7 @@ function PrizeModal({
         </p>
         <div
           className={`mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full ${
-            isJackpot ? "ring-2 ring-yellow-300/40 bg-yellow-500/10" : "ring-1 ring-white/20 bg-white/5"
+            isJackpot ? "ring-2 ring-sakura/40 bg-crimson/10" : "ring-1 ring-white/20 bg-white/5"
           }`}
         >
           {productImg ? (
@@ -302,7 +306,7 @@ function PrizeModal({
         )}
 
         {isJackpot && (
-          <div className="mb-5 rounded-xl border border-yellow-400/50 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">
+          <div className="mb-5 rounded-xl border border-sakura/50 bg-crimson/10 px-4 py-3 text-sm text-sakura">
             🎉 Chúc mừng bạn trúng <strong>{prize.name}</strong>!<br />
             Vui lòng liên hệ admin qua Zalo hoặc hotline để nhận thưởng.
           </div>
@@ -356,6 +360,21 @@ export default function Spin() {
   const [playError, setPlayError] = useState<string | null>(null);
   const [prizeImages, setPrizeImages] = useState<Record<string, HTMLImageElement>>({});
   const [hasToken, setHasToken] = useState<boolean>(() => !!localStorage.getItem("token"));
+
+  // Keep hasToken in sync with localStorage so the QUAY / LOGIN state
+  // updates after login / logout from another tab or after returning to
+  // the page from /login. storage event covers cross-tab updates;
+  // the manual sync on mount handles in-tab navigation.
+  useEffect(() => {
+    const sync = () => setHasToken(!!localStorage.getItem("token"));
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener("focus", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("focus", sync);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -556,7 +575,7 @@ export default function Spin() {
     <div
       className="min-h-screen"
       style={{
-        background: "radial-gradient(circle at 50% 0%, rgba(28, 18, 48, 1) 0%, rgba(10, 6, 18, 1) 60%)",
+        background: "radial-gradient(circle at 50% 0%, rgba(58, 47, 51, 0.6) 0%, rgba(24, 20, 23, 1) 60%)",
       }}
     >
       {/* Main content */}
@@ -586,18 +605,18 @@ export default function Spin() {
           <div className="space-y-5">
             {/* Odds section */}
             <div className="rounded-2xl border border-white/8 p-5" style={{ background: "rgba(255,255,255,0.03)" }}>
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-violet-300" style={{ letterSpacing: "0.05em" }}>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-crimson" style={{ letterSpacing: "0.05em" }}>
                 <span>◐</span> Tỷ lệ trúng thưởng
               </h2>
               <div className="space-y-3">
-                {prizes.slice(0, 6).map((p, i) => {
+                {prizes.map((p, i) => {
                   const pct = ((Number(p.weight) / totalWeight) * 100).toFixed(1);
                   const isJackpot = p.jackpot;
                   return (
                     <div key={`${p.name}-${i}`} className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-300">{p.name}</span>
-                        <span className="text-xs font-bold" style={{ color: isJackpot ? "#89CEFF" : "#CFC2D6" }}>{pct}%</span>
+                        <span className="text-xs font-semibold text-softgray">{p.name}</span>
+                        <span className="text-xs font-bold" style={{ color: isJackpot ? "#F4A2B7" : "#C9C4C6" }}>{pct}%</span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
                         <div
@@ -605,8 +624,8 @@ export default function Spin() {
                           style={{
                             width: `${Math.max(parseFloat(pct), 1)}%`,
                             background: isJackpot
-                              ? "linear-gradient(90deg, #7C3AED, #C084FC)"
-                              : `linear-gradient(90deg, #7C3AED, ${i % 2 === 0 ? "#A78BFA" : "#C4B5FD"})`,
+                              ? "linear-gradient(90deg, #D94A63, #F28CA6)"
+                              : `linear-gradient(90deg, #D94A63, ${i % 2 === 0 ? "#F28CA6" : "#F4A2B7"})`,
                           }}
                         />
                       </div>
@@ -618,15 +637,15 @@ export default function Spin() {
 
             {/* How to earn more */}
             <div className="rounded-2xl border border-white/8 p-5" style={{ background: "rgba(255,255,255,0.03)" }}>
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-violet-300" style={{ letterSpacing: "0.05em" }}>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-crimson" style={{ letterSpacing: "0.05em" }}>
                 <span>⚡</span> Nhận thêm lượt
               </h2>
               <div className="space-y-2">
                 {[
-                  { icon: "↗", label: "Chia sẻ bạn bè", bonus: "+2 lượt", color: "#8B5CF6" },
-                  { icon: "📅", label: "Điểm danh hàng ngày", bonus: "+1 lượt", color: "#A78BFA" },
-                  { icon: "🛒", label: "Đơn hàng đầu tiên", bonus: "+3 lượt", color: "#C4B5FD" },
-                  { icon: "★", label: "Đánh giá sản phẩm", bonus: "+1 lượt", color: "#7C3AED" },
+                  { icon: "↗", label: "Chia sẻ bạn bè", bonus: "+2 lượt", color: "#D94A63" },
+                  { icon: "📅", label: "Điểm danh hàng ngày", bonus: "+1 lượt", color: "#F28CA6" },
+                  { icon: "🛒", label: "Đơn hàng đầu tiên", bonus: "+3 lượt", color: "#F4A2B7" },
+                  { icon: "★", label: "Đánh giá sản phẩm", bonus: "+1 lượt", color: "#A82F49" },
                 ].map((item) => (
                   <button
                     key={item.label}
@@ -640,9 +659,9 @@ export default function Spin() {
                       >
                         {item.icon}
                       </div>
-                      <span className="text-sm font-medium text-slate-300">{item.label}</span>
+                      <span className="text-sm font-medium text-softgray">{item.label}</span>
                     </div>
-                    <span className="text-xs font-bold text-violet-300">{item.bonus}</span>
+                    <span className="text-xs font-bold text-crimson">{item.bonus}</span>
                   </button>
                 ))}
               </div>
@@ -655,14 +674,14 @@ export default function Spin() {
             <div
               className="mb-5 flex items-center gap-3 rounded-full border px-6 py-2.5 text-sm font-semibold"
               style={{
-                background: "rgba(255,255,255,0.04)",
-                borderColor: "rgba(139, 92, 246, 0.3)",
-                color: "#C4B5FD",
+                background: "rgba(217, 74, 99, 0.08)",
+                borderColor: "rgba(217, 74, 99, 0.4)",
+                color: "#F28CA6",
               }}
             >
               <span>▤</span>
               Lượt quay còn lại:
-              <span className="text-xl font-black text-white" style={{ textShadow: "0 0 12px rgba(196, 181, 253, 0.6)" }}>
+              <span className="text-xl font-black text-warmwhite" style={{ textShadow: "0 0 12px rgba(242, 140, 166, 0.6)" }}>
                 {safeCfg.user_credits}
               </span>
             </div>
@@ -673,21 +692,21 @@ export default function Spin() {
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
-                  background: "rgba(155, 63, 240, 0.12)",
-                  boxShadow: "0 0 70px rgba(155, 63, 240, 0.35), 0 0 0 12px rgba(42, 33, 64, 0.9), 0 0 0 10px rgba(20, 16, 31, 0.9)",
+                  background: "rgba(217, 74, 99, 0.12)",
+                  boxShadow: "0 0 70px rgba(217, 74, 99, 0.35), 0 0 0 12px rgba(58, 47, 51, 0.9), 0 0 0 10px rgba(24, 20, 23, 0.9)",
                 }}
               />
               {/* Pointer */}
               <div
                 className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-2"
-                style={{ filter: "drop-shadow(0 0 16px rgba(192, 132, 252, 1))" }}
+                style={{ filter: "drop-shadow(0 0 16px rgba(242, 140, 166, 1))" }}
               >
                 <svg width="34" height="28" viewBox="0 0 34 28" fill="none">
                   <path d="M17 28L2 4h30L17 28z" fill="url(#pointerGrad)" />
                   <defs>
                     <linearGradient id="pointerGrad" x1="17" y1="0" x2="17" y2="28" gradientUnits="userSpaceOnUse">
-                      <stop stopColor="#C084FC" />
-                      <stop offset="1" stopColor="#7C3AED" />
+                      <stop stopColor="#F28CA6" />
+                      <stop offset="1" stopColor="#D94A63" />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -706,34 +725,41 @@ export default function Spin() {
                 />
               </div>
               {/* Center button */}
-              <button
-                type="button"
-                onClick={handleSpin}
-                disabled={!canSpin}
-                className="absolute left-1/2 top-1/2 z-20 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-base font-black tracking-wider focus-aurora disabled:cursor-not-allowed disabled:opacity-50"
-                style={{
-                  background: "radial-gradient(circle at 35% 30%, #C084FC 0%, #9B3FD6 60%, #6B21A8 100%)",
-                  boxShadow: "0 0 34px rgba(192, 132, 252, 0.7), 0 0 0 7px rgba(20, 16, 31, 1)",
-                  color: "rgba(196, 181, 253, 1)",
-                }}
-              >
-                {spinning ? (
-                  <svg className="h-7 w-7 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : !hasToken ? (
-                  <Link to="/login" onClick={() => setHasToken(true)} className="text-sm font-bold tracking-wider">LOGIN</Link>
-                ) : safeCfg.user_credits > 0 ? (
-                  <span>QUAY</span>
-                ) : (
-                  <span className="text-xs">HẾT LƯỢT</span>
-                )}
-              </button>
+              {!hasToken ? (
+                // Unauthenticated: render as a Link so the user is sent to
+                // /login. Styled identically to the active spin button so the
+                // CTA remains obvious, but no nested <a> inside <button> here.
+                <Link
+                  to="/login"
+                  className="spin-cta absolute left-1/2 top-1/2 z-20 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-sm font-black tracking-wider focus-aurora"
+                >
+                  LOGIN
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSpin}
+                  disabled={!canSpin}
+                  className={`spin-cta absolute left-1/2 top-1/2 z-20 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-base font-black tracking-wider focus-aurora ${
+                    !canSpin ? "spin-cta-disabled" : ""
+                  }`}
+                >
+                  {spinning ? (
+                    <svg className="h-7 w-7 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : safeCfg.user_credits > 0 ? (
+                    <span>QUAY</span>
+                  ) : (
+                    <span className="text-xs">HẾT LƯỢT</span>
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Footer note */}
-            <p className="mt-6 text-center text-xs text-slate-500">
+            <p className="mt-6 text-center text-xs text-steelgray">
               Mỗi lượt quay là một cơ hội trúng thưởng độc lập
             </p>
           </div>
@@ -742,12 +768,12 @@ export default function Spin() {
           <div className="space-y-5">
             {/* My history */}
             <div className="rounded-2xl border border-white/8 p-5" style={{ background: "rgba(255,255,255,0.03)" }}>
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-violet-300" style={{ letterSpacing: "0.05em" }}>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-crimson" style={{ letterSpacing: "0.05em" }}>
                 <span>↻</span> Lịch sử của tôi
               </h2>
               {history.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10">
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-steelgray">
                     {hasToken ? "Bạn chưa quay lần nào." : "Đăng nhập để xem lịch sử."}
                   </p>
                 </div>
@@ -758,16 +784,16 @@ export default function Spin() {
                       key={h.id}
                       type="button"
                       onClick={() => navigate("/spin/history")}
-                      className="flex w-full items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left text-xs transition hover:border-violet-400/30 hover:bg-violet-400/5 focus-rose"
+                      className="flex w-full items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left text-xs transition hover:border-crimson/30 hover:bg-crimson/5 focus-rose"
                     >
-                      <span className="truncate pr-3 font-medium text-slate-300">{h.prize_label}</span>
-                      <span className="shrink-0 text-violet-400 hover:text-violet-300">Xem →</span>
+                      <span className="truncate pr-3 font-medium text-softgray">{h.prize_label}</span>
+                      <span className="shrink-0 text-crimson hover:text-sakura">Xem →</span>
                     </button>
                   ))}
                   {history.length > 4 && (
                     <Link
                       to="/spin/history"
-                      className="mt-2 flex items-center justify-center gap-1 text-xs font-semibold text-violet-400 transition-colors hover:text-violet-300 focus-rose"
+                      className="mt-2 flex items-center justify-center gap-1 text-xs font-semibold text-crimson transition-colors hover:text-sakura focus-rose"
                     >
                       Xem tất cả lịch sử →
                     </Link>
@@ -778,14 +804,14 @@ export default function Spin() {
 
             {/* Recent winners */}
             <div className="rounded-2xl border border-white/8 p-5" style={{ background: "rgba(255,255,255,0.03)" }}>
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-violet-300" style={{ letterSpacing: "0.05em" }}>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-crimson" style={{ letterSpacing: "0.05em" }}>
                 <span>🏆</span> Trúng thưởng mới
               </h2>
               <div className="space-y-3">
                 {[
-                  { initials: "QV", name: "Đỗ Quốc Việt", prize: "Voucher 1 triệu", time: "2m trước", color: "#EC4899" },
-                  { initials: "TĐ", name: "Nguyễn Thành Đạt", prize: "iPhone 15 Pro", time: "5m trước", color: "#8B5CF6" },
-                  { initials: "MK", name: "Lê Minh Khôi", prize: "AirPods Pro", time: "8m trước", color: "#A78BFA" },
+                  { initials: "QV", name: "Đỗ Quốc Việt", prize: "Voucher 1 triệu", time: "2m trước", color: "#D94A63" },
+                  { initials: "TĐ", name: "Nguyễn Thành Đạt", prize: "iPhone 15 Pro", time: "5m trước", color: "#A82F49" },
+                  { initials: "MK", name: "Lê Minh Khôi", prize: "AirPods Pro", time: "8m trước", color: "#F28CA6" },
                 ].map((w) => (
                   <div key={w.name} className="flex items-center gap-3">
                     <div
@@ -795,10 +821,10 @@ export default function Spin() {
                       {w.initials}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-200">{w.name}</p>
-                      <p className="truncate text-xs text-violet-400">{w.prize}</p>
+                      <p className="truncate text-sm font-semibold text-softgray">{w.name}</p>
+                      <p className="truncate text-xs text-crimson">{w.prize}</p>
                     </div>
-                    <span className="shrink-0 text-[11px] text-slate-500">{w.time}</span>
+                    <span className="shrink-0 text-[11px] text-steelgray">{w.time}</span>
                   </div>
                 ))}
               </div>
@@ -809,7 +835,7 @@ export default function Spin() {
 
       {/* Footer disclaimer */}
       <div className="border-t border-white/5 py-6 text-center">
-        <p className="text-xs text-slate-600">
+        <p className="text-xs text-steelgray">
           Mỗi lượt quay là một cơ hội trúng thưởng độc lập · Giải thưởng có giới hạn số lượng theo ngày · CellZone giữ quyền quyết định cuối cùng
         </p>
       </div>
