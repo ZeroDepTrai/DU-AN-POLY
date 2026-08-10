@@ -214,6 +214,32 @@ def order_to_response(order: Order) -> OrderResponse:
     )
 
 
+def backfill_stale_store_coords(db: Session) -> int:
+    """One-shot DB migration: rewrite any order whose current_lat/lng match
+    the old wrong HCM City defaults over to the correct Biên Hòa store coords.
+    Returns the number of rows updated."""
+    # Old wrong coords (HCM City ghost location)
+    WRONG_LAT = 10.762622
+    WRONG_LNG = 106.660172
+
+    rows = (
+        db.query(Order)
+        .filter(
+            (Order.current_lat.between(WRONG_LAT - 0.001, WRONG_LAT + 0.001))
+            & (Order.current_lng.between(WRONG_LNG - 0.001, WRONG_LNG + 0.001))
+        )
+        .all()
+    )
+    count = 0
+    for o in rows:
+        o.current_lat = CORRECT_STORE_LAT
+        o.current_lng = CORRECT_STORE_LNG
+        count += 1
+    if count:
+        db.commit()
+    return count
+
+
 def order_coupon_lookup(order: Order):
     from app.models import Coupon as CouponModel
 

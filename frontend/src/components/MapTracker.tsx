@@ -28,6 +28,29 @@ function isValidStoreCoord(lat: number, lng: number): boolean {
   return true;
 }
 
+// Haversine distance in kilometers between two lat/lng points.
+function haversineKm(
+  a: [number, number],
+  b: [number, number]
+): number {
+  const [lat1, lon1] = a;
+  const [lat2, lon2] = b;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6371; // Earth radius (km)
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+}
+
+// Maximum plausible distance — anything longer is almost certainly bad data
+// (Vietnam is ~1700 km tip-to-tip, so a single delivery route should be much shorter).
+const MAX_PLAUSIBLE_KM = 600;
+
 const STATUS_STEPS: OrderStatus[] = [
   "pending",
   "processing",
@@ -107,6 +130,14 @@ function RoutingLayer({
       (fromLat === 0 && fromLng === 0) ||
       (toLat === 0 && toLng === 0)
     ) {
+      setRouteError(true);
+      return;
+    }
+
+    // Guard: reject routes exceeding plausible distance — otherwise OSRM may
+    // route through Cambodia/ocean for invalid HCM→Biên Hòa endpoints.
+    const dist = haversineKm(fromPos, toPos);
+    if (dist > MAX_PLAUSIBLE_KM) {
       setRouteError(true);
       return;
     }
@@ -232,8 +263,8 @@ const HARDCODED_STORE_LAT = 10.9421;
 const HARDCODED_STORE_LNG = 106.8625;
 
 export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
-  const currentLat = liveUpdate?.current_lat ?? order.current_lat;
-  const currentLng = liveUpdate?.current_lng ?? order.current_lng;
+  const rawCurrentLat = liveUpdate?.current_lat ?? order.current_lat;
+  const rawCurrentLng = liveUpdate?.current_lng ?? order.current_lng;
   const status = liveUpdate?.status ?? order.status;
 
   // Use backend values if they're valid Vietnam coords (and not the known wrong HCM City coords);
@@ -244,17 +275,29 @@ export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
   const storeLng = isValidStoreCoord(rawStoreLat, rawStoreLng) ? rawStoreLng : HARDCODED_STORE_LNG;
   const storeName = liveUpdate?.store_name ?? order.store_name;
 
+  // Snap driver pin to store if coords are bad (out of VN, or known wrong HCM).
+  const driverCoordValid = isValidStoreCoord(rawCurrentLat, rawCurrentLng);
+  const currentLat = driverCoordValid ? rawCurrentLat : storeLat;
+  const currentLng = driverCoordValid ? rawCurrentLng : storeLng;
+
   const storePos: [number, number] = [storeLat, storeLng];
   const currentPos: [number, number] = [currentLat, currentLng];
   const destPos: [number, number] = [order.delivery_lat, order.delivery_lng];
 
+  // Driver still at the shop means it hasn't picked up yet — hide the driver pin entirely.
+  const driverAtStore = driverCoordValid
+    && Math.abs(currentLat - storeLat) < 0.0001
+    && Math.abs(currentLng - storeLng) < 0.0001;
+
   // Validate delivery coords; show banner if geocoding failed
   const destValid = inVietnam(destPos[0], destPos[1]) && !(destPos[0] === 0 && destPos[1] === 0);
 
-  const boundsPoints = useMemo<[number, number][]>(
-    () => [storePos, currentPos, destPos],
-    [storePos, currentPos, destPos]
-  );
+  const boundsPoints = useMemo<[number, number][]>(() => {
+    const points: [number, number][] = [storePos];
+    if (!driverAtStore) points.push(currentPos);
+    points.push(destPos);
+    return points;
+  }, [storePos, currentPos, destPos, driverAtStore]);
 
   const currentStepIndex = STATUS_STEPS.indexOf(status);
 
@@ -280,7 +323,7 @@ export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
           <FitBounds points={boundsPoints} />
 
           <RoutingLayer fromPos={storePos} toPos={currentPos} />
-          <RoutingLayer fromPos={currentPos} toPos={destPos} />
+          {!driverAtStore && <RoutingLayer fromPos={currentPos} toPos={destPos} />}
 
           <CircleMarker
             center={storePos}
@@ -296,19 +339,21 @@ export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
             </Popup>
           </CircleMarker>
 
-          <CircleMarker
-            center={currentPos}
-            radius={8}
-            pathOptions={{ color: "#D94A63", fillColor: "#D94A63", fillOpacity: 1, weight: 3 }}
-          >
-            <Popup>
-              <div style={{ textAlign: "center", color: "#181417" }}>
-                <DeliveryIcon />
-                <br />
-                <strong>Đang giao hàng</strong>
-              </div>
-            </Popup>
-          </CircleMarker>
+          {!driverAtStore && (
+            <CircleMarker
+              center={currentPos}
+              radius={8}
+              pathOptions={{ color: "#D94A63", fillColor: "#D94A63", fillOpacity: 1, weight: 3 }}
+            >
+              <Popup>
+                <div style={{ textAlign: "center", color: "#181417" }}>
+                  <DeliveryIcon />
+                  <br />
+                  <strong>Đang giao hàng</strong>
+                </div>
+              </Popup>
+            </CircleMarker>
+          )}
 
           <CircleMarker
             center={destPos}

@@ -21,7 +21,13 @@ from app.schemas import (
     ProductAdminSummary,
     ProductResponse,
 )
-from app.services.orders import order_to_response, CORRECT_STORE_LAT, CORRECT_STORE_LNG, CORRECT_STORE_NAME
+from app.services.orders import (
+    backfill_stale_store_coords,
+    order_to_response,
+    CORRECT_STORE_LAT,
+    CORRECT_STORE_LNG,
+    CORRECT_STORE_NAME,
+)
 from app.services.images import InvalidImageError, persist_inline_data_images, save_optimized_image
 from app.websocket import manager
 from app.routers.products import PRODUCT_LIST_COLUMNS, _attach_media, _attach_rating_like
@@ -490,6 +496,14 @@ async def update_order(
     )
 
     return order_to_response(order)
+
+
+@router.post("/backfill-store-coords")
+def backfill_coords(db: Session = Depends(get_db), _: User = Depends(require_admin)):
+    """One-shot migration: rewrite stale HCM City current_lat/lng on existing
+    orders to the correct Biên Hòa store coords. Returns the count."""
+    count = backfill_stale_store_coords(db)
+    return {"updated": count}
 
 
 @router.get("/admin-emails", response_model=list[AdminEmailResponse])
