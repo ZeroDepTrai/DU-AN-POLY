@@ -1,6 +1,21 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import type { Order, OrderStatus, TrackingUpdate } from "../types";
+
+// Vietnam bounding box for coordinate validation
+const VN_LAT_MIN = 8.0;
+const VN_LAT_MAX = 23.5;
+const VN_LON_MIN = 102.0;
+const VN_LON_MAX = 110.0;
+
+function inVietnam(lat: number, lng: number): boolean {
+  return (
+    lat >= VN_LAT_MIN &&
+    lat <= VN_LAT_MAX &&
+    lng >= VN_LON_MIN &&
+    lng <= VN_LON_MAX
+  );
+}
 
 const STATUS_STEPS: OrderStatus[] = [
   "pending",
@@ -50,29 +65,53 @@ function DeliveryIcon() {
   );
 }
 
+// ── Routing ──────────────────────────────────────────────────────────────
+
+interface RoutingLayerProps {
+  fromPos: [number, number];
+  toPos: [number, number];
+  color?: string;
+  ghostColor?: string;
+}
+
 function RoutingLayer({
-  storePos,
-  destPos,
-}: {
-  storePos: [number, number];
-  destPos: [number, number];
-}) {
+  fromPos,
+  toPos,
+  color = "#D94A63",
+  ghostColor = "#F28CA6",
+}: RoutingLayerProps) {
   const map = useMap();
-  const routingControlRef = useRef<unknown>(null);
+  const controlRef = useRef<unknown>(null);
+  const [routeError, setRouteError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
+    // Guard: skip routing if either endpoint is invalid
+    const [fromLat, fromLng] = fromPos;
+    const [toLat, toLng] = toPos;
+    if (
+      !inVietnam(fromLat, fromLng) ||
+      !inVietnam(toLat, toLng) ||
+      (fromLat === 0 && fromLng === 0) ||
+      (toLat === 0 && toLng === 0)
+    ) {
+      setRouteError(true);
+      return;
+    }
+
+    setRouteError(false);
+
     import("leaflet-routing-machine").then(() => {
       if (!isMounted || !map) return;
 
-      if (routingControlRef.current) {
+      if (controlRef.current) {
         try {
-          map.removeControl(routingControlRef.current as never);
+          map.removeControl(controlRef.current as never);
         } catch {
           // ignore
         }
-        routingControlRef.current = null;
+        controlRef.current = null;
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,61 +120,100 @@ function RoutingLayer({
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const control = (L.Routing as any).control({
-        waypoints: [L.latLng(storePos), L.latLng(destPos)],
+        waypoints: [L.latLng(fromPos), L.latLng(toPos)],
         routeWhileDragging: false,
         draggableWaypoints: false,
         show: false,
         addWaypoints: false,
         lineOptions: {
           styles: [
-            { color: "#D94A63", opacity: 0.85, weight: 5 },
-            { color: "#F28CA6", opacity: 0.4, weight: 2 },
+            { color, opacity: 0.85, weight: 5 },
+            { color: ghostColor, opacity: 0.4, weight: 2 },
           ],
           extendToRoute: true,
         },
         createMarker: () => null,
         router: (L.Routing as any).osrmv1({
           serviceUrl: "https://router.project-osrm.org/route/v1",
-        }),
+        },
+      )});
+
+      // Catch OSRM errors (e.g. no route found) → fall back to straight line
+      control.on("routingerror", () => {
+        if (isMounted) setRouteError(true);
       });
 
-      routingControlRef.current = control;
+      controlRef.current = control;
       map.addControl(control);
     });
 
     return () => {
       isMounted = false;
-      if (routingControlRef.current) {
+      if (controlRef.current) {
         try {
-          map.removeControl(routingControlRef.current as never);
+          map.removeControl(controlRef.current as never);
         } catch {
           // ignore
         }
-        routingControlRef.current = null;
+        controlRef.current = null;
       }
     };
-  }, [map, storePos, destPos]);
+  }, [map, fromPos, toPos, color, ghostColor]);
+
+  // Fallback: straight dashed line when OSRM fails or coords are invalid
+  if (routeError) {
+    return <StraightLine from={fromPos} to={toPos} />;
+  }
 
   return null;
 }
 
-function DeliveryMarker({ position }: { position: [number, number] }) {
-  return (
-    <CircleMarker
-      center={position}
-      radius={8}
-      pathOptions={{ color: "#D94A63", fillColor: "#D94A63", fillOpacity: 1, weight: 3 }}
-    >
-      <Popup>
-        <div style={{ textAlign: "center", color: "#181417" }}>
-          <DeliveryIcon />
-          <br />
-          <strong>Đang giao hàng</strong>
-        </div>
-      </Popup>
-    </CircleMarker>
-  );
+// ── Straight line fallback (no OSRM available) ───────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function StraightLine({ from, to }: { from: [number, number]; to: [number, number] }) {
+  const map = useMap();
+  const lineRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!map) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L = (window as any).L;
+    if (!L) return;
+
+    // Remove old line
+    if (lineRef.current) {
+      try {
+        map.removeLayer(lineRef.current);
+      } catch {
+        // ignore
+      }
+      lineRef.current = null;
+    }
+
+    lineRef.current = L.polyline([from, to], {
+      color: "#D94A63",
+      weight: 3,
+      opacity: 0.6,
+      dashArray: "8, 8",
+    }).addTo(map);
+
+    return () => {
+      if (lineRef.current) {
+        try {
+          map.removeLayer(lineRef.current);
+        } catch {
+          // ignore
+        }
+        lineRef.current = null;
+      }
+    };
+  }, [map, from, to]);
+
+  return null;
 }
+
+// ── Main export ──────────────────────────────────────────────────────────
 
 export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
   const currentLat = liveUpdate?.current_lat ?? order.current_lat;
@@ -149,6 +227,9 @@ export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
   const currentPos: [number, number] = [currentLat, currentLng];
   const destPos: [number, number] = [order.delivery_lat, order.delivery_lng];
 
+  // Validate delivery coords; show banner if geocoding failed
+  const destValid = inVietnam(destPos[0], destPos[1]) && !(destPos[0] === 0 && destPos[1] === 0);
+
   const boundsPoints = useMemo<[number, number][]>(
     () => [storePos, currentPos, destPos],
     [storePos, currentPos, destPos]
@@ -158,6 +239,12 @@ export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
 
   return (
     <div className="space-y-6">
+      {!destValid && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+          ⚠️ Không tìm được vị trí chính xác cho địa chỉ giao hàng. Bản đồ hiển thị vị trí gần đúng.
+        </div>
+      )}
+
       <div className="h-[420px] overflow-hidden rounded-xl border border-gunmetal/60">
         <MapContainer
           center={currentPos}
@@ -171,8 +258,8 @@ export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
           />
           <FitBounds points={boundsPoints} />
 
-          <RoutingLayer storePos={storePos} destPos={currentPos} />
-          <RoutingLayer storePos={currentPos} destPos={destPos} />
+          <RoutingLayer fromPos={storePos} toPos={currentPos} />
+          <RoutingLayer fromPos={currentPos} toPos={destPos} />
 
           <CircleMarker
             center={storePos}
@@ -188,7 +275,19 @@ export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
             </Popup>
           </CircleMarker>
 
-          <DeliveryMarker position={currentPos} />
+          <CircleMarker
+            center={currentPos}
+            radius={8}
+            pathOptions={{ color: "#D94A63", fillColor: "#D94A63", fillOpacity: 1, weight: 3 }}
+          >
+            <Popup>
+              <div style={{ textAlign: "center", color: "#181417" }}>
+                <DeliveryIcon />
+                <br />
+                <strong>Đang giao hàng</strong>
+              </div>
+            </Popup>
+          </CircleMarker>
 
           <CircleMarker
             center={destPos}
