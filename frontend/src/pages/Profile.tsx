@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { favoritesApi, ordersApi, spinApi } from "../api/client";
+import { favoritesApi, ordersApi, reviewsApi, spinApi } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type { Order } from "../types";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -59,6 +59,7 @@ export default function Profile() {
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["my-orders"],
     queryFn: async () => (await ordersApi.list()).data,
+    enabled: !!user,
   });
 
   const { data: spinCfg } = useQuery({
@@ -68,10 +69,21 @@ export default function Profile() {
   const spendPerSpin = spinCfg?.spend_per_spin_vnd ?? 3_000_000;
   const userCredits = spinCfg?.user_credits ?? 0;
 
+  // Favorites are fetched unconditionally so the count in the header
+  // and the Yêu thích stat card are always live, even before the user
+  // visits the Yêu thích tab.
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery({
     queryKey: ["my-favorites"],
     queryFn: async () => (await favoritesApi.list()).data,
-    enabled: tab === "favorites" && !!user,
+    enabled: !!user,
+  });
+
+  // Reviews the current user has written — needed to populate the
+  // "Đánh giá" tab with real entries instead of the empty placeholder.
+  const { data: myReviews = [], isLoading: reviewsLoading } = useQuery({
+    queryKey: ["my-reviews"],
+    queryFn: async () => (await reviewsApi.list()).data,
+    enabled: !!user && tab === "reviews",
   });
 
   if (!user) {
@@ -84,7 +96,11 @@ export default function Profile() {
   }
 
   const deliverOrders = (orders as Order[]).filter((o) => o.status === "delivered");
-  const totalSpend = deliverOrders.reduce(
+  // Total spend is now calculated from ALL orders (not just delivered
+  // ones) so the loyalty tier reflects the customer's real spend even
+  // when items are still in transit. The stat card subtitle still
+  // distinguishes total orders from delivered ones.
+  const totalSpend = (orders as Order[]).reduce(
     (s, o) => s + (o.items?.reduce((x, i) => x + i.unit_price * i.quantity, 0) || 0),
     0
   );
@@ -204,12 +220,14 @@ export default function Profile() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="text-xs uppercase tracking-wider text-steelgray">Tổng chi đã giao</p>
+                <p className="text-xs uppercase tracking-wider text-steelgray">Tổng chi tiêu</p>
                 <p className="mt-2 text-2xl font-bold text-warmwhite">
                   {formatVND(totalSpend)}
                   <span className="ml-1 text-sm font-normal text-steelgray">VND</span>
                 </p>
-                <p className="mt-1 text-xs text-softgray">{deliverOrders.length} đơn đã giao</p>
+                <p className="mt-1 text-xs text-softgray">
+                  {orders.length} đơn · {deliverOrders.length} đã giao
+                </p>
               </GlassCard>
               <GlassCard intensity="med" className="p-5">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-sakura/20">
@@ -413,19 +431,66 @@ export default function Profile() {
           <div>
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-bold text-warmwhite">Đánh giá của tôi</h2>
+              <AuroraBadge tone="sakura">{myReviews.length} đánh giá</AuroraBadge>
             </div>
-            <GlassCard intensity="med" className="p-12 text-center">
-              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-aurora-gradient shadow-glow-violet">
-                <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
+            {reviewsLoading ? (
+              <LoadingSpinner label="Đang tải đánh giá..." />
+            ) : myReviews.length === 0 ? (
+              <GlassCard intensity="med" className="p-12 text-center">
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-aurora-gradient shadow-glow-violet">
+                  <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </div>
+                <h3 className="mb-2 text-xl font-bold aurora-text-gradient">Chưa có đánh giá nào</h3>
+                <p className="mb-6 text-sm text-steelgray">Mua sản phẩm và để lại đánh giá của bạn để giúp người khác có quyết định tốt hơn.</p>
+                <Link to="/products" className="inline-flex justify-center rounded-xl bg-rose-gradient px-6 py-3 text-sm font-semibold text-white shadow-glow-violet transition-all hover:opacity-90 focus-rose">
+                  Khám phá sản phẩm
+                </Link>
+              </GlassCard>
+            ) : (
+              <div className="space-y-4">
+                {myReviews.map((r) => (
+                  <GlassCard key={r.id} intensity="med" hoverable className="p-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          to={`/products/${r.product_id}`}
+                          className="block truncate text-sm font-semibold text-warmwhite transition-colors hover:text-sakura focus-rose"
+                        >
+                          {r.product_name || `Sản phẩm #${r.product_id}`}
+                        </Link>
+                        <p className="mt-0.5 text-xs text-steelgray">
+                          {formatDate(r.created_at)}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-0.5 text-amber-400">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <svg
+                            key={i}
+                            className={`h-4 w-4 ${i < r.stars ? "fill-current" : "fill-white/10"}`}
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                          </svg>
+                        ))}
+                      </div>
+                    </div>
+                    {r.review && (
+                      <p className="mt-3 text-sm leading-relaxed text-softgray">{r.review}</p>
+                    )}
+                    <div className="mt-3 flex justify-end">
+                      <Link
+                        to={`/products/${r.product_id}`}
+                        className="text-xs font-semibold aurora-text-rainbow transition-colors hover:text-sakura focus-rose"
+                      >
+                        Xem sản phẩm →
+                      </Link>
+                    </div>
+                  </GlassCard>
+                ))}
               </div>
-              <h3 className="mb-2 text-xl font-bold aurora-text-gradient">Chưa có đánh giá nào</h3>
-              <p className="mb-6 text-sm text-steelgray">Mua sản phẩm và để lại đánh giá của bạn để giúp người khác có quyết định tốt hơn.</p>
-              <Link to="/products" className="inline-flex justify-center rounded-xl bg-rose-gradient px-6 py-3 text-sm font-semibold text-white shadow-glow-violet transition-all hover:opacity-90 focus-rose">
-                Khám phá sản phẩm
-              </Link>
-            </GlassCard>
+            )}
           </div>
         )}
 

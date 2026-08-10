@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { BlogPost, BlogPostListItem, Order, Product, RatingSummary, LikeStatus, User } from "../types";
+import type { BlogPost, BlogPostListItem, Order, Product, RatingSummary, LikeStatus, User, UserReview } from "../types";
 
 export interface ProductMediaItem {
   id: number;
@@ -162,6 +162,12 @@ export const likesApi = {
 
 export const favoritesApi = {
   list: () => api.get<Product[]>("/api/me/favorites"),
+};
+
+// Reviews the current user has submitted. Used by the Profile page
+// "Đánh giá" tab to display the user's own review history.
+export const reviewsApi = {
+  list: () => api.get<UserReview[]>("/api/me/reviews"),
 };
 
 export const categoriesApi = {

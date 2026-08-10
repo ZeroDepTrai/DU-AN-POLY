@@ -401,6 +401,7 @@ class RatingResponse(BaseModel):
     stars: int
     review: str
     created_at: str
+    product_name: str | None = None
 
     model_config = {"from_attributes": True}
 

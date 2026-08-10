@@ -37,6 +37,15 @@ export interface RatingSummary {
   my_rating: number | null;
 }
 
+export interface UserReview {
+  id: number;
+  product_id: number;
+  product_name?: string | null;
+  stars: number;
+  review: string;
+  created_at: string;
+}
+
 export interface LikeStatus {
   liked: boolean;
   count: number;
