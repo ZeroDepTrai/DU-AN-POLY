@@ -11,15 +11,15 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expire_hours: int = 24
-    store_lat: float = 10.762622
-    store_lng: float = 106.660172
-    store_name: str = "Phone Store HQ"
+    store_lat: float = 10.9421
+    store_lng: float = 106.8625
+    store_name: str = "CellZone - 193 Đỗ Văn Thi"
     admin_email: str = "admin@phone-store.com"
     admin_password: str = "admin123"
     cors_origins: str = "https://cellzone.site,https://du-an-poly.vercel.app,https://du-an-poly-production.up.railway.app,http://localhost:5173,http://localhost:5174,http://localhost:8081,exp://,exp://localhost:8081"
     upload_dir: str = "/data/uploads"
     resend_api_key: str = ""
-    email_from: str = "Phone Store <onboarding@resend.dev>"
+    email_from: str = "CellZone <onboarding@resend.dev>"
     # Optional: enables the live-chat AI agent in backend/app/services/ai_agent.py.
     # Leave empty in local development — the agent will then issue a friendly
     # canned reply instead of calling Gemini. The value is read from the

@@ -37,6 +37,22 @@ def get_order_by_tracking(tracking_code: str, db: Session = Depends(get_db)):
     return order_to_response(order)
 
 
+@router.get("", response_model=list[OrderResponse])
+def list_my_orders(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all orders belonging to the authenticated user, newest first."""
+    orders = (
+        db.query(Order)
+        .options(joinedload(Order.items).joinedload(OrderItem.product))
+        .filter(Order.user_id == current_user.id)
+        .order_by(Order.id.desc())
+        .all()
+    )
+    return [order_to_response(o) for o in orders]
+
+
 @router.patch("/{order_id}/shipping", response_model=OrderResponse)
 def update_order_shipping(
     order_id: int,

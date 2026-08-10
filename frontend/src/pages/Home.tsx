@@ -635,7 +635,7 @@ export default function Home() {
             <GlassCard intensity="med" className="overflow-hidden p-0">
               <iframe
                 title="CellZone Location"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=106.6%2C10.7%2C106.8%2C10.9&layer=mapnik"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=106.84%2C10.92%2C106.89%2C10.96&layer=mapnik"
                 className="h-80 w-full border-0 lg:h-[420px]"
                 loading="lazy"
               />

@@ -70,7 +70,7 @@ def _apply_coupon(db: Session, order: Order, code: str | None) -> tuple[Coupon |
 async def create_order(db: Session, user: User, payload: OrderCreate) -> Order:
     from app.services.geocoding import geocode_address
 
-    delivery_lat, delivery_lng = await geocode_address(payload.delivery_address)
+    delivery_lat, delivery_lng, _ = await geocode_address(payload.delivery_address)
 
     order = Order(
         user_id=user.id,
