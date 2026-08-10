@@ -1,6 +1,7 @@
 import { useRef, FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import { productsApi } from "../api/client";
 import ProductCard from "../components/ProductCard";
 import GlassCard from "../components/aurora/GlassCard";
@@ -10,6 +11,10 @@ import AuroraBadge from "../components/aurora/AuroraBadge";
 import SectionHeading from "../components/aurora/SectionHeading";
 import OptimizedImage from "../components/OptimizedImage";
 import StarRating from "../components/aurora/StarRating";
+
+// Store location — 193 Đỗ Văn Thi, phường Trấn Biên, TP. Biên Hòa, Đồng Nai
+const STORE_LAT = 10.9421;
+const STORE_LNG = 106.8625;
 
 const HERO_GLOW =
   "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=1200&q=85&auto=format&fit=crop";
@@ -633,12 +638,33 @@ export default function Home() {
           />
           <div className="mt-10 grid gap-6 lg:grid-cols-2">
             <GlassCard intensity="med" className="overflow-hidden p-0">
-              <iframe
-                title="CellZone Location"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=106.84%2C10.92%2C106.89%2C10.96&layer=mapnik"
-                className="h-80 w-full border-0 lg:h-[420px]"
-                loading="lazy"
-              />
+              <MapContainer
+                center={[STORE_LAT, STORE_LNG]}
+                zoom={15}
+                scrollWheelZoom={false}
+                className="h-80 w-full lg:h-[420px]"
+                style={{ borderRadius: "0" }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <CircleMarker
+                  center={[STORE_LAT, STORE_LNG]}
+                  radius={12}
+                  pathOptions={{ color: "#D94A63", fillColor: "#D94A63", fillOpacity: 1, weight: 3 }}
+                >
+                  <Popup>
+                    <div style={{ color: "#181417", textAlign: "center" }}>
+                      <strong>CellZone</strong>
+                      <br />
+                      193 Đỗ Văn Thi, phường Trấn Biên
+                      <br />
+                      TP. Biên Hòa, Đồng Nai
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              </MapContainer>
               <div className="border-t border-white/10 p-6">
                 <AuroraBadge tone="crimson" glow className="mb-3">
                   Trụ sở chính

@@ -215,12 +215,21 @@ function StraightLine({ from, to }: { from: [number, number]; to: [number, numbe
 
 // ── Main export ──────────────────────────────────────────────────────────
 
+// Hardcoded correct store location — used as ultimate fallback regardless of backend config.
+// 193 Đỗ Văn Thi, phường Trấn Biên, TP. Biên Hòa, Đồng Nai
+const HARDCODED_STORE_LAT = 10.9421;
+const HARDCODED_STORE_LNG = 106.8625;
+
 export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
   const currentLat = liveUpdate?.current_lat ?? order.current_lat;
   const currentLng = liveUpdate?.current_lng ?? order.current_lng;
   const status = liveUpdate?.status ?? order.status;
-  const storeLat = liveUpdate?.store_lat ?? order.store_lat;
-  const storeLng = liveUpdate?.store_lng ?? order.store_lng;
+
+  // Use backend values if they're valid Vietnam coords; otherwise fall back to hardcoded values.
+  const rawStoreLat = liveUpdate?.store_lat ?? order.store_lat;
+  const rawStoreLng = liveUpdate?.store_lng ?? order.store_lng;
+  const storeLat = inVietnam(rawStoreLat, rawStoreLng) ? rawStoreLat : HARDCODED_STORE_LAT;
+  const storeLng = inVietnam(rawStoreLat, rawStoreLng) ? rawStoreLng : HARDCODED_STORE_LNG;
   const storeName = liveUpdate?.store_name ?? order.store_name;
 
   const storePos: [number, number] = [storeLat, storeLng];
