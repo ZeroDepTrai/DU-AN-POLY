@@ -139,15 +139,18 @@ def claim_order(
 
 # POST /api/driver/orders/{order_id}/location  — update GPS + broadcast
 async def _broadcast_location(order: Order) -> None:
+    # Import here to avoid circular import.
+    from app.services.orders import CORRECT_STORE_LAT, CORRECT_STORE_LNG, CORRECT_STORE_NAME
+
     await manager.broadcast(
         order.tracking_code,
         {
             "current_lat": order.current_lat,
             "current_lng": order.current_lng,
             "status": order.status.value,
-            "store_lat": settings.store_lat,
-            "store_lng": settings.store_lng,
-            "store_name": settings.store_name,
+            "store_lat": CORRECT_STORE_LAT,
+            "store_lng": CORRECT_STORE_LNG,
+            "store_name": CORRECT_STORE_NAME,
         },
     )
 

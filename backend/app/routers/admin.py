@@ -21,7 +21,7 @@ from app.schemas import (
     ProductAdminSummary,
     ProductResponse,
 )
-from app.services.orders import order_to_response
+from app.services.orders import order_to_response, CORRECT_STORE_LAT, CORRECT_STORE_LNG, CORRECT_STORE_NAME
 from app.services.images import InvalidImageError, persist_inline_data_images, save_optimized_image
 from app.websocket import manager
 from app.routers.products import PRODUCT_LIST_COLUMNS, _attach_media, _attach_rating_like
@@ -426,9 +426,9 @@ async def update_order_location(
             "current_lat": order.current_lat,
             "current_lng": order.current_lng,
             "status": order.status.value,
-            "store_lat": settings.store_lat,
-            "store_lng": settings.store_lng,
-            "store_name": settings.store_name,
+            "store_lat": CORRECT_STORE_LAT,
+            "store_lng": CORRECT_STORE_LNG,
+            "store_name": CORRECT_STORE_NAME,
         },
     )
 
@@ -483,9 +483,9 @@ async def update_order(
             "current_lat": order.current_lat,
             "current_lng": order.current_lng,
             "status": order.status.value,
-            "store_lat": settings.store_lat,
-            "store_lng": settings.store_lng,
-            "store_name": settings.store_name,
+            "store_lat": CORRECT_STORE_LAT,
+            "store_lng": CORRECT_STORE_LNG,
+            "store_name": CORRECT_STORE_NAME,
         },
     )
 

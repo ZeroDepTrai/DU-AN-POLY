@@ -17,6 +17,17 @@ function inVietnam(lat: number, lng: number): boolean {
   );
 }
 
+// Known incorrect store coordinates that were used before — reject these too.
+const WRONG_STORE_LAT = 10.762622;
+const WRONG_STORE_LNG = 106.660172;
+
+function isValidStoreCoord(lat: number, lng: number): boolean {
+  if (!inVietnam(lat, lng)) return false;
+  // Reject the old wrong HCM City coordinates
+  if (Math.abs(lat - WRONG_STORE_LAT) < 0.0001 && Math.abs(lng - WRONG_STORE_LNG) < 0.0001) return false;
+  return true;
+}
+
 const STATUS_STEPS: OrderStatus[] = [
   "pending",
   "processing",
@@ -225,11 +236,12 @@ export default function MapTracker({ order, liveUpdate }: MapTrackerProps) {
   const currentLng = liveUpdate?.current_lng ?? order.current_lng;
   const status = liveUpdate?.status ?? order.status;
 
-  // Use backend values if they're valid Vietnam coords; otherwise fall back to hardcoded values.
+  // Use backend values if they're valid Vietnam coords (and not the known wrong HCM City coords);
+  // otherwise fall back to hardcoded correct values.
   const rawStoreLat = liveUpdate?.store_lat ?? order.store_lat;
   const rawStoreLng = liveUpdate?.store_lng ?? order.store_lng;
-  const storeLat = inVietnam(rawStoreLat, rawStoreLng) ? rawStoreLat : HARDCODED_STORE_LAT;
-  const storeLng = inVietnam(rawStoreLat, rawStoreLng) ? rawStoreLng : HARDCODED_STORE_LNG;
+  const storeLat = isValidStoreCoord(rawStoreLat, rawStoreLng) ? rawStoreLat : HARDCODED_STORE_LAT;
+  const storeLng = isValidStoreCoord(rawStoreLat, rawStoreLng) ? rawStoreLng : HARDCODED_STORE_LNG;
   const storeName = liveUpdate?.store_name ?? order.store_name;
 
   const storePos: [number, number] = [storeLat, storeLng];

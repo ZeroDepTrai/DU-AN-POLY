@@ -151,6 +151,14 @@ def _notify_admins(db: Session, order: Order, customer_name: str) -> None:
     ).start()
 
 
+# Hardcoded correct store location — used instead of settings.store_lat/lng
+# so that Railway env-var overrides cannot put the shop in the wrong city.
+# 193 Đỗ Văn Thi, phường Trấn Biên, TP. Biên Hòa, Đồng Nai
+CORRECT_STORE_LAT = 10.9421
+CORRECT_STORE_LNG = 106.8625
+CORRECT_STORE_NAME = "CellZone - 193 Đỗ Văn Thi"
+
+
 def order_to_response(order: Order) -> OrderResponse:
     coupon_code = None
     discount = 0.0
@@ -189,9 +197,9 @@ def order_to_response(order: Order) -> OrderResponse:
         delivery_lng=order.delivery_lng,
         current_lat=order.current_lat,
         current_lng=order.current_lng,
-        store_lat=settings.store_lat,
-        store_lng=settings.store_lng,
-        store_name=settings.store_name,
+        store_lat=CORRECT_STORE_LAT,
+        store_lng=CORRECT_STORE_LNG,
+        store_name=CORRECT_STORE_NAME,
         items=[
             OrderItemResponse(
                 product_id=item.product_id,
