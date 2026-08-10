@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import type { Order, OrderStatus, TrackingUpdate } from "../types";
 
 // Vietnam bounding box for coordinate validation
@@ -114,100 +114,97 @@ function RoutingLayer({
   color = "#D94A63",
   ghostColor = "#F28CA6",
 }: RoutingLayerProps) {
-  const map = useMap();
-  const controlRef = useRef<unknown>(null);
+  const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
   const [routeError, setRouteError] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Guard: skip routing if either endpoint is invalid
+  const [fromLat, fromLng] = fromPos;
+  const [toLat, toLng] = toPos;
+  const coordsValid =
+    inVietnam(fromLat, fromLng) &&
+    inVietnam(toLat, toLng) &&
+    !(fromLat === 0 && fromLng === 0) &&
+    !(toLat === 0 && toLng === 0);
 
   useEffect(() => {
-    let isMounted = true;
-
-    // Guard: skip routing if either endpoint is invalid
-    const [fromLat, fromLng] = fromPos;
-    const [toLat, toLng] = toPos;
-    if (
-      !inVietnam(fromLat, fromLng) ||
-      !inVietnam(toLat, toLng) ||
-      (fromLat === 0 && fromLng === 0) ||
-      (toLat === 0 && toLng === 0)
-    ) {
+    if (!coordsValid) {
       setRouteError(true);
+      setRouteCoords(null);
       return;
     }
 
-    // Guard: reject routes exceeding plausible distance — otherwise OSRM may
+    // Reject routes exceeding plausible distance — otherwise OSRM may
     // route through Cambodia/ocean for invalid HCM→Biên Hòa endpoints.
     const dist = haversineKm(fromPos, toPos);
     if (dist > MAX_PLAUSIBLE_KM) {
       setRouteError(true);
+      setRouteCoords(null);
       return;
     }
 
     setRouteError(false);
 
-    import("leaflet-routing-machine").then(() => {
-      if (!isMounted || !map) return;
+    // Hit OSRM directly (public demo server) — returns a GeoJSON LineString.
+    const url =
+      `https://router.project-osrm.org/route/v1/driving/` +
+      `${fromLng},${fromLat};${toLng},${toLat}` +
+      `?overview=full&geometries=geojson`;
 
-      if (controlRef.current) {
-        try {
-          map.removeControl(controlRef.current as never);
-        } catch {
-          // ignore
+    const controller = new AbortController();
+    abortRef.current?.abort();
+    abortRef.current = controller;
+
+    fetch(url, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error(`OSRM HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data: {
+        code?: string;
+        routes?: Array<{ geometry?: { coordinates?: [number, number][] } }>;
+      }) => {
+        if (data.code !== "Ok" || !data.routes?.[0]?.geometry?.coordinates) {
+          throw new Error("OSRM no route");
         }
-        controlRef.current = null;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const L = (window as any).L;
-      if (!L || !(L as any).Routing) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const control = (L.Routing as any).control({
-        waypoints: [L.latLng(fromPos), L.latLng(toPos)],
-        routeWhileDragging: false,
-        draggableWaypoints: false,
-        show: false,
-        addWaypoints: false,
-        lineOptions: {
-          styles: [
-            { color, opacity: 0.85, weight: 5 },
-            { color: ghostColor, opacity: 0.4, weight: 2 },
-          ],
-          extendToRoute: true,
-        },
-        createMarker: () => null,
-        router: (L.Routing as any).osrmv1({
-          serviceUrl: "https://router.project-osrm.org/route/v1",
-        },
-      )});
-
-      // Catch OSRM errors (e.g. no route found) → fall back to straight line
-      control.on("routingerror", () => {
-        if (isMounted) setRouteError(true);
+        // GeoJSON is [lng, lat] — flip to [lat, lng] for Leaflet.
+        const coords: [number, number][] = data.routes[0].geometry.coordinates!.map(
+          ([lng, lat]) => [lat, lng]
+        );
+        setRouteCoords(coords);
+        setRouteError(false);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        // eslint-disable-next-line no-console
+        console.warn("[MapTracker] OSRM route failed:", err);
+        setRouteError(true);
+        setRouteCoords(null);
       });
 
-      controlRef.current = control;
-      map.addControl(control);
-    });
-
     return () => {
-      isMounted = false;
-      if (controlRef.current) {
-        try {
-          map.removeControl(controlRef.current as never);
-        } catch {
-          // ignore
-        }
-        controlRef.current = null;
-      }
+      controller.abort();
     };
-  }, [map, fromPos, toPos, color, ghostColor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromLat, fromLng, toLat, toLng, coordsValid]);
 
   // Fallback: straight dashed line when OSRM fails or coords are invalid
-  if (routeError) {
+  if (routeError || !routeCoords) {
     return <StraightLine from={fromPos} to={toPos} />;
   }
 
-  return null;
+  return (
+    <>
+      <Polyline
+        positions={routeCoords}
+        pathOptions={{ color: ghostColor, opacity: 0.4, weight: 6 }}
+      />
+      <Polyline
+        positions={routeCoords}
+        pathOptions={{ color, opacity: 0.85, weight: 4 }}
+      />
+    </>
+  );
 }
 
 // ── Straight line fallback (no OSRM available) ───────────────────────────
