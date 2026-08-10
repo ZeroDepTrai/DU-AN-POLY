@@ -128,31 +128,31 @@ export default function AdminDashboard() {
   const isLoading = loadingProducts || loadingOrders;
 
   return (
-    <div className="flex min-h-screen text-warmwhite" style={{ background: "#0B0C12" }}>
+    <div className="flex min-h-screen text-warmwhite" style={{ background: "#181417" }}>
       {/* Sidebar */}
-      <aside className="hidden w-[280px] shrink-0 flex-col border-r border-white/10 md:flex" style={{ background: "#0B0C12" }}>
+      <aside className="hidden w-[280px] shrink-0 flex-col border-r border-white/10 md:flex" style={{ background: "#181417" }}>
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 border-b border-white/10 px-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-violet-400 font-black text-lg text-violet-400" style={{ borderColor: "#8B5CF6", textShadow: "0 0 12px rgba(139, 92, 246, 0.8)" }}>
+        <Link to="/" className="flex h-16 items-center gap-3 border-b border-white/10 px-6 transition-colors hover:bg-white/[0.02]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-aurora-gradient font-black text-lg text-white shadow-glow-violet">
             CZ
           </div>
           <div>
             <p className="text-sm font-bold tracking-wide text-warmwhite">CellZone</p>
-            <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400" style={{ letterSpacing: "0.2em" }}>LUCKY SPIN</p>
+            <p className="text-[10px] font-medium uppercase tracking-widest text-sakura" style={{ letterSpacing: "0.2em" }}>LUCKY SPIN</p>
           </div>
-        </div>
+        </Link>
 
         {/* Admin badge */}
         <div className="mx-4 mt-4 mb-2">
           <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-violet-400/40 bg-violet-400/10 text-xs font-bold text-violet-300">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-crimson/40 bg-crimson/10 text-xs font-bold text-crimson">
               A
             </div>
             <div>
               <p className="text-xs font-semibold text-warmwhite">Admin</p>
-              <p className="text-[10px] text-slate-500">Toàn quyền</p>
+              <p className="text-[10px] text-steelgray">Toàn quyền</p>
             </div>
-            <div className="ml-auto h-2 w-2 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(74, 222, 128, 0.8)" }} />
+            <div className="ml-auto h-2 w-2 rounded-full bg-emerald" style={{ boxShadow: "0 0 6px rgba(52, 211, 153, 0.8)" }} />
           </div>
         </div>
 
@@ -163,14 +163,14 @@ export default function AdminDashboard() {
               onClick={() => setActiveTab(tab.id)}
               className={`focus-rose flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                 activeTab === tab.id
-                  ? "border border-violet-400/30 bg-violet-400/10 text-violet-300"
-                  : "border border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.03] hover:text-warmwhite"
+                  ? "border border-crimson/30 bg-crimson/10 text-crimson"
+                  : "border border-transparent text-steelgray hover:border-white/10 hover:bg-white/[0.03] hover:text-warmwhite"
               }`}
             >
               <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all ${
                 activeTab === tab.id
-                  ? "bg-violet-500/20 text-violet-300"
-                  : "text-slate-500"
+                  ? "bg-crimson/20 text-crimson"
+                  : "text-steelgray"
               }`}>
                 {tab.icon}
               </span>
@@ -183,17 +183,17 @@ export default function AdminDashboard() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Sticky top bar */}
-        <div className="sticky top-0 z-10 flex h-[72px] items-center justify-between gap-6 border-b border-white/10 px-6 backdrop-blur-xl" style={{ background: "rgba(11, 12, 18, 0.85)" }}>
+        <div className="sticky top-0 z-10 flex h-[72px] items-center justify-between gap-6 border-b border-white/10 px-6 backdrop-blur-xl" style={{ background: "rgba(24, 20, 23, 0.85)" }}>
           {/* Search */}
           <div className="relative flex flex-1 max-w-lg">
-            <div className="flex flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2.5 backdrop-blur-md transition-all focus-within:border-violet-500/50">
-              <svg className="h-4 w-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="flex flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2.5 backdrop-blur-md transition-all focus-within:border-crimson/50">
+              <svg className="h-4 w-4 text-steelgray shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
                 type="search"
                 placeholder="Tìm kiếm sản phẩm, đơn hàng..."
-                className="flex-1 bg-transparent text-sm text-warmwhite placeholder-slate-500 outline-none"
+                className="flex-1 bg-transparent text-sm text-warmwhite placeholder-steelgray outline-none"
               />
             </div>
           </div>
@@ -201,16 +201,16 @@ export default function AdminDashboard() {
           {/* Right actions */}
           <div className="flex items-center gap-3">
             {/* Notification bell */}
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.08]">
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-steelgray transition hover:border-white/20 hover:bg-white/[0.08]">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full bg-violet-500 text-[9px] font-bold text-white flex items-center justify-center">2</span>
+              <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full bg-crimson text-[9px] font-bold text-white flex items-center justify-center">2</span>
             </button>
 
             {/* User avatar */}
-            <button className="flex items-center gap-2 rounded-xl border border-violet-400/30 p-1.5 pr-3 transition hover:border-violet-400/50 hover:bg-white/[0.04]">
-              <div className="h-8 w-8 rounded-xl bg-violet-500/20 text-sm font-bold text-violet-300 flex items-center justify-center">A</div>
+            <button className="flex items-center gap-2 rounded-xl border border-crimson/30 p-1.5 pr-3 transition hover:border-crimson/50 hover:bg-white/[0.04]">
+              <div className="h-8 w-8 rounded-xl bg-crimson/20 text-sm font-bold text-crimson flex items-center justify-center">A</div>
               <span className="text-xs font-semibold text-warmwhite hidden sm:block">Admin</span>
             </button>
           </div>
@@ -273,7 +273,8 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
     },
     {
       label: "Tổng doanh thu",
-      value: new Intl.NumberFormat("vi-VN").format(totalRevenue) + "₫",
+      value: new Intl.NumberFormat("vi-VN", { notation: "compact", maximumFractionDigits: 1 }).format(totalRevenue) + "₫",
+      fullValue: new Intl.NumberFormat("vi-VN").format(totalRevenue) + "₫",
       subtext: "Đã bán",
       accentColor: "#FFB690",
       bgColor: "rgba(255, 182, 144, 0.08)",
@@ -338,10 +339,16 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
               </div>
             </div>
             <div className="flex items-end gap-2">
-              <span className="text-4xl font-black text-warmwhite leading-none" style={{ letterSpacing: "-0.02em" }}>
+              <span
+                className={`font-black text-warmwhite leading-none tabular-nums ${
+                  stat.label === "Tổng doanh thu" ? "text-base sm:text-lg lg:text-2xl" : "text-2xl sm:text-3xl lg:text-4xl"
+                }`}
+                style={{ letterSpacing: "-0.02em" }}
+                title={"fullValue" in stat ? (stat as { fullValue?: string }).fullValue : undefined}
+              >
                 {stat.value}
               </span>
-              <span className="mb-1 text-sm font-medium" style={{ color: stat.accentColor, opacity: 0.7 }}>
+              <span className="mb-0.5 text-xs font-medium sm:text-sm" style={{ color: stat.accentColor, opacity: 0.7 }}>
                 {stat.subtext}
               </span>
             </div>
@@ -352,10 +359,10 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
       {/* Stock alert */}
       {lowStock.length > 0 && (
         <div
-          className="mb-8 rounded-2xl border border-violet-400/20 p-5 backdrop-blur-md"
-          style={{ background: "rgba(139, 92, 246, 0.06)" }}
+          className="mb-8 rounded-2xl border border-crimson/20 p-5 backdrop-blur-md"
+          style={{ background: "rgba(217, 74, 99, 0.06)" }}
         >
-          <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-violet-300">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-crimson">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -367,7 +374,7 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
                 <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded-lg object-cover" />
                 <div>
                   <p className="truncate max-w-[150px] text-sm font-medium text-warmwhite">{p.name}</p>
-                  <p className="text-xs text-red-300">Chỉ còn {p.stock} sản phẩm</p>
+                  <p className="text-xs text-deeprose">Chỉ còn {p.stock} sản phẩm</p>
                 </div>
               </div>
             ))}
@@ -401,13 +408,13 @@ function DashboardTab({ products, orders }: { products: Product[]; orders: Order
                 <tr key={order.id} className="border-t border-white/[0.04] hover:bg-white/[0.03] transition-colors">
                   <td className="px-6 py-4 font-mono font-medium text-warmwhite">{order.tracking_code}</td>
                   <td className="px-6 py-4">
-                    <span className="rounded-full border border-violet-400/30 bg-violet-400/10 px-3 py-1 text-xs font-semibold text-violet-300">
+                    <span className="rounded-full border border-crimson/30 bg-crimson/10 px-3 py-1 text-xs font-semibold text-crimson">
                       {order.status.replace("_", " ")}
                     </span>
                   </td>
-                  <td className="px-6 py-4 max-w-xs truncate text-slate-400">{order.delivery_address}</td>
+                  <td className="px-6 py-4 max-w-xs truncate text-steelgray">{order.delivery_address}</td>
                   <td className="px-6 py-4">
-                    <Link to={`/track/${order.tracking_code}`} className="text-sm text-violet-400 hover:text-violet-300 transition-colors focus-rose">
+                    <Link to={`/track/${order.tracking_code}`} className="text-sm text-crimson hover:text-sakura transition-colors focus-rose">
                       Theo dõi →
                     </Link>
                   </td>

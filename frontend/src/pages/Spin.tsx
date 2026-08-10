@@ -559,49 +559,6 @@ export default function Spin() {
         background: "radial-gradient(circle at 50% 0%, rgba(28, 18, 48, 1) 0%, rgba(10, 6, 18, 1) 60%)",
       }}
     >
-      {/* Top announcement strip */}
-      <div className="border-b border-violet-900/50" style={{ background: "#0D0916" }}>
-        <div className="mx-auto flex max-w-7xl items-center gap-8 overflow-x-auto px-4 py-2 scrollbar-none">
-          {["Miễn phí vận chuyển cho đơn từ 500K", "Đổi trả trong 30 ngày", "Thanh toán an toàn 100%", "Hỗ trợ 24/7"].map((msg) => (
-            <span key={msg} className="whitespace-nowrap text-[11px] text-violet-300/60">{msg}</span>
-          ))}
-        </div>
-      </div>
-
-      {/* Header */}
-      <div className="border-b border-violet-900/40" style={{ background: "rgba(13, 9, 22, 0.8)", backdropFilter: "blur(12px)" }}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border-2 font-black text-lg text-violet-400" style={{ borderColor: "rgba(139, 92, 246, 0.6)", textShadow: "0 0 16px rgba(139, 92, 246, 0.6)" }}>
-              CZ
-            </div>
-            <div>
-              <p className="text-base font-bold text-warmwhite">CellZone</p>
-              <p className="text-[10px] font-medium uppercase tracking-widest text-violet-400" style={{ letterSpacing: "0.2em" }}>LUCKY SPIN</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.08]">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.08]">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500 text-[9px] font-bold text-white">2</span>
-            </button>
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.08]">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500 text-[9px] font-bold text-white">2</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Main content */}
       <div className="mx-auto max-w-7xl px-4 py-6">
         {warning && (
@@ -753,7 +710,7 @@ export default function Spin() {
                 type="button"
                 onClick={handleSpin}
                 disabled={!canSpin}
-                className="aurora-glow-btn absolute left-1/2 top-1/2 z-20 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-base font-black tracking-wider focus-aurora disabled:cursor-not-allowed disabled:opacity-50"
+                className="absolute left-1/2 top-1/2 z-20 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-base font-black tracking-wider focus-aurora disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   background: "radial-gradient(circle at 35% 30%, #C084FC 0%, #9B3FD6 60%, #6B21A8 100%)",
                   boxShadow: "0 0 34px rgba(192, 132, 252, 0.7), 0 0 0 7px rgba(20, 16, 31, 1)",
