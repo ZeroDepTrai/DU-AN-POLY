@@ -108,18 +108,18 @@ interface DeliveryMapProps {
   store: [number, number];
   driver: [number, number];
   destination: [number, number];
+  destinationValid: boolean;
   storeName: string;
   driverAtStore: boolean;
-  showDriverRoute: boolean;
 }
 
 function DeliveryMap({
   store,
   driver,
   destination,
+  destinationValid,
   storeName,
   driverAtStore,
-  showDriverRoute,
 }: DeliveryMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -305,14 +305,18 @@ function DeliveryMap({
 
     (async () => {
       try {
+        // Always fetch the route to the destination when destination is valid.
+        // When driver is at store, we still need the store→destination route.
         const storeToDriver = await fetchRoute(store, driver);
-        let driverToDest: RouteInfo | null = null;
-        if (showDriverRoute && !driverAtStore) {
-          driverToDest = await fetchRoute(driver, destination);
-        }
+        const driverToDest = destinationValid
+          ? await fetchRoute(driver, destination)
+          : null;
         if (!controller.signal.aborted) {
           setRoutes({ storeToDriver, driverToDest });
-          setRouteFailed(storeToDriver.source === "straight" && storeToDriver.distanceKm > 0);
+          const anyFailed =
+            (storeToDriver.source === "straight" && storeToDriver.distanceKm > 0) ||
+            (driverToDest?.source === "straight" && (driverToDest?.distanceKm ?? 0) > 0);
+          setRouteFailed(anyFailed);
         }
       } catch {
         // aborted — no-op
@@ -320,7 +324,7 @@ function DeliveryMap({
     })();
 
     return () => controller.abort();
-  }, [store[0], store[1], driver[0], driver[1], destination[0], destination[1], showDriverRoute, driverAtStore]);
+  }, [store[0], store[1], driver[0], driver[1], destination[0], destination[1], destinationValid]);
 
   // ── Draw markers, polylines, and fit bounds whenever inputs change.
   useEffect(() => {
@@ -351,11 +355,16 @@ function DeliveryMap({
       .addTo(map)
       .bindPopup(`<strong>Điểm giao hàng</strong>`);
 
-    if (!driverAtStore) {
-      L_.driverMarker = L.marker(driver, { icon: driverIcon, zIndexOffset: 1000 })
-        .addTo(map)
-        .bindPopup(`<strong>Tài xế</strong><br/>Đang trên đường giao hàng`);
-    }
+    // Always show driver marker — even when "at store" we show it at store coords.
+    // When driver hasn't picked up, it's at the same coords as the store marker,
+    // so we give it a higher zIndexOffset to ensure it's on top.
+    L_.driverMarker = L.marker(driver, { icon: driverIcon, zIndexOffset: driverAtStore ? 2000 : 1000 })
+      .addTo(map)
+      .bindPopup(
+        driverAtStore
+          ? `<strong>Tài xế</strong><br/>Đang lấy hàng tại cửa hàng`
+          : `<strong>Tài xế</strong><br/>Đang trên đường giao hàng`
+      );
 
     // 3) Polylines.
     const drawRoute = (
@@ -388,14 +397,27 @@ function DeliveryMap({
       L_.driverToDestGhost = b.ghostLayer;
     }
 
-    // 4) Fit bounds.
-    const points: L.LatLngTuple[] = [store, destination];
-    if (!driverAtStore) points.push(driver);
-    const bounds = L.latLngBounds(points);
-    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    // 4) Fit bounds — retry via rAF until the container has real pixel dimensions
+    //    (Leaflet needs the DOM to have settled before it can compute sizes).
+    const points: L.LatLngTuple[] = [store, destination, driver];
+    let attempts = 0;
+    let rafId: number;
+    const tryFit = () => {
+      attempts++;
+      map.invalidateSize();
+      const size = map.getSize();
+      if (size.x < 100 || size.y < 100) {
+        if (attempts < 5) rafId = requestAnimationFrame(tryFit);
+        return;
+      }
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    };
+    rafId = requestAnimationFrame(tryFit);
 
-    // Make sure sizes are right after layout changes.
-    setTimeout(() => map.invalidateSize(), 50);
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
   }, [
     store[0],
     store[1],
@@ -403,6 +425,7 @@ function DeliveryMap({
     driver[1],
     destination[0],
     destination[1],
+    destinationValid,
     driverAtStore,
     routes.storeToDriver,
     routes.driverToDest,
@@ -417,9 +440,9 @@ function DeliveryMap({
 
       {/* Route info overlay (top-right) */}
       <div className="pointer-events-none absolute right-3 top-3 flex max-w-[220px] flex-col gap-2">
-        {routes.driverToDest && routes.driverToDest.distanceKm > 0 && !driverAtStore && (
+        {routes.driverToDest && routes.driverToDest.distanceKm > 0 && (
           <RouteInfoCard
-            label="Đến điểm giao"
+            label={driverAtStore ? "Quãng đường giao" : "Đến điểm giao"}
             distanceKm={routes.driverToDest.distanceKm}
             durationMin={routes.driverToDest.durationMin}
             color="rose"
@@ -427,10 +450,10 @@ function DeliveryMap({
         )}
         {routes.storeToDriver && routes.storeToDriver.distanceKm > 0 && (
           <RouteInfoCard
-            label={driverAtStore ? "Tại cửa hàng" : "Đến tài xế"}
+            label={driverAtStore ? "Tài xế tại cửa hàng" : "Đến tài xế"}
             distanceKm={routes.storeToDriver.distanceKm}
             durationMin={routes.storeToDriver.durationMin}
-            color="violet"
+            color="sakura"
           />
         )}
       </div>
@@ -454,13 +477,13 @@ function RouteInfoCard({
   label: string;
   distanceKm: number;
   durationMin: number;
-  color: "rose" | "violet";
+  color: "rose" | "sakura";
 }) {
   const accent =
     color === "rose"
       ? "from-rose/30 to-rose/10 border-rose/40"
-      : "from-violet/30 to-violet/10 border-violet/40";
-  const text = color === "rose" ? "text-rose" : "text-violet";
+      : "from-sakura/30 to-sakura/10 border-sakura/40";
+  const text = color === "rose" ? "text-rose" : "text-sakura";
   return (
     <div
       className={`pointer-events-auto rounded-xl border bg-gradient-to-br ${accent} px-3 py-2 backdrop-blur-md shadow-lg`}
@@ -597,12 +620,6 @@ export default function TrackOrder() {
 
   const currentStatus: OrderStatus = (liveUpdate?.status ?? order.status) as OrderStatus;
 
-  // For terminal states we still want a graceful map.
-  const showDriverRoute =
-    currentStatus === "shipped" ||
-    currentStatus === "in_transit" ||
-    currentStatus === "delivered";
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       {/* ── Header ──────────────────────────────────────────────────── */}
@@ -642,9 +659,9 @@ export default function TrackOrder() {
           store={store}
           driver={driver}
           destination={destination}
+          destinationValid={destinationValid}
           storeName={storeName}
           driverAtStore={driverAtStore}
-          showDriverRoute={showDriverRoute}
         />
         <MapLegend
           storeName={storeName}
@@ -804,16 +821,15 @@ function MapLegend({
   return (
     <div className="mt-3 flex flex-wrap items-center gap-4 px-2 text-xs text-softgray">
       <LegendDot color="bg-gradient-to-br from-green-500 to-green-600" emoji="🏬" label={storeName} />
-      {!driverAtStore && (
-        <LegendDot color="bg-gradient-to-br from-violet-500 to-indigo-500" emoji="🚚" label="Tài xế" />
-      )}
+      <LegendDot
+        color="bg-gradient-to-br from-violet-500 to-indigo-500"
+        emoji="🚚"
+        label={driverAtStore ? "Tài xế (đang lấy hàng)" : "Tài xế"}
+      />
       {destinationValid && (
         <LegendDot color="bg-gradient-to-br from-rose to-pink" emoji="🏠" label="Điểm giao" />
       )}
-      <LegendLine color="bg-violet" dashed={false} label="Đường đến tài xế" />
-      {destinationValid && (
-        <LegendLine color="bg-rose" dashed={false} label="Đường đến điểm giao" />
-      )}
+      <LegendLine color="bg-violet" dashed={false} label="Tuyến đường" />
     </div>
   );
 }
