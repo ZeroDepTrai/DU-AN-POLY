@@ -12,6 +12,10 @@ import ChatBubble from "./components/ChatBubble";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import ProductDetail from "./pages/ProductDetail";
+import Support from "./pages/Support";
+import Warranty from "./pages/Warranty";
+import ReturnPage from "./pages/Return";
+import Installment from "./pages/Installment";
 
 // Lazy: anything below-the-fold on Home. Each becomes its own JS chunk so
 // Home's first paint no longer ships the Tiptap editor, Leaflet map,
@@ -42,6 +46,10 @@ export default function App() {
                 <Routes>
                 <Route element={<Layout />}>
                   <Route path="/" element={<Home />} />
+                  <Route path="/support" element={<Support />} />
+                  <Route path="/warranty" element={<Warranty />} />
+                  <Route path="/return" element={<ReturnPage />} />
+                  <Route path="/installment" element={<Installment />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/products/:id" element={<ProductDetail />} />
                   <Route path="/accessories" element={<Accessories />} />
