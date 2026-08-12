@@ -58,7 +58,8 @@ function isValidCoord(lat: number, lng: number): boolean {
 
 function isValidStoreCoord(lat: number, lng: number): boolean {
   if (!isValidCoord(lat, lng)) return false;
-  // Reject the known bad HCM City center coords if they slipped through.
+  // Reject the known bad HCM City center coords — the backend sometimes returns these
+  // as a fallback, so we never trust them for store or driver location.
   if (Math.abs(lat - BAD_STORE_LAT) < 0.01 && Math.abs(lng - BAD_STORE_LNG) < 0.01) {
     return false;
   }
@@ -606,11 +607,14 @@ export default function TrackOrder() {
 
   const rawDriverLat = liveUpdate?.current_lat ?? order.current_lat;
   const rawDriverLng = liveUpdate?.current_lng ?? order.current_lng;
-  const driverValid = isValidCoord(rawDriverLat, rawDriverLng);
+  const driverValid = isValidStoreCoord(rawDriverLat, rawDriverLng);
   const driver: [number, number] = driverValid ? [rawDriverLat, rawDriverLng] : store;
 
   const destinationRaw: [number, number] = [order.delivery_lat, order.delivery_lng];
-  const destinationValid = isValidCoord(destinationRaw[0], destinationRaw[1]);
+  const destinationValid =
+    isValidCoord(destinationRaw[0], destinationRaw[1]) &&
+    !(Math.abs(destinationRaw[0] - BAD_STORE_LAT) < 0.01 &&
+      Math.abs(destinationRaw[1] - BAD_STORE_LNG) < 0.01);
   const destination: [number, number] = destinationValid ? destinationRaw : store;
 
   const driverAtStore =
