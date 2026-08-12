@@ -89,7 +89,7 @@ export default function Installment() {
               <span className="aurora-text-gradient">Trả góp 0%</span>
             </h1>
             <p className="text-lg text-softgray">
-              Sở hữu ngay chiếc điện thoại旗舰 mà không cần trả trước quá nhiều. Duyệt nhanh, lãi suất 0%, giấy tờ tối giản.
+              Sở hữu ngay chiếc điện thoại cao cấp mà không cần trả trước quá nhiều. Duyệt nhanh, lãi suất 0%, giấy tờ tối giản.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Link to="/products" className="aurora-glow-btn inline-flex items-center gap-2 px-8 py-3">
