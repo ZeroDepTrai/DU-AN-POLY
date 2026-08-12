@@ -51,7 +51,7 @@ export default function Register() {
       <div className="mx-auto grid max-w-5xl items-center gap-12 lg:grid-cols-2">
         <div className="hidden lg:block">
           <AuroraBadge tone="sakura" glow className="mb-4">
-            Aurora UI · CellZone
+            CellZone
           </AuroraBadge>
           <h1 className="mb-4 text-5xl font-extrabold leading-tight text-balance">
             <span className="aurora-text-rainbow">Tạo tài khoản</span>

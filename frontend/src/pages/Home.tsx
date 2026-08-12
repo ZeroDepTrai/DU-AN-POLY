@@ -271,7 +271,7 @@ export default function Home() {
               <div className="mb-5 inline-flex items-center gap-2 rounded-fig-pill border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur-xl">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sakura shadow-glow" />
                 <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-sakura">
-                  CellZone · Aurora UI
+                  CellZone
                 </span>
               </div>
               <h1 className="mb-5 text-fig-display">
@@ -682,7 +682,7 @@ export default function Home() {
 
             <GlassCard intensity="med" className="p-8">
               <div className="mb-4 flex items-center gap-2">
-                <AuroraBadge tone="sakura">Aurora · Liên hệ</AuroraBadge>
+                <AuroraBadge tone="sakura">Liên hệ</AuroraBadge>
               </div>
               <h3 className="mb-2 text-2xl font-bold text-warmwhite">Gửi thông điệp</h3>
               <p className="mb-6 text-sm text-softgray">
