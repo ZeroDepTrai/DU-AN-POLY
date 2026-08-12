@@ -15,9 +15,9 @@ interface LogoProps {
 // ── Component ─────────────────────────────────────────────────────────────
 
 /**
- * CellZone logo — renders the actual logo PNG from Figma + brand text.
+ * CellZone logo — renders the actual logo PNG from Figma.
  */
-export default function Logo({ size = 36, className = "", showText = true }: LogoProps) {
+export default function Logo({ size = 44, className = "", showText = false }: LogoProps) {
   return (
     <div
       className={`flex items-center gap-2 ${className}`}
