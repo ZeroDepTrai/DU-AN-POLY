@@ -17,18 +17,16 @@ const VN_LAT_MAX = 23.5;
 const VN_LON_MIN = 102.0;
 const VN_LON_MAX = 110.0;
 
-// Maximum plausible delivery distance (km). Anything longer than this is almost
-// certainly bad geocoding data and would cause OSRM to route through Cambodia.
-const MAX_PLAUSIBLE_KM = 600;
-
 // Hardcoded correct store location — 193 Đỗ Văn Thi, Trấn Biên, Biên Hòa, Đồng Nai.
 const STORE_LAT = 10.9421;
 const STORE_LNG = 106.8625;
 const STORE_NAME = "CellZone Biên Hòa";
 
-// Known bad fallback the backend once shipped for store coords — reject these.
-const BAD_STORE_LAT = 10.7769; // ≈ HCM City center
-const BAD_STORE_LNG = 106.7009;
+// Known bad fallback coords that the backend sometimes returns as store/driver location
+// (≈ HCM City center). Reject any coords within ~5 km of this point.
+const BAD_LAT = 10.7769;
+const BAD_LNG = 106.7009;
+const BAD_RADIUS_DEG = 0.05; // ~5 km
 
 const STATUS_STEPS: { key: OrderStatus; label: string; icon: string }[] = [
   { key: "pending", label: "Đã xác nhận", icon: "📋" },
@@ -58,9 +56,9 @@ function isValidCoord(lat: number, lng: number): boolean {
 
 function isValidStoreCoord(lat: number, lng: number): boolean {
   if (!isValidCoord(lat, lng)) return false;
-  // Reject the known bad HCM City center coords — the backend sometimes returns these
-  // as a fallback, so we never trust them for store or driver location.
-  if (Math.abs(lat - BAD_STORE_LAT) < 0.01 && Math.abs(lng - BAD_STORE_LNG) < 0.01) {
+  // Reject any coords within BAD_RADIUS_DEG (~5 km) of HCM City center.
+  // The backend sometimes returns these as a fallback for both store and driver.
+  if (Math.abs(lat - BAD_LAT) < BAD_RADIUS_DEG && Math.abs(lng - BAD_LNG) < BAD_RADIUS_DEG) {
     return false;
   }
   return true;
@@ -108,6 +106,7 @@ interface RouteInfo {
 interface DeliveryMapProps {
   store: [number, number];
   driver: [number, number];
+  driverValid: boolean;
   destination: [number, number];
   destinationValid: boolean;
   storeName: string;
@@ -117,6 +116,7 @@ interface DeliveryMapProps {
 function DeliveryMap({
   store,
   driver,
+  driverValid,
   destination,
   destinationValid,
   storeName,
@@ -260,9 +260,6 @@ function DeliveryMap({
       if (dist === 0) {
         return { coords: [from, to], distanceKm: 0, durationMin: 0, source: "straight" };
       }
-      if (dist > MAX_PLAUSIBLE_KM) {
-        return { coords: [from, to], distanceKm: dist, durationMin: 0, source: "straight" };
-      }
       // OSRM uses [lng, lat] order.
       const url =
         `https://router.project-osrm.org/route/v1/driving/` +
@@ -356,16 +353,17 @@ function DeliveryMap({
       .addTo(map)
       .bindPopup(`<strong>Điểm giao hàng</strong>`);
 
-    // Always show driver marker — even when "at store" we show it at store coords.
-    // When driver hasn't picked up, it's at the same coords as the store marker,
-    // so we give it a higher zIndexOffset to ensure it's on top.
-    L_.driverMarker = L.marker(driver, { icon: driverIcon, zIndexOffset: driverAtStore ? 2000 : 1000 })
-      .addTo(map)
-      .bindPopup(
-        driverAtStore
-          ? `<strong>Tài xế</strong><br/>Đang lấy hàng tại cửa hàng`
-          : `<strong>Tài xế</strong><br/>Đang trên đường giao hàng`
-      );
+    // Only show driver marker when we have a valid real GPS coordinate.
+    // When driverValid=false the backend returned bad/unknown coords — don't place a phantom marker.
+    if (driverValid) {
+      L_.driverMarker = L.marker(driver, { icon: driverIcon, zIndexOffset: 1000 })
+        .addTo(map)
+        .bindPopup(
+          driverAtStore
+            ? `<strong>Tài xế</strong><br/>Đang lấy hàng tại cửa hàng`
+            : `<strong>Tài xế</strong><br/>Đang trên đường giao hàng`
+        );
+    }
 
     // 3) Polylines.
     const drawRoute = (
@@ -424,6 +422,7 @@ function DeliveryMap({
     store[1],
     driver[0],
     driver[1],
+    driverValid,
     destination[0],
     destination[1],
     destinationValid,
@@ -441,15 +440,15 @@ function DeliveryMap({
 
       {/* Route info overlay (top-right) */}
       <div className="pointer-events-none absolute right-3 top-3 flex max-w-[220px] flex-col gap-2">
-        {routes.driverToDest && routes.driverToDest.distanceKm > 0 && (
+        {routes.driverToDest && routes.driverToDest.distanceKm > 0 && destinationValid && (
           <RouteInfoCard
-            label={driverAtStore ? "Quãng đường giao" : "Đến điểm giao"}
+            label="Quãng đường giao"
             distanceKm={routes.driverToDest.distanceKm}
             durationMin={routes.driverToDest.durationMin}
             color="rose"
           />
         )}
-        {routes.storeToDriver && routes.storeToDriver.distanceKm > 0 && (
+        {routes.storeToDriver && routes.storeToDriver.distanceKm > 0 && driverValid && (
           <RouteInfoCard
             label={driverAtStore ? "Tài xế tại cửa hàng" : "Đến tài xế"}
             distanceKm={routes.storeToDriver.distanceKm}
@@ -505,6 +504,7 @@ function RouteInfoCard({
 export default function TrackOrder() {
   const { trackingCode } = useParams<{ trackingCode: string }>();
   const [liveUpdate, setLiveUpdate] = useState<TrackingUpdate | null>(null);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   const { data: order, isLoading, error } = useQuery<Order>({
     queryKey: ["track", trackingCode],
@@ -613,8 +613,8 @@ export default function TrackOrder() {
   const destinationRaw: [number, number] = [order.delivery_lat, order.delivery_lng];
   const destinationValid =
     isValidCoord(destinationRaw[0], destinationRaw[1]) &&
-    !(Math.abs(destinationRaw[0] - BAD_STORE_LAT) < 0.01 &&
-      Math.abs(destinationRaw[1] - BAD_STORE_LNG) < 0.01);
+    !(Math.abs(destinationRaw[0] - BAD_LAT) < BAD_RADIUS_DEG &&
+      Math.abs(destinationRaw[1] - BAD_LNG) < BAD_RADIUS_DEG);
   const destination: [number, number] = destinationValid ? destinationRaw : store;
 
   const driverAtStore =
@@ -662,6 +662,7 @@ export default function TrackOrder() {
         <DeliveryMap
           store={store}
           driver={driver}
+          driverValid={driverValid}
           destination={destination}
           destinationValid={destinationValid}
           storeName={storeName}
@@ -669,9 +670,34 @@ export default function TrackOrder() {
         />
         <MapLegend
           storeName={storeName}
+          driverValid={driverValid}
           driverAtStore={driverAtStore}
           destinationValid={destinationValid}
         />
+
+        {/* ── Debug panel: raw backend coords ─────────────────────── */}
+        <div className="mt-3 px-2">
+          <button
+            onClick={() => setDebugOpen((o) => !o)}
+            className="flex w-full items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-steelgray transition-colors hover:border-white/20 hover:text-softgray"
+          >
+            <span>🔧 Raw Backend Coords (debug)</span>
+            <span>{debugOpen ? "▲" : "▼"}</span>
+          </button>
+          {debugOpen && (
+            <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+              <DebugField label="store_lat (raw)" value={order.store_lat} />
+              <DebugField label="store_lng (raw)" value={order.store_lng} />
+              <DebugField label="storeValid" value={storeValid ? "✅" : "❌"} />
+              <DebugField label="driver_lat (raw)" value={order.current_lat} />
+              <DebugField label="driver_lng (raw)" value={order.current_lng} />
+              <DebugField label="driverValid" value={driverValid ? "✅" : "❌"} />
+              <DebugField label="dest_lat (raw)" value={order.delivery_lat} />
+              <DebugField label="dest_lng (raw)" value={order.delivery_lng} />
+              <DebugField label="destValid" value={destinationValid ? "✅" : "❌"} />
+            </div>
+          )}
+        </div>
       </GlassCard>
 
       {/* ── Order info cards ────────────────────────────────────────── */}
@@ -815,21 +841,25 @@ function Stepper({ currentStatus }: { currentStatus: OrderStatus }) {
 
 function MapLegend({
   storeName,
+  driverValid,
   driverAtStore,
   destinationValid,
 }: {
   storeName: string;
+  driverValid: boolean;
   driverAtStore: boolean;
   destinationValid: boolean;
 }) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-4 px-2 text-xs text-softgray">
       <LegendDot color="bg-gradient-to-br from-green-500 to-green-600" emoji="🏬" label={storeName} />
-      <LegendDot
-        color="bg-gradient-to-br from-violet-500 to-indigo-500"
-        emoji="🚚"
-        label={driverAtStore ? "Tài xế (đang lấy hàng)" : "Tài xế"}
-      />
+      {driverValid && (
+        <LegendDot
+          color="bg-gradient-to-br from-violet-500 to-indigo-500"
+          emoji="🚚"
+          label={driverAtStore ? "Tài xế (đang lấy hàng)" : "Tài xế"}
+        />
+      )}
       {destinationValid && (
         <LegendDot color="bg-gradient-to-br from-rose to-pink" emoji="🏠" label="Điểm giao" />
       )}
@@ -890,6 +920,17 @@ function InfoCard({
       </div>
       <div className="text-sm text-warmwhite">{value}</div>
     </GlassCard>
+  );
+}
+
+// ── Debug field ──────────────────────────────────────────────────────────
+
+function DebugField({ label, value }: { label: string; value: string | number | boolean }) {
+  return (
+    <div className="rounded border border-white/[0.06] bg-black/20 px-2 py-1">
+      <p className="truncate text-[10px] text-steelgray">{label}</p>
+      <p className="font-mono text-warmwhite">{String(value)}</p>
+    </div>
   );
 }
 
