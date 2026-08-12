@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { spinApi } from "../api/client";
+import Logo from "./Logo";
 
 export default function Header() {
   const { user, isAdmin, logout } = useAuth();
@@ -47,16 +48,7 @@ export default function Header() {
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-aurora-bg-deep/70 backdrop-blur-2xl shadow-glow-soft">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link to="/" className="group flex items-center gap-2.5">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-fig-card bg-aurora-gradient shadow-glow-violet">
-              <div className="absolute inset-0 rounded-fig-card bg-aurora-shimmer opacity-0 transition-opacity group-hover:opacity-100" />
-              <svg className="relative h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <span className="text-lg font-extrabold tracking-tight sm:text-xl">
-              <span className="aurora-text-gradient">Cell</span>
-              <span className="aurora-text-rainbow">Zone</span>
-            </span>
+            <Logo />
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex" aria-label="Điều hướng chính">

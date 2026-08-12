@@ -13,6 +13,7 @@ import { useIsFetching } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import Logo from "./Logo";
 
 const MEDIA_WAIT_TIMEOUT_MS = 12_000;
 const PREPARING_SCREEN_DELAY_MS = 180;
@@ -82,15 +83,14 @@ function PagePreparingScreen() {
       aria-live="polite"
     >
       <div className="flex flex-col items-center gap-6">
-        <div className="relative h-20 w-20">
-          <div className="absolute inset-0 animate-spin-slow rounded-full bg-aurora-gradient opacity-80 blur-sm" />
-          <div className="absolute inset-1 rounded-full bg-aurora-bg-deep" />
-          <div className="absolute inset-3 rounded-full border border-sakura/30 bg-white/[0.04] shadow-fig-glow" />
+        {/* Pulsing ring behind logo */}
+        <div className="relative">
+          <div className="absolute inset-0 animate-ping rounded-full bg-sakura/10" style={{ animationDuration: "2s" }} />
+          <div className="relative flex h-16 w-16 items-center justify-center">
+            <Logo />
+          </div>
         </div>
         <div className="flex flex-col items-center gap-1.5">
-          <span className="aurora-text-gradient text-2xl font-extrabold uppercase tracking-[0.32em]">
-            CellZone
-          </span>
           <span className="text-xs uppercase tracking-[0.25em] text-steelgray">
             Đang chuẩn bị
           </span>

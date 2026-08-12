@@ -12,14 +12,6 @@ import OptimizedImage from "../components/OptimizedImage";
 
 const PAGE_SIZE = 6;
 
-const TAG_TABS = [
-  { label: "Tất cả", value: "" },
-  { label: "Nổi bật", value: "featured" },
-  { label: "Tin công nghệ", value: "tech" },
-  { label: "Review sản phẩm", value: "review" },
-  { label: "Mẹo hay", value: "tips" },
-];
-
 const CATEGORY_PILLS = [
   { label: "Tất cả", value: "" },
   { label: "Công nghệ", value: "tech" },
@@ -31,9 +23,7 @@ const CATEGORY_PILLS = [
 ];
 
 export default function Blog() {
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sidebarSearch, setSidebarSearch] = useState("");
 
@@ -46,9 +36,9 @@ export default function Blog() {
   });
 
   const { data: allPosts = [], isLoading } = useQuery({
-    queryKey: ["blog-posts", selectedTags],
+    queryKey: ["blog-posts"],
     queryFn: async () => {
-      const { data } = await blogApi.list(selectedTags.length ? selectedTags.join(",") : undefined);
+      const { data } = await blogApi.list();
       return data;
     },
   });
@@ -68,7 +58,6 @@ export default function Blog() {
     : allPosts;
 
   const filtered = posts.filter((p) => {
-    if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
     if (selectedCategory && !p.tags?.toLowerCase().includes(selectedCategory.toLowerCase())) return false;
     return true;
   });
@@ -80,13 +69,6 @@ export default function Blog() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-    setPage(1);
-  };
 
   const featuredTags = featuredPost?.tags
     ? featuredPost.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
@@ -200,42 +182,6 @@ export default function Blog() {
                     {cat.label}
                   </button>
                 ))}
-              </div>
-            </div>
-
-            {/* Tag Filter + Search */}
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap gap-2">
-                {TAG_TABS.map((tab) => {
-                  const active = tab.value === "" ? selectedTags.length === 0 : selectedTags.includes(tab.value);
-                  return (
-                    <button
-                      key={tab.value}
-                      onClick={() => toggleTag(tab.value)}
-                      className={[
-                        "rounded-fig-pill border px-4 py-1.5 text-xs font-medium transition-all focus-rose",
-                        active
-                          ? "border-transparent aurora-chip-active"
-                          : "border-white/[0.06] bg-white/[0.04] text-softgray hover:border-white/30 hover:text-warmwhite",
-                      ].join(" ")}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="relative w-full sm:w-56">
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  placeholder="Tìm kiếm bài viết..."
-                  className="w-full rounded-fig-pill border border-white/[0.06] bg-white/[0.04] px-4 py-2 pl-10 text-sm text-warmwhite placeholder:text-steelgray transition-all focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-sakura/30"
-                />
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-steelgray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
               </div>
             </div>
 
