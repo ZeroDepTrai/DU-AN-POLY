@@ -17,7 +17,7 @@ interface LogoProps {
 /**
  * CellZone logo — renders the actual logo PNG from Figma.
  */
-export default function Logo({ size = 44, className = "", showText = false }: LogoProps) {
+export default function Logo({ size = 72, className = "", showText = false }: LogoProps) {
   return (
     <div
       className={`flex items-center gap-2 ${className}`}
@@ -27,7 +27,7 @@ export default function Logo({ size = 44, className = "", showText = false }: Lo
         alt="CellZone"
         width={size}
         height={size}
-        className="h-auto w-auto shrink-0 rounded-fig-card"
+        className="h-auto w-auto shrink-0"
         style={{ width: size, height: "auto" }}
       />
 
