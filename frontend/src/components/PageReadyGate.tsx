@@ -86,8 +86,8 @@ function PagePreparingScreen() {
         {/* Pulsing ring behind logo */}
         <div className="relative">
           <div className="absolute inset-0 animate-ping rounded-full bg-sakura/10" style={{ animationDuration: "2s" }} />
-          <div className="relative flex h-16 w-16 items-center justify-center">
-            <Logo />
+          <div className="relative flex items-center justify-center">
+            <Logo size={144} />
           </div>
         </div>
         <div className="flex flex-col items-center gap-1.5">
