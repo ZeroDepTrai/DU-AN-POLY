@@ -13,6 +13,9 @@ import OptimizedImage from "../components/OptimizedImage";
 
 type Step = 1 | 2 | 3;
 
+// Vietnamese mobile phone: 10 digits, starts with 0 (after country code)
+const VN_PHONE_REGEX = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+
 const PAYMENT_METHODS = [
   {
     id: "cod",
@@ -81,6 +84,19 @@ export default function Checkout() {
   const [couponError, setCouponError] = useState("");
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
+  const [addressError, setAddressError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+
+  const isPhoneValid = (value: string) => {
+    const trimmed = value.trim().replace(/\s+/g, "");
+    return VN_PHONE_REGEX.test(trimmed);
+  };
+
+  const isAddressValid = (value: string) => value.trim().length >= 10;
+
+  const canContinueToPayment =
+    isPhoneValid(phone) && isAddressValid(address);
+
   const shipping = 0;
   const tax = Math.round(totalPrice * 0.1);
   const discount = appliedCoupon?.discount ?? 0;
@@ -117,6 +133,23 @@ export default function Checkout() {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
+
+    // Final guard — re-validate before submitting in case state changed
+    if (!isPhoneValid(phone)) {
+      setError("Số điện thoại không hợp lệ.");
+      setStep(1);
+      return;
+    }
+    if (!isAddressValid(address)) {
+      setError("Địa chỉ giao hàng không hợp lệ.");
+      setStep(1);
+      return;
+    }
+    if (items.length === 0) {
+      setError("Giỏ hàng trống.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -271,21 +304,54 @@ export default function Checkout() {
                 <AuroraInput
                   label="Số điện thoại *"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (phoneError) setPhoneError("");
+                  }}
+                  onBlur={() => {
+                    if (phone && !isPhoneValid(phone)) {
+                      setPhoneError("Số điện thoại không hợp lệ (VD: 0901234567)");
+                    }
+                  }}
                   placeholder="VD: 090 123 4567"
                   required
                 />
+                {phoneError && (
+                  <p className="mt-1 text-xs text-lightpink">{phoneError}</p>
+                )}
                 <AuroraTextarea
                   label="Địa chỉ nhận hàng *"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    if (addressError) setAddressError("");
+                  }}
+                  onBlur={() => {
+                    if (address && !isAddressValid(address)) {
+                      setAddressError("Địa chỉ quá ngắn — vui lòng nhập số nhà, đường, quận/huyện");
+                    }
+                  }}
                   placeholder="VD: 123 Nguyễn Huệ, Quận 1, TP.HCM"
                   rows={3}
                   required
                 />
+                {addressError && (
+                  <p className="mt-1 text-xs text-lightpink">{addressError}</p>
+                )}
               </div>
               <div className="mt-6 flex justify-end">
-                <GlowButton variant="aurora" onClick={() => setStep(2)} className="px-8">
+                <GlowButton
+                  variant="aurora"
+                  onClick={() => {
+                    const phoneOk = isPhoneValid(phone);
+                    const addressOk = isAddressValid(address);
+                    if (!phoneOk) setPhoneError("Số điện thoại không hợp lệ (VD: 0901234567)");
+                    if (!addressOk) setAddressError("Vui lòng nhập địa chỉ đầy đủ (số nhà, đường, quận/huyện)");
+                    if (phoneOk && addressOk) setStep(2);
+                  }}
+                  disabled={!canContinueToPayment}
+                  className="px-8"
+                >
                   Tiếp tục
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -302,6 +368,11 @@ export default function Checkout() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-aurora-gradient text-sm font-bold text-white shadow-glow-violet">2</div>
                 <h2 className="text-lg font-bold text-warmwhite">Phương thức thanh toán</h2>
               </div>
+              {error && (
+                <div className="mb-4 rounded-xl border border-deeprose/40 bg-deeprose/10 p-3 text-sm text-rose">
+                  {error}
+                </div>
+              )}
               <div className="grid gap-3 sm:grid-cols-2">
                 {PAYMENT_METHODS.map((m) => (
                   <label
@@ -342,7 +413,19 @@ export default function Checkout() {
                   </svg>
                   Quay lại
                 </GlowButton>
-                <GlowButton variant="aurora" onClick={() => setStep(3)} className="px-8">
+                <GlowButton
+                  variant="aurora"
+                  onClick={() => {
+                    if (!payment) {
+                      setError("Vui lòng chọn phương thức thanh toán");
+                      return;
+                    }
+                    setError("");
+                    setStep(3);
+                  }}
+                  className="px-8"
+                  disabled={!payment}
+                >
                   Xem đơn hàng
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

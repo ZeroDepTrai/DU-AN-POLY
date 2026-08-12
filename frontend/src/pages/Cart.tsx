@@ -108,7 +108,6 @@ export default function CartPage() {
                         {item.product_name}
                       </Link>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <AuroraBadge tone="sakura">{item.product_tags}</AuroraBadge>
                         {isFree && <AuroraBadge tone="mint">Quà tặng</AuroraBadge>}
                       </div>
                     </div>

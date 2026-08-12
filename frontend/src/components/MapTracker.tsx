@@ -127,17 +127,13 @@ function RoutingLayer({
     !(fromLat === 0 && fromLng === 0) &&
     !(toLat === 0 && toLng === 0);
 
-  useEffect(() => {
-    if (!coordsValid) {
-      setRouteError(true);
-      setRouteCoords(null);
-      return;
-    }
+  // Reject routes exceeding plausible distance — otherwise OSRM may
+  // route through Cambodia/ocean for invalid HCM→Biên Hòa endpoints.
+  const dist = coordsValid ? haversineKm(fromPos, toPos) : 0;
+  const distPlausible = dist > 0 && dist <= MAX_PLAUSIBLE_KM;
 
-    // Reject routes exceeding plausible distance — otherwise OSRM may
-    // route through Cambodia/ocean for invalid HCM→Biên Hòa endpoints.
-    const dist = haversineKm(fromPos, toPos);
-    if (dist > MAX_PLAUSIBLE_KM) {
+  useEffect(() => {
+    if (!coordsValid || !distPlausible) {
       setRouteError(true);
       setRouteCoords(null);
       return;
@@ -146,10 +142,11 @@ function RoutingLayer({
     setRouteError(false);
 
     // Hit OSRM directly (public demo server) — returns a GeoJSON LineString.
+    // Format: lng,lat pairs (NOT lat,lng) — OSRM uses [lng, lat] order.
+    const coords = `${fromLng},${fromLat};${toLng},${toLat}`;
     const url =
-      `https://router.project-osrm.org/route/v1/driving/` +
-      `${fromLng},${fromLat};${toLng},${toLat}` +
-      `?overview=full&geometries=geojson`;
+      `https://router.project-osrm.org/route/v1/driving/${coords}` +
+      `?overview=full&geometries=geojson&alternatives=false&steps=false`;
 
     const controller = new AbortController();
     abortRef.current?.abort();
@@ -165,19 +162,19 @@ function RoutingLayer({
         routes?: Array<{ geometry?: { coordinates?: [number, number][] } }>;
       }) => {
         if (data.code !== "Ok" || !data.routes?.[0]?.geometry?.coordinates) {
-          throw new Error("OSRM no route");
+          throw new Error(`OSRM: ${data.code ?? "no route"}`);
         }
+        const coords = data.routes[0].geometry.coordinates!;
+        if (coords.length < 2) throw new Error("OSRM route too short");
         // GeoJSON is [lng, lat] — flip to [lat, lng] for Leaflet.
-        const coords: [number, number][] = data.routes[0].geometry.coordinates!.map(
-          ([lng, lat]) => [lat, lng]
-        );
-        setRouteCoords(coords);
+        const latlng: [number, number][] = coords.map(([lng, lat]) => [lat, lng]);
+        setRouteCoords(latlng);
         setRouteError(false);
       })
       .catch((err) => {
         if (err?.name === "AbortError") return;
         // eslint-disable-next-line no-console
-        console.warn("[MapTracker] OSRM route failed:", err);
+        console.warn("[MapTracker] OSRM route failed, falling back to straight line:", err);
         setRouteError(true);
         setRouteCoords(null);
       });
@@ -186,7 +183,7 @@ function RoutingLayer({
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromLat, fromLng, toLat, toLng, coordsValid]);
+  }, [fromLat, fromLng, toLat, toLng, coordsValid, distPlausible]);
 
   // Fallback: straight dashed line when OSRM fails or coords are invalid
   if (routeError || !routeCoords) {
@@ -197,11 +194,11 @@ function RoutingLayer({
     <>
       <Polyline
         positions={routeCoords}
-        pathOptions={{ color: ghostColor, opacity: 0.4, weight: 6 }}
+        pathOptions={{ color: ghostColor, opacity: 0.5, weight: 8 }}
       />
       <Polyline
         positions={routeCoords}
-        pathOptions={{ color, opacity: 0.85, weight: 4 }}
+        pathOptions={{ color, opacity: 0.9, weight: 5 }}
       />
     </>
   );
