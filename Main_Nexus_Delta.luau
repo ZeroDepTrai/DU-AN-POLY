@@ -1084,28 +1084,46 @@ local ToolbarActionMap: {[string]: string} = {
     ["Slot 5"] = "Toolbar_5th",
 }
 
+local EquipState = { Character = nil, Slot = nil, NextAt = 0, Attempts = 0, Busy = false }
+
 local function ensureWeaponEquipped()
-    local selectedSlot = State.WeaponSlot
-    if not selectedSlot or selectedSlot == "None" then return end
-    local act = ToolbarActionMap[selectedSlot]
-    if not act then return end
-
-    local slotNum = tonumber(selectedSlot:match("%d+"))
-    if not slotNum then return end
-
-    local pgui = LocalPlayer:FindFirstChild("PlayerGui")
-    local ch = pgui and pgui:FindFirstChild("ComponentsHolder")
-    local sh = ch and ch:FindFirstChild("BottomHolder") and ch.BottomHolder:FindFirstChild("Toolbar") and ch.BottomHolder.Toolbar:FindFirstChild("SkillHolder")
-    local btn = sh and sh:FindFirstChild(slotNum .. "_ToolPosition")
-    local cs = btn and btn:FindFirstChild("CircleSelect")
-    
-    local isSelected = cs and (cs.ImageTransparency < 0.72)
-    if not isSelected then
-        InputHandler.VirtualPress(act)
-        task.wait(0.04)
-        InputHandler.VirtualRelease(act)
-        task.wait(0.08)
+    local slot, character = State.WeaponSlot, LocalPlayer.Character
+    local action = slot and ToolbarActionMap[slot]
+    if not action or not character then
+        EquipState.Slot, EquipState.Attempts = nil, 0
+        return
     end
+    local changedSlot = EquipState.Character == character and EquipState.Slot ~= nil and EquipState.Slot ~= slot
+    if EquipState.Character ~= character or EquipState.Slot ~= slot then
+        EquipState.Character, EquipState.Slot = character, slot
+        EquipState.NextAt, EquipState.Attempts, EquipState.Busy = 0, 0, false
+    end
+    if EquipState.Busy then return end
+
+    local equipped
+    if Character_info_provider and type(Character_info_provider.Get_equipped_tool) == "function" then
+        local ok, tool = pcall(Character_info_provider.Get_equipped_tool, LocalPlayer)
+        if ok then equipped = tool end
+    end
+    equipped = equipped or character:FindFirstChildOfClass("Tool")
+    -- A slot action toggles equipment. Never repeat it merely because the mobile
+    -- toolbar highlight is missing or slow. A deliberate slot change gets one press.
+    if equipped and not changedSlot then EquipState.Attempts = 0; return end
+    if os.clock() < EquipState.NextAt then return end
+    if EquipState.Attempts >= 3 then
+        Compat.warnOnce("equip-" .. slot, "Auto-equip could not confirm a weapon. Equip it manually or reselect the slot to retry.")
+        return
+    end
+    EquipState.Attempts += 1
+    EquipState.NextAt = os.clock() + 2
+    EquipState.Busy = true
+    local ok, err = pcall(function()
+        InputHandler.VirtualPress(action)
+        task.wait(0.04)
+        InputHandler.VirtualRelease(action)
+    end)
+    EquipState.Busy = false
+    if not ok then Compat.warnOnce("equip-input", "Auto-equip input failed: " .. tostring(err)) end
 end
 
 -- ==============================================================================
@@ -2590,6 +2608,42 @@ local function findNpcModel(npcName: string, expectedPos: Vector3?): Model?
     return nil
 end
 
+local QuestDialogue = { PendingUntil = 0, NextAt = 0 }
+function QuestDialogue.recover(quest, npcName)
+    if QuestDialogue.RecoveredQuest == quest then return end
+    local gui = LocalPlayer:FindFirstChild("PlayerGui")
+    local holder = gui and gui:FindFirstChild("DialogueHolder", true)
+    if not holder or (holder:IsA("GuiObject") and not holder.Visible) then return end
+    for _, label in ipairs(holder:GetDescendants()) do
+        if label:IsA("TextLabel") and label.Visible and label.Text == npcName then
+            QuestDialogue.RecoveredQuest = quest
+            QuestDialogue.PendingUntil, QuestDialogue.NextAt = os.clock() + 4, 0
+            QuestDialogue.close()
+            return
+        end
+    end
+end
+
+function QuestDialogue.close()
+    if os.clock() > QuestDialogue.PendingUntil or os.clock() < QuestDialogue.NextAt then return end
+    QuestDialogue.NextAt = os.clock() + 0.5
+    local gui = LocalPlayer:FindFirstChild("PlayerGui")
+    local holder = gui and gui:FindFirstChild("DialogueHolder", true)
+    if not holder or (holder:IsA("GuiObject") and not holder.Visible) then QuestDialogue.PendingUntil = 0; return end
+    for _, button in ipairs(holder:GetDescendants()) do
+        if button:IsA("GuiButton") and button.Visible then
+            local label = button:IsA("TextButton") and button or button:FindFirstChildWhichIsA("TextLabel", true)
+            local text = label and label.Text:lower():match("^%s*(.-)%s*$")
+            if text == "close" or text == "farewell" then
+                -- Execute the actual close callback; hiding the GUI alone leaves
+                -- the game's dialogue/camera state active.
+                Compat.activate(button)
+                return
+            end
+        end
+    end
+end
+
 -- Teleport to NPC and simulate player interaction (ProximityPrompt & Dialogue & SignalEvent ToServer)
 local function interactWithNpc(npcName: string, promptName: string): boolean
     local targetPos = NpcLocations[npcName]
@@ -2620,13 +2674,6 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
             safeTeleport(CFrame.new(npcRoot.Position + Vector3.new(0, 1, 3), npcRoot.Position), false)
         end
 
-        local prompt = npcModel:FindFirstChildWhichIsA("ProximityPrompt", true)
-        if prompt then
-            pcall(function()
-                Compat.prompt(prompt)
-            end)
-            task.wait(0.2)
-        end
     end
 
     -- Accept through the existing game request below; no desktop dialogue click is needed.
@@ -2649,8 +2696,10 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
     -- 5. Poll for server to grant quest into Data.Quests.Holder
     local waitStart = os.clock()
     while os.clock() - waitStart < 2.5 do
-        local activeInst = getActiveQuest()
-        if activeInst then
+        local activeInst, activePrompt = getActiveQuest()
+        if activeInst and activePrompt == promptName then
+            QuestDialogue.PendingUntil, QuestDialogue.NextAt = os.clock() + 4, 0
+            QuestDialogue.close()
             return true
         end
         task.wait(0.2)
@@ -2838,6 +2887,8 @@ Runtime.worker("AutoQuest", function()
     while Runtime.alive do
         task.wait(0.8)
 
+        if State.AutoQuest then QuestDialogue.close() end
+
         -- 1. Auto-confirm cancel popups if present (anti-softlock)
         pcall(handleAbandonPopup)
 
@@ -2858,6 +2909,7 @@ Runtime.worker("AutoQuest", function()
                 end
 
                 if currentEntry then
+                    QuestDialogue.recover(activeInst, currentEntry.OfferNpc)
                     State.CurrentQuestPrompt = currentEntry.Prompt
                     State.CurrentQuestTitle = currentEntry.QuestName
                     State.TargetQuestMob = currentEntry.TargetMob
