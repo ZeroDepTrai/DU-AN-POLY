@@ -893,7 +893,7 @@ function M1.timing(preset, hit, airborne, speed)
         or preset.default_before_hit or beforeSwing) / speed)
     local recovery = final and (preset.final or 1.65)
         or (preset.customDelay and preset.customDelay[hit + 1]) or preset.default or 0.25
-    return animation, hitDelay, math.max(hitDelay, recovery / speed) + 0.02, final
+    return animation, hitDelay, recovery / speed + 0.02, final
 end
 
 function M1.prepare(character, presetKey, now)
@@ -1027,6 +1027,33 @@ local Skill_Controller = safeRequire(ReplicatedStorage:FindFirstChild("CAM")
     and ReplicatedStorage.CAM.Client:FindFirstChild("Controllers")
     and ReplicatedStorage.CAM.Client.Controllers:FindFirstChild("Skill_Controller"))
 
+local Attachment = { Humanoid = nil, PreviousAutoRotate = true }
+function Attachment.release()
+    if Attachment.Humanoid then
+        pcall(function() Attachment.Humanoid.AutoRotate = Attachment.PreviousAutoRotate end)
+        Attachment.Humanoid = nil
+    end
+end
+function Attachment.face(character, targetRoot, height)
+    local hum = character and character:FindFirstChildOfClass("Humanoid")
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not hum or hum.Health <= 0 or not root or not targetRoot or not targetRoot.Parent then return false end
+    if Attachment.Humanoid ~= hum then
+        Attachment.release()
+        Attachment.Humanoid, Attachment.PreviousAutoRotate = hum, hum.AutoRotate
+    end
+    hum.AutoRotate = false
+    local targetCF = targetRoot.CFrame
+    local position = targetCF.Position + Vector3.new(0, height or 6, 0) - targetCF.LookVector * 1.5
+    local direction = targetCF.Position - position
+    local up = math.abs(direction.Unit:Dot(Vector3.yAxis)) > 0.95 and targetCF.LookVector or Vector3.yAxis
+    local facing = CFrame.lookAt(position, targetCF.Position, up)
+    character:PivotTo(facing)
+    root.CFrame = facing
+    root.AssemblyLinearVelocity, root.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
+    return true
+end
+
 -- Centralized Target Management
 local function setTarget(mob: Model?, hrp: BasePart?, hum: Humanoid?)
     State.CurrentTarget = mob
@@ -1046,6 +1073,7 @@ local function setTarget(mob: Model?, hrp: BasePart?, hum: Humanoid?)
 end
 
 local function clearTarget()
+    Attachment.release()
     if State.TargetHum and State.TargetHum.Health <= 0 then LastBossKilledTime = os.clock() end
     if State.TargetAnimConn then State.TargetAnimConn:Disconnect(); State.TargetAnimConn = nil end
     State.TargetAnimator = nil
@@ -1131,23 +1159,28 @@ end
 -- ==============================================================================
 local function getSkillActionAndInfo(targetKey: string): (string, string?)
     local keyUpper = targetKey:upper()
-    local success, Skills_Provider = pcall(function()
-        return require(ReplicatedStorage.CAM.Client.Controllers.Skills_Provider)
+    local defaults = { F = 1, Z = 2, X = 3, C = 4, V = 5, B = 6 }
+    local suffixes = { "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th" }
+    local fallback = "Skills_" .. (suffixes[defaults[keyUpper] or 2])
+    local ok, keys = pcall(function()
+        return require(ReplicatedStorage.CAM.Client.Controllers.Skills_Provider).get_current_keys()
     end)
-    if success and Skills_Provider and Skills_Provider.get_current_keys then
-        local currentKeys = Skills_Provider.get_current_keys()
-        if type(currentKeys) == "table" then
-            local suffixes = { "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th" }
-            for idx, info in pairs(currentKeys) do
-                if type(info) == "table" and info.Key and info.Key:upper() == keyUpper then
-                    local act = suffixes[idx] and ("Skills_" .. suffixes[idx]) or ("Skills_" .. tostring(idx))
-                    return act, info.Name
-                end
+    if not ok or type(keys) ~= "table" then return fallback, nil end
+    for index, info in pairs(keys) do
+        if type(info) == "table" and suffixes[index] then
+            local action = "Skills_" .. suffixes[index]
+            local binding = info.Key
+            if typeof(binding) == "EnumItem" then binding = binding.Name end
+            if type(binding) ~= "string" and rawInputHandler and rawInputHandler.KeyLabel then
+                local resolved, label = pcall(rawInputHandler.KeyLabel, action)
+                if resolved then binding = label end
             end
+            local matches = type(binding) == "string" and binding:upper() == keyUpper
+                or (binding == nil and index == defaults[keyUpper])
+            if matches then return action, info.Name end
         end
     end
-    local fallbackMap = { Z = "Skills_2nd", X = "Skills_3rd", C = "Skills_4th", V = "Skills_5th", B = "Skills_6th" }
-    return fallbackMap[keyUpper] or "Skills_2nd", nil
+    return fallback, nil
 end
 
 local function isSkillLoopPlaying(skillName: string?): boolean
@@ -1277,29 +1310,34 @@ local function ensureSemiKillAuraActive()
 end
 
 local lastAutoSkillTime = 0
+local autoSkillCursor = 0
 local function executeAutoSkills()
     if not State.AutoUseSkills or State.SemiKillAura or not canCombat() then return end
-    local now = os.clock()
-    if now - lastAutoSkillTime < 0.25 then return end
-
+    if os.clock() - lastAutoSkillTime < 0.25 then return end
+    if not Skill_Controller or type(Skill_Controller.Attempt_Hold) ~= "function"
+        or type(Skill_Controller.StopHold) ~= "function" then
+        Compat.warnOnce("auto-skills-controller", "Auto skills: the game's skill controller is unavailable.")
+        return
+    end
+    lastAutoSkillTime = os.clock()
     local char = LocalPlayer.Character
     local shc = char and char:FindFirstChild("SHC")
-    
     local skillKeys = { "Z", "X", "C", "V", "B" }
-    for _, key in ipairs(skillKeys) do
+    for offset = 1, #skillKeys do
+        local index = (autoSkillCursor + offset - 1) % #skillKeys + 1
+        local key = skillKeys[index]
         if State.AutoUseSkillsList[key] then
-            local action, skillName = getSkillActionAndInfo(key)
-            local onCooldown = skillName and shc and (shc:FindFirstChild(skillName) ~= nil)
-            if not onCooldown then
-                if Combat_presets then
-                    Combat_presets.Last_Punched = 0
+            local _, skillName = getSkillActionAndInfo(key)
+            if skillName and not (shc and shc:FindFirstChild(skillName)) then
+                -- Use the same controller as the game. A mobile action can select
+                -- a skill without casting it; Attempt_Hold reports acceptance.
+                local ok, accepted = pcall(Skill_Controller.Attempt_Hold, skillName, key)
+                if ok and accepted == true then
+                    autoSkillCursor = index
+                    task.wait(0.05)
+                    pcall(Skill_Controller.StopHold, skillName)
+                    return
                 end
-                if not InputHandler.VirtualPress(action) then return end
-                task.wait(0.05)
-                InputHandler.VirtualRelease(action)
-                lastAutoSkillTime = os.clock()
-                task.wait(0.12)
-                break
             end
         end
     end
@@ -1356,6 +1394,7 @@ if LocalPlayer.Character then
     end)
 end
 stopCombat = function()
+    Attachment.release()
     if InputHandler.IsDown("Combat") then
         InputHandler.VirtualRelease("Combat")
     end
@@ -2798,14 +2837,38 @@ local function handleAbandonPopup()
     end
 end
 
--- Retrieve current LocalPlayer Level from HUD ExpFrame
-local function getPlayerLevel(): number
-    local level = 0
-    pcall(function()
-        local text = LocalPlayer.PlayerGui.ComponentsHolder.LeftHudPortion.ExpFrame.Context.Level.Text
-        level = tonumber(string.match(text, "%d+")) or 0
-    end)
-    return level
+local PlayerLevelCache = { At = -math.huge, Value = nil }
+local function getPlayerLevel(): number?
+    if os.clock() - PlayerLevelCache.At < 1 then return PlayerLevelCache.Value end
+    PlayerLevelCache.At = os.clock()
+    PlayerLevelCache.Value = nil
+    local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if not gui then return nil end
+    for _, label in ipairs(gui:GetDescendants()) do
+        if label:IsA("TextLabel") then
+            local parent, inExperienceHud, inHud, excluded = label.Parent, false, false, false
+            for _ = 1, 6 do
+                if not parent or parent == gui then break end
+                local name = parent.Name:lower()
+                if name == "expframe" or name == "experience" or name == "exp" then inExperienceHud = true end
+                if name == "hud" or name == "lefthudportion" or name == "valuehub" then inHud = true end
+                if name:find("mastery", 1, true) or name:find("quest", 1, true) or name:find("skill", 1, true) then excluded = true end
+                parent = parent.Parent
+            end
+            local text = label.Text:gsub("<[^>]*>", ""):lower()
+            -- Anchored prefixes prevent XP fractions, quest requirements and mastery
+            -- values from being interpreted as the player's character level.
+            local digits = text:match("^%s*lv%.?%s*(%d+)%s*$") or text:match("^%s*level%s*:?%s*(%d+)%s*$")
+            if inExperienceHud and label.Name:lower() == "level" then
+                digits = digits or text:match("^%s*(%d+)%s*$")
+            end
+            if digits and not excluded and (inExperienceHud or inHud) then
+                local value = tonumber(digits)
+                if value and value > 0 then PlayerLevelCache.Value = value; return value end
+            end
+        end
+    end
+    return nil
 end
 
 -- Get active Quest info from Data.Quests.Holder
@@ -2863,6 +2926,10 @@ end
 -- Select highest suitable quest for level (Regular mob quests only)
 local function selectBestEligibleQuest(): CombatQuestEntry?
     local playerLvl = getPlayerLevel()
+    if not playerLvl then
+        if QuestTargetLabel then pcall(function() QuestTargetLabel:SetText("Target: waiting for character level") end) end
+        return nil
+    end
     local Data = UtilityModule and UtilityModule.GetData(LocalPlayer) or nil
 
     for _, entry in ipairs(CombatProgressionList) do
@@ -3140,69 +3207,42 @@ local function findNearestMob(myHRP: BasePart): (Model?, BasePart?, Humanoid?)
 end
 
 -- Find target mob for current quest (Dedicated to Auto Quest Engine)
+local QuestMobCache = { At = -math.huge, Models = {} }
 local function findQuestMob(myHRP: BasePart): (Model?, BasePart?, Humanoid?)
-    local targetName = State.TargetQuestMob
-    if not targetName or targetName == "" then return nil, nil, nil end
-
-    local shortestDist = math.huge
-    local chosenMob: Model? = nil
-    local chosenHRP: BasePart? = nil
-    local chosenHum: Humanoid? = nil
-
-    local function evaluateModel(model: Model)
-        if not model:IsA("Model") or Players:GetPlayerFromCharacter(model) then return end
-        if BlacklistedTargets[model] and os.clock() < BlacklistedTargets[model] then return end
-        local mName = cleanTargetName(model.Name)
-        local pName = model.Parent and cleanTargetName(model.Parent.Name) or ""
-        if isMobNameMatch(mName, targetName) or isMobNameMatch(pName, targetName) then
-            local hum = model:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then
-                local hrp = model:FindFirstChild("HumanoidRootPart") :: BasePart? or model.PrimaryPart
-                if hrp then
-                    local dist = (hrp.Position - myHRP.Position).Magnitude
-                    if dist < shortestDist then
-                        shortestDist = dist
-                        chosenMob = model
-                        chosenHRP = hrp
-                        chosenHum = hum
-                    end
-                end
+    local wanted = State.TargetQuestMob
+    if not wanted or wanted == "" then return nil, nil, nil end
+    if os.clock() - QuestMobCache.At >= 0.75 then
+        QuestMobCache.At = os.clock()
+        table.clear(QuestMobCache.Models)
+        -- Regions/ActiveNpcs layout varies with place and streaming. Cache live
+        -- humanoid models instead of requiring one fixed folder depth.
+        for _, desc in ipairs(Workspace:GetDescendants()) do
+            if desc:IsA("Humanoid") and desc.Parent and desc.Parent:IsA("Model")
+                and not Players:GetPlayerFromCharacter(desc.Parent) then
+                QuestMobCache.Models[desc.Parent] = desc
             end
         end
     end
-
-    local hums = Workspace:FindFirstChild("Humanoids")
-    local regions = hums and hums:FindFirstChild("Regions")
-
-    if regions then
-        for _, reg in ipairs(regions:GetChildren()) do
-            local an = reg:FindFirstChild("ActiveNpcs")
-            if an then
-                for _, folder in ipairs(an:GetChildren()) do
-                    local fClean = cleanTargetName(folder.Name)
-                    if isMobNameMatch(fClean, targetName) then
-                        for _, ch in ipairs(folder:GetChildren()) do
-                            if ch:IsA("Model") then
-                                evaluateModel(ch)
-                            end
-                        end
-                    end
-                end
+    local best, bestRoot, bestHum, distance = nil, nil, nil, math.huge
+    for model, hum in pairs(QuestMobCache.Models) do
+        if model.Parent and hum.Parent == model and hum.Health > 0
+            and not (BlacklistedTargets[model] and os.clock() < BlacklistedTargets[model]) then
+            local match = isMobNameMatch(cleanTargetName(model.Name), wanted)
+                or isMobNameMatch(cleanTargetName(hum.DisplayName), wanted)
+            local parent = model.Parent
+            for _ = 1, 3 do
+                if match or not parent or parent == Workspace then break end
+                match = isMobNameMatch(cleanTargetName(parent.Name), wanted)
+                parent = parent.Parent
             end
-        end
-    else
-        local container = hums or Workspace
-        for _, desc in ipairs(container:GetDescendants()) do
-            if desc:IsA("Humanoid") and desc.Health > 0 then
-                local model = desc.Parent
-                if model and model:IsA("Model") then
-                    evaluateModel(model)
-                end
+            local root = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+            if match and root and root:IsA("BasePart") then
+                local current = (root.Position - myHRP.Position).Magnitude
+                if current < distance then best, bestRoot, bestHum, distance = model, root, hum, current end
             end
         end
     end
-
-    return chosenMob, chosenHRP, chosenHum
+    return best, bestRoot, bestHum
 end
 
 -- ==============================================================================
@@ -3907,7 +3947,7 @@ end)
 
 
 local steppedConn = Runtime.track(RunService.Stepped:Connect(function()
-    if State.AutoDungeon then DungeonEngine.Frame(); return end
+    if State.AutoDungeon then Attachment.release(); DungeonEngine.Frame(); return end
     local char = LocalPlayer.Character
     if not char then return end
 
@@ -3915,6 +3955,8 @@ local steppedConn = Runtime.track(RunService.Stepped:Connect(function()
     local myHum = char:FindFirstChildOfClass("Humanoid")
 
     local isAttachActive = State.AttachBack or State.AutoFarmMobs or State.AutoFarmWorldBoss or State.AutoQuest
+
+    if not isAttachActive or not myHRP or not myHum or myHum.Health <= 0 then Attachment.release() end
 
     -- 1. Noclip Engine (Automatically active during Attach, Auto Farm, or NoClip)
     if isAttachActive or State.NoClip then
@@ -3928,6 +3970,7 @@ local steppedConn = Runtime.track(RunService.Stepped:Connect(function()
     -- 2. Attach To Mob Engine (Dynamic Height & Zero-Desync)
     if isAttachActive and myHRP and myHum and myHum.Health > 0 then
         if State.IsInteractingNpc then
+            Attachment.release()
             if State.InteractingNpcStartTime == 0 then
                 State.InteractingNpcStartTime = os.clock()
             elseif (os.clock() - State.InteractingNpcStartTime) > 5.0 then
@@ -4085,30 +4128,7 @@ local steppedConn = Runtime.track(RunService.Stepped:Connect(function()
             if horizDist <= 120 then
                 local effectiveHeight = State.SemiKillAura and State.SemiKillAuraSafeHeight or (State.AutoQuest and (State.MobAttackHeight or 6.0) or State.CurrentHeight)
 
-                local mobCF = State.TargetHRP.CFrame
-                local targetPos: Vector3
-                local targetCF: CFrame
-
-                if effectiveHeight >= 50 then
-                    -- Sky Safe Zone (+300 studs directly above target, zero gimbal lock)
-                    targetPos = mobCF.Position + Vector3.new(0, effectiveHeight, 0)
-                    targetCF = CFrame.new(targetPos) * mobCF.Rotation
-                elseif effectiveHeight > 0.05 then
-                    -- Air M1 (+6 studs above mob, slight 0.8 stud backward offset to avoid gimbal lock jitter)
-                    targetPos = mobCF.Position + Vector3.new(0, effectiveHeight, 0) - (mobCF.LookVector * 0.8)
-                    targetCF = CFrame.lookAt(targetPos, mobCF.Position + Vector3.new(0, 0.5, 0))
-                elseif effectiveHeight < -0.05 then
-                    targetPos = mobCF.Position + Vector3.new(0, effectiveHeight, 0) - (mobCF.LookVector * 1.5)
-                    targetCF = CFrame.lookAt(targetPos, mobCF.Position, mobCF.LookVector)
-                else
-                    targetPos = mobCF.Position
-                    targetCF = mobCF
-                end
-
-                char:PivotTo(targetCF)
-                myHRP.CFrame = targetCF
-                myHRP.AssemblyLinearVelocity = Vector3.zero
-                myHRP.AssemblyAngularVelocity = Vector3.zero
+                Attachment.face(char, State.TargetHRP, effectiveHeight)
 
                 -- Lock physics gravity with BodyVelocity so player does not jitter or fall between physics frames
                 local attachBV = myHRP:FindFirstChild("ObsidianAttachLock") :: BodyVelocity?
@@ -4123,6 +4143,7 @@ local steppedConn = Runtime.track(RunService.Stepped:Connect(function()
                 end
             end
         else
+            Attachment.release()
             local attachBV = myHRP:FindFirstChild("ObsidianAttachLock")
             if attachBV then
                 pcall(function() attachBV:Destroy() end)
@@ -4224,6 +4245,13 @@ Runtime.worker("Combat", function()
                         local character = LocalPlayer.Character
                         local root = character and character:FindFirstChild("HumanoidRootPart")
                         local targetRoot = State.TargetHRP
+                        -- Re-align before the hit gate; mobile camera/humanoid rotation
+                        -- must not leave the combat loop permanently facing away.
+                        if root and targetRoot and targetRoot.Parent and State.TargetHum and State.TargetHum.Health > 0
+                            and (targetRoot.Position - root.Position).Magnitude <= 120
+                            and (not State.IsMobAttacking or State.AutoQuest) then
+                            Attachment.face(character, targetRoot, State.CurrentHeight)
+                        end
                         local delta = root and targetRoot and targetRoot.Parent and (targetRoot.Position - root.Position)
                         if not State.TargetHum or State.TargetHum.Health <= 0 or not delta or delta.Magnitude < 0.01
                             or delta.Magnitude > 8 or root.CFrame.LookVector:Dot(delta.Unit) < 0.9
@@ -7050,6 +7078,7 @@ initAntiAFK()
 
 -- Teardown Function
 local function cleanupAll()
+    Attachment.release()
     if not Runtime.alive then return end
     DungeonEngine.SetEnabled(false)
     Runtime.shutdown()
