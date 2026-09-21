@@ -108,54 +108,64 @@ end
 
 function Compat.prompt(prompt)
     if not prompt or not prompt.Enabled then return false end
-    if type(fireproximityprompt) == "function" then
-        local ok, result = pcall(fireproximityprompt, prompt)
-        if ok and result ~= false then return true end
-    end
+    pcall(function()
+        if type(fireproximityprompt) == "function" then
+            fireproximityprompt(prompt)
+        end
+    end)
     local began = pcall(function() prompt:InputHoldBegin() end)
-    if not began then
-        Compat.warnOnce("prompt", "Automatic prompt input is unavailable; interact with the prompt manually.")
-        return false
+    if began then
+        local hold = prompt.HoldDuration or 0
+        if hold > 0 then
+            task.wait(hold + 0.05)
+        else
+            task.wait(0.05)
+        end
+        pcall(function() prompt:InputHoldEnd() end)
+        return true
     end
-    task.wait(math.max(prompt.HoldDuration, 0) + 0.05)
-    local ended = pcall(function() prompt:InputHoldEnd() end)
-    return ended -- Input dispatched; the caller must still check the interaction result.
+    return false
 end
 
 function Compat.activate(button)
-    if not button or not button:IsA("GuiButton") or not button.Visible then return false end
+    if not button or not button:IsA("GuiButton") then return false end
+    local fired = false
+    if type(firesignal) == "function" then
+        pcall(function() firesignal(button.Activated) end)
+        pcall(function() firesignal(button.MouseButton1Click) end)
+        fired = true
+    end
     if type(getconnections) == "function" then
-        -- Use one signal to avoid submitting the same button twice.
         for _, signal in ipairs({button.Activated, button.MouseButton1Click}) do
             local ok, connections = pcall(getconnections, signal)
-            local fired = false
             if ok and type(connections) == "table" then
                 for _, connection in ipairs(connections) do
                     local success, result = pcall(function()
-                        if connection.Enabled == false or type(connection.Fire) ~= "function" then return false end
-                        connection:Fire()
-                        return true
+                        if connection.Enabled == false then return false end
+                        if type(connection.Fire) == "function" then
+                            connection:Fire()
+                            return true
+                        elseif type(connection.Function) == "function" then
+                            connection.Function()
+                            return true
+                        end
+                        return false
                     end)
                     fired = fired or (success and result == true)
                 end
             end
-            if fired then return true end
         end
     end
-    if UserInputService.TouchEnabled then
-        Compat.warnOnce("touch-dialogue", "Tap this dialogue choice manually; this client cannot dispatch its action directly.")
-        return false
-    end
-    local ok = pcall(function()
+    pcall(function()
         local input = game:GetService("VirtualInputManager")
         local point = button.AbsolutePosition + button.AbsoluteSize / 2
         local screen = button:FindFirstAncestorWhichIsA("ScreenGui")
         if screen and not screen.IgnoreGuiInset then point += game:GetService("GuiService"):GetGuiInset() end
         input:SendMouseButtonEvent(point.X, point.Y, 0, true, game, 0)
         input:SendMouseButtonEvent(point.X, point.Y, 0, false, game, 0)
+        fired = true
     end)
-    if not ok then Compat.warnOnce("button", "Automatic dialogue clicks are unavailable; tap the visible choice manually.") end
-    return ok
+    return fired
 end
 
 function Compat.guiParent()
@@ -2757,6 +2767,29 @@ function QuestDialogue.close()
     end
 end
 
+-- Close any lingering dialogue cleanly (reclaims UI and frees camera)
+local function closeDialogue()
+    pcall(function()
+        local Dialogue = safeRequire(ReplicatedStorage:FindFirstChild("CAM")
+            and ReplicatedStorage.CAM:FindFirstChild("Client")
+            and ReplicatedStorage.CAM.Client:FindFirstChild("Modules")
+            and ReplicatedStorage.CAM.Client.Modules:FindFirstChild("GamePlay")
+            and ReplicatedStorage.CAM.Client.Modules.GamePlay:FindFirstChild("Dialogue"))
+        if Dialogue and Dialogue.CurrentDialogue and Dialogue.CurrentDialogue.Cancel then
+            Dialogue.CurrentDialogue.Cancel:Fire()
+        end
+    end)
+    pcall(function()
+        local comp = LocalPlayer.PlayerGui:FindFirstChild("ComponentsHolder")
+        if comp then
+            local dc = comp:FindFirstChild("DialogueContent")
+            if dc then dc.Visible = false end
+            local df = comp:FindFirstChild("DialogueFrame")
+            if df then df.Visible = false end
+        end
+    end)
+end
+
 -- Teleport to NPC and simulate player interaction (ProximityPrompt & Dialogue & SignalEvent ToServer)
 local function interactWithNpc(npcName: string, promptName: string): boolean
     local targetPos = NpcLocations[npcName]
@@ -2768,6 +2801,16 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
     if not targetPos then
         local entry = getEntryByPrompt(promptName)
         targetPos = entry and entry.NpcPos
+    end
+    if not targetPos then
+        local regMod = safeRequire(ReplicatedStorage:FindFirstChild("Regions"))
+        if regMod and regMod.GetNpcSpawn then
+            local ok, sp = pcall(regMod.GetNpcSpawn, npcName)
+            if ok and typeof(sp) == "Vector3" then
+                targetPos = sp
+                NpcLocations[npcName] = sp
+            end
+        end
     end
     if not targetPos then return false end
 
@@ -2794,10 +2837,10 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
     safeTeleport(CFrame.new(standPos), true)
     pcall(function() LocalPlayer:RequestStreamAroundAsync(targetPos, 5) end)
 
-    -- 2. Wait up to 3.5s for NPC model to stream in while holding position rock-solid
+    -- 2. Wait up to 4.0s for NPC model to stream in while holding position rock-solid
     local npcModel = nil
     local startTime = os.clock()
-    while os.clock() - startTime < 3.5 do
+    while os.clock() - startTime < 4.0 do
         hrp.CFrame = CFrame.new(standPos)
         hrp.AssemblyLinearVelocity = Vector3.zero
         hrp.AssemblyAngularVelocity = Vector3.zero
@@ -2810,7 +2853,7 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
     if npcModel then
         local npcRoot = npcModel:FindFirstChild("HumanoidRootPart") or npcModel.PrimaryPart or npcModel:FindFirstChildWhichIsA("BasePart")
         if npcRoot then
-            local faceCF = CFrame.lookAt(npcRoot.Position + (npcRoot.CFrame.LookVector * 2.5), npcRoot.Position)
+            local faceCF = CFrame.lookAt(standPos, npcRoot.Position)
             hrp.CFrame = faceCF
             hrp.AssemblyLinearVelocity = Vector3.zero
         end
@@ -2829,34 +2872,30 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
         end
 
         if prompt then
-            pcall(function()
-                if type(fireproximityprompt) == "function" then
-                    fireproximityprompt(prompt)
-                elseif Compat and Compat.prompt then
-                    Compat.prompt(prompt)
-                end
-            end)
+            Compat.prompt(prompt)
             task.wait(0.25)
         end
     end
 
-    -- 3. Simulate accepting quest in Dialogue GUI if visible
+    -- 3. Simulate dialogue advancement / option selection (desktop & mobile compatible)
     pcall(function()
         local compHolder = LocalPlayer.PlayerGui:FindFirstChild("ComponentsHolder")
-        local dHolder = compHolder and compHolder:FindFirstChild("DialogueHolder")
-        if dHolder then
-            for _, btn in ipairs(dHolder:GetDescendants()) do
-                if btn:IsA("TextButton") or btn:IsA("GuiButton") then
-                    local label = btn:IsA("TextButton") and btn or btn:FindFirstChildWhichIsA("TextLabel", true)
-                    local t = label and label.Text:lower() or ""
-                    if t:find(promptName:lower()) or t:find("accept") or t:find("yes") or t:find("take") then
-                        if Compat and Compat.activate then
+        if compHolder then
+            local df = compHolder:FindFirstChild("DialogueFrame")
+            local cd = df and df:FindFirstChild("ClickDetector")
+            if cd and cd:IsA("GuiButton") then
+                Compat.activate(cd)
+            end
+            local dc = compHolder:FindFirstChild("DialogueContent")
+            if dc then
+                for _, btn in ipairs(dc:GetDescendants()) do
+                    if btn:IsA("GuiButton") then
+                        local label = btn:IsA("TextButton") and btn or btn:FindFirstChildWhichIsA("TextLabel", true)
+                        local t = label and label.Text:lower() or ""
+                        if t:find(promptName:lower()) or t:find("accept") or t:find("yes") or t:find("take") or t:find("drive") or t:find("defeat") or t:find("hunt") then
                             Compat.activate(btn)
-                        else
-                            for _, c in ipairs(getconnections(btn.MouseButton1Click)) do c:Fire() end
-                            for _, c in ipairs(getconnections(btn.Activated)) do c:Fire() end
+                            break
                         end
-                        break
                     end
                 end
             end
@@ -2864,25 +2903,29 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
     end)
 
     -- 4. SEND OFFICIAL SERVER REMOTE: SignalEvent.ToServer("AddQuest", promptName)
-    pcall(function()
-        if SignalEventModule and SignalEventModule.ToServer then
-            SignalEventModule.ToServer("AddQuest", promptName)
-        else
-            local se = ReplicatedStorage:FindFirstChild("Communication")
-                and ReplicatedStorage.Communication:FindFirstChild("ServerAndClient")
-                and ReplicatedStorage.Communication.ServerAndClient:FindFirstChild("Signals")
-                and ReplicatedStorage.Communication.ServerAndClient.Signals:FindFirstChild("SignalEvent")
-                and ReplicatedStorage.Communication.ServerAndClient.Signals.SignalEvent:FindFirstChild("Event")
-            if se and se:IsA("RemoteEvent") then
-                se:FireServer("AddQuest", promptName)
+    local function fireAddQuestRemote()
+        pcall(function()
+            if SignalEventModule and SignalEventModule.ToServer then
+                SignalEventModule.ToServer("AddQuest", promptName)
+            else
+                local se = ReplicatedStorage:FindFirstChild("Communication")
+                    and ReplicatedStorage.Communication:FindFirstChild("ServerAndClient")
+                    and ReplicatedStorage.Communication.ServerAndClient:FindFirstChild("Signals")
+                    and ReplicatedStorage.Communication.ServerAndClient.Signals:FindFirstChild("SignalEvent")
+                    and ReplicatedStorage.Communication.ServerAndClient.Signals.SignalEvent:FindFirstChild("Event")
+                if se and se:IsA("RemoteEvent") then
+                    se:FireServer("AddQuest", promptName)
+                end
             end
-        end
-    end)
+        end)
+    end
 
-    -- 5. Poll for server to grant quest into Data.Quests.Holder
+    fireAddQuestRemote()
+
+    -- 5. Poll for server to grant quest into Data.Quests.Holder with retry
     local waitStart = os.clock()
     local success = false
-    while os.clock() - waitStart < 3.0 do
+    while os.clock() - waitStart < 3.5 do
         local activeInst, activePrompt = getActiveQuest()
         if activeInst and (activePrompt == promptName or not promptName) then
             QuestDialogue.PendingUntil, QuestDialogue.NextAt = os.clock() + 4, 0
@@ -2890,8 +2933,13 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
             success = true
             break
         end
+        if os.clock() - waitStart > 1.5 then
+            fireAddQuestRemote()
+        end
         task.wait(0.2)
     end
+
+    closeDialogue()
 
     if lockBV and lockBV.Parent then
         lockBV:Destroy()
@@ -3039,6 +3087,25 @@ getActiveQuest = function(): (Instance?, string?, string?)
     return nil, nil, nil
 end
 
+-- Check if active quest has completed all required tasks
+local function isQuestCompleted(questInst: Instance?): boolean
+    if not questInst then return false end
+    local tasks = questInst:FindFirstChild("Tasks")
+    if not tasks then return false end
+    local children = tasks:GetChildren()
+    if #children == 0 then return false end
+    for _, t in ipairs(children) do
+        local valObj = t:FindFirstChild("Value")
+        local maxObj = t:FindFirstChild("Max")
+        local val = valObj and tonumber(valObj.Value) or 0
+        local max = maxObj and tonumber(maxObj.Value) or 0
+        if max > 0 and val < max then
+            return false
+        end
+    end
+    return true
+end
+
 -- Get progress of current quest (e.g. "1/4")
 local function getActiveQuestProgress(questInst: Instance?): string?
     if not questInst then return nil end
@@ -3107,15 +3174,46 @@ Runtime.worker("AutoQuest", function()
     while Runtime.alive do
         task.wait(0.8)
 
-        if State.AutoQuest then QuestDialogue.close() end
-
         -- 1. Auto-confirm cancel popups if present (anti-softlock)
         pcall(handleAbandonPopup)
 
         if State.AutoQuest and QuestsModule then
             local activeInst, activePrompt, activeName = getActiveQuest()
 
-            if activeInst then
+            -- Detect if active quest finished all combat tasks
+            if activeInst and isQuestCompleted(activeInst) then
+                clearTarget()
+                State.IsAttached = false
+                State.TargetQuestMob = nil
+
+                if QuestStatusLabel then
+                    pcall(function()
+                        QuestStatusLabel:SetText("Quest: Completed! Finalizing...")
+                    end)
+                end
+
+                -- Give server up to 1.5s to auto-clear the completed quest
+                local finishWait = os.clock()
+                while os.clock() - finishWait < 1.5 do
+                    if not getActiveQuest() then break end
+                    task.wait(0.2)
+                end
+
+                -- If server didn't remove it, force clear lingering completed quest
+                local lingeringInst = getActiveQuest()
+                if lingeringInst and isQuestCompleted(lingeringInst) then
+                    pcall(function()
+                        if SignalEventModule and SignalEventModule.ToServer then
+                            SignalEventModule.ToServer("RemoveQuest", lingeringInst.Name)
+                        end
+                    end)
+                    task.wait(0.5)
+                end
+
+                activeInst, activePrompt, activeName = getActiveQuest()
+            end
+
+            if activeInst and not isQuestCompleted(activeInst) then
                 local currentEntry = (activePrompt and getEntryByPrompt(activePrompt)) 
                     or (activeName and getEntryByName(activeName))
 
@@ -3129,7 +3227,6 @@ Runtime.worker("AutoQuest", function()
                 end
 
                 if currentEntry then
-                    QuestDialogue.recover(activeInst, currentEntry.OfferNpc)
                     State.CurrentQuestPrompt = currentEntry.Prompt
                     State.CurrentQuestTitle = currentEntry.QuestName
                     State.TargetQuestMob = currentEntry.TargetMob
@@ -3164,16 +3261,30 @@ Runtime.worker("AutoQuest", function()
                     end)
                 end
             else
+                -- No active quest (or quest was just completed & cleared)
                 clearTarget()
+                State.IsAttached = false
+                State.TargetQuestMob = nil -- Prevent steppedConn from attacking mobs without active quest
+
                 local bestEntry = selectBestEligibleQuest()
                 if bestEntry and not State.IsInteractingNpc then
                     State.CurrentQuestPrompt = bestEntry.Prompt
                     State.CurrentQuestTitle = bestEntry.QuestName
-                    State.TargetQuestMob = bestEntry.TargetMob
 
-                    -- Check cooldown before moving to NPC
+                    -- Check 30s quest cooldown
                     local canAdd = true
-                    if QuestsModule.CanAddQuest then
+                    local remaining = 0
+                    local Data = UtilityModule and UtilityModule.GetData(LocalPlayer)
+                    local lastTime = Data and Data:FindFirstChild("Quests") and Data.Quests:FindFirstChild("LastTime") and Data.Quests.LastTime.Value or 0
+                    local cd = QuestsModule.QuestCD or 30
+                    local curTick = UtilityModule and UtilityModule.Tick() or os.time()
+                    local diff = curTick - lastTime
+                    if diff < cd then
+                        canAdd = false
+                        remaining = math.max(0, math.ceil(cd - diff))
+                    end
+
+                    if canAdd and QuestsModule.CanAddQuest then
                         local ca = QuestsModule.CanAddQuest(LocalPlayer, bestEntry.Prompt)
                         if ca == false then
                             canAdd = false
@@ -3190,22 +3301,21 @@ Runtime.worker("AutoQuest", function()
                                 QuestStatusLabel:SetText(string.format("Quest: Claiming from %s...", bestEntry.OfferNpc))
                             end)
                         end
+                        if QuestTargetLabel then
+                            pcall(function()
+                                QuestTargetLabel:SetText("Target: None (Claiming Quest)")
+                            end)
+                        end
 
                         Runtime.spawn(function()
-                            pcall(function()
-                                interactWithNpc(bestEntry.OfferNpc, bestEntry.Prompt)
-                            end)
-                            task.wait(0.5)
+                            for attempt = 1, 3 do
+                                local success = interactWithNpc(bestEntry.OfferNpc, bestEntry.Prompt)
+                                if success or getActiveQuest() then break end
+                                task.wait(0.8)
+                            end
                             State.IsInteractingNpc = false
                         end)
                     else
-                        local remaining = 0
-                        pcall(function()
-                            local Data = UtilityModule and UtilityModule.GetData(LocalPlayer)
-                            local lastTime = Data and Data:FindFirstChild("Quests") and Data.Quests:FindFirstChild("LastTime") and Data.Quests.LastTime.Value or 0
-                            local cd = QuestsModule.QuestCD or 30
-                            remaining = math.max(0, math.ceil(cd - ((UtilityModule and UtilityModule.Tick() or os.time()) - lastTime)))
-                        end)
                         if QuestStatusLabel then
                             pcall(function()
                                 if remaining > 0 then
@@ -3215,12 +3325,11 @@ Runtime.worker("AutoQuest", function()
                                 end
                             end)
                         end
-                    end
-
-                    if QuestTargetLabel and State.TargetQuestMob then
-                        pcall(function()
-                            QuestTargetLabel:SetText("Target: " .. (State.TargetQuestMob or "None"))
-                        end)
+                        if QuestTargetLabel then
+                            pcall(function()
+                                QuestTargetLabel:SetText("Target: None (Cooldown)")
+                            end)
+                        end
                     end
                 end
             end
@@ -4194,7 +4303,7 @@ local steppedConn = Runtime.track(RunService.Stepped:Connect(function()
             -- Scan for new target
             if (now - State.LastScan) >= State.ScanInterval then
                 State.LastScan = now
-                if State.AutoQuest and State.TargetQuestMob then
+                if State.AutoQuest and State.TargetQuestMob and getActiveQuest() then
                     local qMob, qHrp, qHum = findQuestMob(myHRP)
                     if qMob and qHrp and qHum then
                         setTarget(qMob, qHrp, qHum)
