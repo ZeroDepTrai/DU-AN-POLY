@@ -2582,34 +2582,53 @@ local NpcLocations: {[string]: Vector3} = {
 Runtime.spawn(function()
     pcall(function()
         local RS = game:GetService("ReplicatedStorage")
-        local regMod = require(RS:WaitForChild("Regions", 3))
-        if regMod and regMod.Regions then
-            for regName, regData in pairs(regMod.Regions) do
-                if type(regData) == "table" then
-                    if regData.Npcs then
-                        for _, npc in ipairs(regData.Npcs) do
-                            if npc.Name and npc.Spawns and #npc.Spawns > 0 then
-                                local sp = npc.Spawns[1]
-                                if typeof(sp) == "CFrame" then
-                                    NpcLocations[npc.Name] = sp.Position
-                                elseif typeof(sp) == "Vector3" then
-                                    NpcLocations[npc.Name] = sp
+        local regMod = require(RS:WaitForChild("Regions", 5))
+        if regMod then
+            if regMod.NpcSpawns then
+                for name, pos in pairs(regMod.NpcSpawns) do
+                    if typeof(pos) == "Vector3" then
+                        NpcLocations[name] = pos
+                    elseif typeof(pos) == "CFrame" then
+                        NpcLocations[name] = pos.Position
+                    end
+                end
+            end
+            if regMod.GetNpcSpawn then
+                for _, entry in ipairs(CombatProgressionList) do
+                    local ok, sp = pcall(regMod.GetNpcSpawn, entry.OfferNpc)
+                    if ok and typeof(sp) == "Vector3" then
+                        NpcLocations[entry.OfferNpc] = sp
+                    end
+                end
+            end
+            if regMod.Regions then
+                for regName, regData in pairs(regMod.Regions) do
+                    if type(regData) == "table" then
+                        if regData.Npcs then
+                            for _, npc in ipairs(regData.Npcs) do
+                                if npc.Name and npc.Spawns and #npc.Spawns > 0 then
+                                    local sp = npc.Spawns[1]
+                                    if typeof(sp) == "CFrame" then
+                                        NpcLocations[npc.Name] = sp.Position
+                                    elseif typeof(sp) == "Vector3" then
+                                        NpcLocations[npc.Name] = sp
+                                    end
                                 end
                             end
                         end
-                    end
-                    if regData.Quests then
-                        for qPrompt, qInfo in pairs(regData.Quests) do
-                            if type(qInfo) == "table" and qInfo.Category == "Combat" then
-                                for _, entry in ipairs(CombatProgressionList) do
-                                    if entry.Prompt == qPrompt then
-                                        if qInfo.Position then
-                                            entry.MobPos = qInfo.Position
-                                        elseif qInfo.Markers then
-                                            for _, mData in pairs(qInfo.Markers) do
-                                                if type(mData) == "table" and mData.Position and typeof(mData.Position) == "Vector3" then
-                                                    entry.MobPos = mData.Position
-                                                    break
+                        if regData.Quests then
+                            for qPrompt, qInfo in pairs(regData.Quests) do
+                                if type(qInfo) == "table" and qInfo.Category == "Combat" then
+                                    for _, entry in ipairs(CombatProgressionList) do
+                                        if entry.Prompt == qPrompt then
+                                            if qInfo.Position then
+                                                entry.MobPos = qInfo.Position
+                                            elseif qInfo.Markers then
+                                                for _, mData in pairs(qInfo.Markers) do
+                                                    if type(mData) == "table" and mData.Position and typeof(mData.Position) == "Vector3" then
+                                                        entry.MobPos = mData.Position
+                                                        break
+                                                    end
                                                 end
                                             end
                                         end
@@ -2624,26 +2643,83 @@ Runtime.spawn(function()
     end)
 end)
 
--- Find NPC Model in Workspace (StationaryNpcs or Debree regions)
+-- Find NPC Model in Workspace (StationaryNpcs across all regions and fallbacks)
 local function findNpcModel(npcName: string, expectedPos: Vector3?): Model?
     local debree = Workspace:FindFirstChild("Debree")
-    local regions = debree and debree:FindFirstChild("Regions")
-    if regions then
-        for _, reg in ipairs(regions:GetChildren()) do
+    local debreeRegions = debree and debree:FindFirstChild("Regions")
+    if debreeRegions then
+        for _, reg in ipairs(debreeRegions:GetChildren()) do
             local stat = reg:FindFirstChild("StationaryNpcs")
             if stat then
                 local npc = stat:FindFirstChild(npcName)
+                if not npc and (npcName == "Grandpa Wagwon" or npcName == "Wagwan") then
+                    npc = stat:FindFirstChild("Wagwan") or stat:FindFirstChild("Grandpa Wagwon")
+                end
                 if npc and npc:IsA("Model") then
                     return npc
                 end
             end
         end
     end
-    for _, desc in ipairs(Workspace:GetDescendants()) do
-        if desc:IsA("Model") and desc.Name == npcName then
-            return desc
+
+    local hums = Workspace:FindFirstChild("Humanoids")
+    local humRegions = hums and hums:FindFirstChild("Regions")
+    if humRegions then
+        for _, reg in ipairs(humRegions:GetChildren()) do
+            local stat = reg:FindFirstChild("StationaryNpcs")
+            if stat then
+                local npc = stat:FindFirstChild(npcName)
+                if not npc and (npcName == "Grandpa Wagwon" or npcName == "Wagwan") then
+                    npc = stat:FindFirstChild("Wagwan") or stat:FindFirstChild("Grandpa Wagwon")
+                end
+                if npc and npc:IsA("Model") then
+                    return npc
+                end
+            end
         end
     end
+
+    local globalStat = Workspace:FindFirstChild("StationaryNpcs")
+    if globalStat then
+        local npc = globalStat:FindFirstChild(npcName)
+        if not npc and (npcName == "Grandpa Wagwon" or npcName == "Wagwan") then
+            npc = globalStat:FindFirstChild("Wagwan") or globalStat:FindFirstChild("Grandpa Wagwon")
+        end
+        if npc and npc:IsA("Model") then
+            return npc
+        end
+    end
+
+    local lowName = npcName:lower()
+    for _, desc in ipairs(Workspace:GetDescendants()) do
+        if desc:IsA("Model") then
+            local dName = desc.Name:lower()
+            if dName == lowName then
+                return desc
+            elseif expectedPos then
+                local root = desc:FindFirstChild("HumanoidRootPart") or desc.PrimaryPart or desc:FindFirstChildWhichIsA("BasePart")
+                if root and (root.Position - expectedPos).Magnitude < 35 and desc:FindFirstChildWhichIsA("ProximityPrompt", true) then
+                    return desc
+                end
+            end
+        end
+    end
+
+    -- ProximityPrompt match fallback near expectedPos
+    if expectedPos then
+        for _, p in ipairs(Workspace:GetDescendants()) do
+            if p:IsA("ProximityPrompt") then
+                local pPart = p.Parent:IsA("BasePart") and p.Parent or p:FindFirstAncestorWhichIsA("BasePart")
+                if pPart and (pPart.Position - expectedPos).Magnitude < 35 then
+                    local model = p:FindFirstAncestorWhichIsA("Model")
+                    if model then
+                        return model
+                    end
+                end
+            end
+        end
+    end
+
     return nil
 end
 
@@ -2674,8 +2750,6 @@ function QuestDialogue.close()
             local label = button:IsA("TextButton") and button or button:FindFirstChildWhichIsA("TextLabel", true)
             local text = label and label.Text:lower():match("^%s*(.-)%s*$")
             if text == "close" or text == "farewell" then
-                -- Execute the actual close callback; hiding the GUI alone leaves
-                -- the game's dialogue/camera state active.
                 Compat.activate(button)
                 return
             end
@@ -2686,6 +2760,15 @@ end
 -- Teleport to NPC and simulate player interaction (ProximityPrompt & Dialogue & SignalEvent ToServer)
 local function interactWithNpc(npcName: string, promptName: string): boolean
     local targetPos = NpcLocations[npcName]
+    if not targetPos then
+        if npcName == "Grandpa Wagwon" or npcName == "Wagwan" then
+            targetPos = NpcLocations["Wagwan"] or NpcLocations["Grandpa Wagwon"]
+        end
+    end
+    if not targetPos then
+        local entry = getEntryByPrompt(promptName)
+        targetPos = entry and entry.NpcPos
+    end
     if not targetPos then return false end
 
     clearTarget()
@@ -2695,13 +2778,30 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
     local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
     if not hrp then return false end
 
-    -- 1. Teleport to NPC position to authorize interaction
-    safeTeleport(CFrame.new(targetPos + Vector3.new(0, 3, 0)), true)
+    -- 1. Anti-gravity lock to freeze player in place and prevent falling into unstreamed void
+    local lockBV = hrp:FindFirstChild("ObsidianNpcLock") :: BodyVelocity?
+    if not lockBV then
+        lockBV = Instance.new("BodyVelocity")
+        lockBV.Name = "ObsidianNpcLock"
+        lockBV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        lockBV.Velocity = Vector3.zero
+        lockBV.Parent = hrp
+    else
+        lockBV.Velocity = Vector3.zero
+    end
 
-    -- 2. Wait briefly for NPC model and prompt if not immediately present
+    local standPos = targetPos + Vector3.new(0, 1.5, 0)
+    safeTeleport(CFrame.new(standPos), true)
+    pcall(function() LocalPlayer:RequestStreamAroundAsync(targetPos, 5) end)
+
+    -- 2. Wait up to 3.5s for NPC model to stream in while holding position rock-solid
     local npcModel = nil
     local startTime = os.clock()
-    while os.clock() - startTime < 1.5 do
+    while os.clock() - startTime < 3.5 do
+        hrp.CFrame = CFrame.new(standPos)
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+
         npcModel = findNpcModel(npcName, targetPos)
         if npcModel then break end
         task.wait(0.15)
@@ -2710,12 +2810,59 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
     if npcModel then
         local npcRoot = npcModel:FindFirstChild("HumanoidRootPart") or npcModel.PrimaryPart or npcModel:FindFirstChildWhichIsA("BasePart")
         if npcRoot then
-            safeTeleport(CFrame.new(npcRoot.Position + Vector3.new(0, 1, 3), npcRoot.Position), false)
+            local faceCF = CFrame.lookAt(npcRoot.Position + (npcRoot.CFrame.LookVector * 2.5), npcRoot.Position)
+            hrp.CFrame = faceCF
+            hrp.AssemblyLinearVelocity = Vector3.zero
         end
 
+        local prompt = npcModel:FindFirstChildWhichIsA("ProximityPrompt", true)
+        if not prompt and targetPos then
+            for _, p in ipairs(Workspace:GetDescendants()) do
+                if p:IsA("ProximityPrompt") then
+                    local pPart = p.Parent:IsA("BasePart") and p.Parent or p:FindFirstAncestorWhichIsA("BasePart")
+                    if pPart and (pPart.Position - targetPos).Magnitude < 35 then
+                        prompt = p
+                        break
+                    end
+                end
+            end
+        end
+
+        if prompt then
+            pcall(function()
+                if type(fireproximityprompt) == "function" then
+                    fireproximityprompt(prompt)
+                elseif Compat and Compat.prompt then
+                    Compat.prompt(prompt)
+                end
+            end)
+            task.wait(0.25)
+        end
     end
 
-    -- Accept through the existing game request below; no desktop dialogue click is needed.
+    -- 3. Simulate accepting quest in Dialogue GUI if visible
+    pcall(function()
+        local compHolder = LocalPlayer.PlayerGui:FindFirstChild("ComponentsHolder")
+        local dHolder = compHolder and compHolder:FindFirstChild("DialogueHolder")
+        if dHolder then
+            for _, btn in ipairs(dHolder:GetDescendants()) do
+                if btn:IsA("TextButton") or btn:IsA("GuiButton") then
+                    local label = btn:IsA("TextButton") and btn or btn:FindFirstChildWhichIsA("TextLabel", true)
+                    local t = label and label.Text:lower() or ""
+                    if t:find(promptName:lower()) or t:find("accept") or t:find("yes") or t:find("take") then
+                        if Compat and Compat.activate then
+                            Compat.activate(btn)
+                        else
+                            for _, c in ipairs(getconnections(btn.MouseButton1Click)) do c:Fire() end
+                            for _, c in ipairs(getconnections(btn.Activated)) do c:Fire() end
+                        end
+                        break
+                    end
+                end
+            end
+        end
+    end)
+
     -- 4. SEND OFFICIAL SERVER REMOTE: SignalEvent.ToServer("AddQuest", promptName)
     pcall(function()
         if SignalEventModule and SignalEventModule.ToServer then
@@ -2734,17 +2881,23 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
 
     -- 5. Poll for server to grant quest into Data.Quests.Holder
     local waitStart = os.clock()
-    while os.clock() - waitStart < 2.5 do
+    local success = false
+    while os.clock() - waitStart < 3.0 do
         local activeInst, activePrompt = getActiveQuest()
-        if activeInst and activePrompt == promptName then
+        if activeInst and (activePrompt == promptName or not promptName) then
             QuestDialogue.PendingUntil, QuestDialogue.NextAt = os.clock() + 4, 0
             QuestDialogue.close()
-            return true
+            success = true
+            break
         end
         task.wait(0.2)
     end
 
-    return false
+    if lockBV and lockBV.Parent then
+        lockBV:Destroy()
+    end
+
+    return success
 end
 
 local CachedMarkerHandler: any = nil
@@ -4056,7 +4209,7 @@ local steppedConn = Runtime.track(RunService.Stepped:Connect(function()
                         local waitPos = getQuestWaitPosition(currentEntry)
                         if waitPos then
                             if (myHRP.Position - waitPos).Magnitude > 15 then
-                                safeTeleport(CFrame.new(waitPos + Vector3.new(0, 8, 0)), false)
+                                safeTeleport(CFrame.new(waitPos + Vector3.new(0, 8, 0)), true)
                             end
                             if (now - State.LastQuestWaitTP) >= 0.5 then
                                 State.LastQuestWaitTP = now
@@ -4125,9 +4278,8 @@ local steppedConn = Runtime.track(RunService.Stepped:Connect(function()
         if shouldAttach and State.TargetHRP and State.TargetHum and State.TargetHum.Health > 0 then
             local mobPos = State.TargetHRP.Position
             local horizDist = Vector2.new(myHRP.Position.X - mobPos.X, myHRP.Position.Z - mobPos.Z).Magnitude
+            local effectiveHeight = State.SemiKillAura and State.SemiKillAuraSafeHeight or (State.AutoQuest and (State.MobAttackHeight or 6.0) or State.CurrentHeight)
             if horizDist <= 120 then
-                local effectiveHeight = State.SemiKillAura and State.SemiKillAuraSafeHeight or (State.AutoQuest and (State.MobAttackHeight or 6.0) or State.CurrentHeight)
-
                 Attachment.face(char, State.TargetHRP, effectiveHeight)
 
                 -- Lock physics gravity with BodyVelocity so player does not jitter or fall between physics frames
@@ -4141,6 +4293,9 @@ local steppedConn = Runtime.track(RunService.Stepped:Connect(function()
                 else
                     attachBV.Velocity = Vector3.zero
                 end
+            else
+                -- Target mob is beyond 120 studs: safeTeleport directly into attach range with streaming
+                safeTeleport(CFrame.new(mobPos + Vector3.new(0, effectiveHeight, 0)), true)
             end
         else
             Attachment.release()
