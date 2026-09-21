@@ -74,10 +74,19 @@ function Compat.fetch(url)
     error("Nexus Mobile could not download " .. url .. ". HTTP access is required.")
 end
 
+function Compat.uiSource(source)
+    -- Keep UI in PlayerGui: accessing an executor-protected CoreGui tree can
+    -- fail when a game callback runs with ordinary script capabilities.
+    return 'local gethui = function() return game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end\n'
+        .. 'local protectgui = function() end\n' .. source
+end
+
 function Compat.loadAddon(path, optional)
     local ok, result = pcall(function()
         assert(type(loadstring) == "function", "This build requires loadstring support")
-        local fn, message = loadstring(Compat.fetch(path))
+        local source = Compat.fetch(path)
+        if path:match("/Library%.lua$") then source = Compat.uiSource(source) end
+        local fn, message = loadstring(source)
         assert(fn, message)
         return fn()
     end)
@@ -132,6 +141,10 @@ function Compat.activate(button)
             end
             if fired then return true end
         end
+    end
+    if UserInputService.TouchEnabled then
+        Compat.warnOnce("touch-dialogue", "Tap this dialogue choice manually; this client cannot dispatch its action directly.")
+        return false
     end
     local ok = pcall(function()
         local input = game:GetService("VirtualInputManager")
@@ -205,7 +218,10 @@ local InputHandler = setmetatable({}, {
         if type(fn) == "function" then
             return function(...)
                 local ok, a, b, c = pcall(fn, ...)
-                if ok then return a, b, c end
+                if ok then
+                    if key == "VirtualPress" or key == "VirtualRelease" then return a ~= false end
+                    return a, b, c
+                end
                 Compat.warnOnce("input-" .. tostring(key), "Game input is unavailable: " .. tostring(key))
                 return false
             end
@@ -1095,14 +1111,6 @@ end
 -- ==============================================================================
 -- SEMI-KILL AURA (DYNAMIC HOLD SKILL) & AUTO USE SKILLS ENGINE
 -- ==============================================================================
-local KeyCodeMap: {[string]: number} = {
-    Z = 0x5A,
-    X = 0x58,
-    C = 0x43,
-    V = 0x56,
-    B = 0x42,
-}
-
 local function getSkillActionAndInfo(targetKey: string): (string, string?)
     local keyUpper = targetKey:upper()
     local success, Skills_Provider = pcall(function()
@@ -1150,10 +1158,6 @@ local function releaseSemiKillAura()
     if InputHandler.IsDown(action) then
         InputHandler.VirtualRelease(action)
     end
-    local kc = KeyCodeMap[chosenKey:upper()]
-    if kc and keyrelease then
-        pcall(keyrelease, kc)
-    end
     if Skill_Controller then
         Skill_Controller.AutoUnholdDisabled = false
         if skillName then
@@ -1196,10 +1200,6 @@ local function recastSemiKillAura()
         if InputHandler.IsDown(action) then
             InputHandler.VirtualRelease(action)
         end
-        local kc = KeyCodeMap[chosenKey:upper()]
-        if kc and keyrelease then
-            pcall(keyrelease, kc)
-        end
 
         local char = LocalPlayer.Character
         local shc = char and char:FindFirstChild("SHC")
@@ -1216,11 +1216,7 @@ local function recastSemiKillAura()
                 Skill_Controller.AutoUnholdDisabled = true
             end
 
-            InputHandler.VirtualPress(action)
-            if kc and keypress then
-                pcall(keypress, kc)
-            end
-            State.IsHoldingSkill = true
+            State.IsHoldingSkill = InputHandler.VirtualPress(action) == true
 
             if shc and skillName then
                 local cd = shc:FindFirstChild(skillName)
@@ -1280,7 +1276,7 @@ local function executeAutoSkills()
                 if Combat_presets then
                     Combat_presets.Last_Punched = 0
                 end
-                InputHandler.VirtualPress(action)
+                if not InputHandler.VirtualPress(action) then return end
                 task.wait(0.05)
                 InputHandler.VirtualRelease(action)
                 lastAutoSkillTime = os.clock()
@@ -2633,23 +2629,7 @@ local function interactWithNpc(npcName: string, promptName: string): boolean
         end
     end
 
-    -- 3. Simulate accepting quest in Dialogue GUI if visible
-    pcall(function()
-        local compHolder = LocalPlayer.PlayerGui:FindFirstChild("ComponentsHolder")
-        local dHolder = compHolder and compHolder:FindFirstChild("DialogueHolder")
-        if dHolder then
-            for _, btn in ipairs(dHolder:GetDescendants()) do
-                if btn:IsA("TextButton") then
-                    local t = btn.Text:lower()
-                    if t:find(promptName:lower()) or t:find("accept") or t:find("yes") or t:find("take") then
-                        Compat.activate(btn)
-                        break
-                    end
-                end
-            end
-        end
-    end)
-
+    -- Accept through the existing game request below; no desktop dialogue click is needed.
     -- 4. SEND OFFICIAL SERVER REMOTE: SignalEvent.ToServer("AddQuest", promptName)
     pcall(function()
         if SignalEventModule and SignalEventModule.ToServer then
@@ -4604,22 +4584,18 @@ local BlackmarketEngine = {
 }
 
 function BlackmarketEngine:Init()
-    if self.BmConfig then return end
-    pcall(function()
-        local npcsFolder = ReplicatedStorage:WaitForChild("Ouwland", 5)
-            and ReplicatedStorage.Ouwland:WaitForChild("Content", 5)
-            and ReplicatedStorage.Ouwland.Content:WaitForChild("Misc", 5)
-            and ReplicatedStorage.Ouwland.Content.Misc:WaitForChild("Npcs", 5)
-        if npcsFolder and npcsFolder:FindFirstChild("Black Marketer") then
-            self.BmConfig = require(npcsFolder["Black Marketer"])
-        end
-    end)
-    pcall(function()
-        self.TimedVendor = require(ReplicatedStorage.CAM.Global.Subsets.Gameplay.TimedVendor)
-    end)
-    pcall(function()
-        self.Dialogue = require(ReplicatedStorage.CAM.Client.Modules.GamePlay.Dialogue)
-    end)
+    if self.BmConfig and self.TimedVendor and self.Dialogue then return end
+    if self.NextModuleRetry and os.clock() < self.NextModuleRetry then return end
+    self.NextModuleRetry = os.clock() + 15
+    local function child(parent, name) return parent and parent:FindFirstChild(name) end
+    local npcs = child(child(child(child(ReplicatedStorage, "Ouwland"), "Content"), "Misc"), "Npcs")
+    local cam = child(ReplicatedStorage, "CAM")
+    local gameplay = child(child(child(cam, "Global"), "Subsets"), "Gameplay")
+    local modules = child(child(cam, "Client"), "Modules")
+    local gamePlay = child(modules, "GamePlay")
+    self.BmConfig = self.BmConfig or safeRequire(child(npcs, "Black Marketer"))
+    self.TimedVendor = self.TimedVendor or safeRequire(child(gameplay, "TimedVendor"))
+    self.Dialogue = self.Dialogue or safeRequire(child(gamePlay, "Dialogue"))
 end
 
 function BlackmarketEngine:GetState()
@@ -6785,18 +6761,19 @@ do
 
     local function safeSetText(labelObj, text: string)
         if not labelObj then return end
-        pcall(function()
-            if labelObj.SetText then
-                labelObj:SetText(text)
-            elseif labelObj.TextLabel then
-                labelObj.TextLabel.Text = text
-            end
+        local ok, err = pcall(function()
+            if labelObj.SetText then labelObj:SetText(text)
+            elseif labelObj.TextLabel then labelObj.TextLabel.Text = text end
         end)
+        if not ok then Compat.warnOnce("blackmarket-label", "Cannot update black-market display: " .. tostring(err)) end
     end
 
     local function updateBlackmarketTracker()
         local ok, err = pcall(function()
             local isLive, _, timeStr, _, locStr = BlackmarketEngine:GetStatus()
+            local estimate = not (BlackmarketEngine.TimedVendor and BlackmarketEngine.BmConfig
+                and BlackmarketEngine.BmConfig.TimedVendor)
+            if estimate then timeStr = timeStr .. " (estimated schedule)" end
             if isLive then
                 safeSetText(bmStatusLabel, "Status: 🟢 OPEN (Active)")
                 safeSetText(bmTimerLabel, "Closes In: " .. timeStr)
@@ -6812,14 +6789,13 @@ do
         end
     end
 
-    -- Initial immediate update on UI load
-    updateBlackmarketTracker()
+    -- Game-module work stays off the UI construction thread.
 
     -- Continuous 1-second watcher loop
     Runtime.worker("BlackmarketStatus", function()
         while Runtime.alive do
-            task.wait(1.0)
             updateBlackmarketTracker()
+            task.wait(1.0)
         end
     end)
 
