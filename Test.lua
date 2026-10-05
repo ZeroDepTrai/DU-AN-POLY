@@ -47,6 +47,11 @@ local function inspect(environment)
         if type(rawget(snapshot, "antiAFK")) == "table" then
             safe.antiAFK = selectFields(rawget(snapshot, "antiAFK"), {"mode", "available", "lastError"})
         end
+        if type(rawget(snapshot, "navigation")) == "table" then
+            safe.navigation = selectFields(rawget(snapshot, "navigation"), {"phase", "waypoint", "waypoints",
+                "speed", "suspended", "computing", "solveSeconds", "waitingFor", "computeElapsed",
+                "candidate", "recoveries", "recoveryReason"})
+        end
         if next(safe) == nil then return false end
         local ok, json = pcall(function() return http:JSONEncode(safe) end)
         if ok then
