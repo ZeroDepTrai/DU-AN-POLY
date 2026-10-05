@@ -18,7 +18,7 @@ local function inspect(environment)
     end)
 
     local rootFields = {"state", "phase", "stage", "build", "reason", "device", "lowPerformance", "targetId",
-        "recoveryAttempts", "dodgeRetryAt", "witchRouteId", "updatedAt", "startedAt", "version", "enabled"}
+        "recoveryAttempts", "dodgeRetryAt", "witchRouteId", "updatedAt", "startedAt", "version", "enabled", "runtimeBuild"}
     local webhookFields = {"delivery", "error", "messageId", "queuedAlerts", "TotalCandiesGained",
         "DoorsInteracted", "Wallet", "SessionTimer", "metadata"}
     local function scalar(value)
@@ -53,6 +53,12 @@ local function inspect(environment)
                 "candidate", "recoveries", "recoveryReason"})
         end
         if next(safe) == nil then return false end
+        safe.statusReaderBuild="navigation-status-v2"
+        local nav=safe.navigation
+        local navLine=nav and ("Navigation: "..tostring(nav.phase or "unknown")
+            .." | wait: "..tostring(nav.waitingFor or "none").." | speed: "..tostring(nav.speed or "unknown")
+            .." | solve: "..tostring(nav.computeElapsed or nav.solveSeconds or "unknown").."s")
+            or "Navigation diagnostics unavailable in this snapshot. Reload the updated CandyFarm."
         local ok, json = pcall(function() return http:JSONEncode(safe) end)
         if ok then
             report("CandyFarm status:", json)
@@ -60,7 +66,8 @@ local function inspect(environment)
             report("CandyFarm status:", safe.state or safe.phase or "UNKNOWN", safe.reason or "")
         end
         notify((safe.state or safe.phase or "UNKNOWN").." | "..(safe.stage or safe.device or "")
-            ..(safe.reason and " | "..safe.reason or "")..(ok and "\n\n"..json or ""))
+            ..(safe.reason and " | "..safe.reason or "").."\nReader: navigation-status-v2 | Farm: "
+            ..tostring(safe.runtimeBuild or "unversioned").."\n"..navLine..(ok and "\n\n"..json or ""))
         return true
     end
 
